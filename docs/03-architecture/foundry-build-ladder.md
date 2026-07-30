@@ -2,7 +2,7 @@
 
 **Foundation:** 1.0
 **Authority:** Sequential implementation program derived from `docs/03-architecture/implementation-plan.md` and all active specification documents
-**Status:** `FBL-001`–`FBL-004` are **complete**. Foundry Foundation is **approved (1.0)**. The operator has explicitly authorized a bounded execution sequence covering `FBL-003`–`FBL-006`; `FBL-005` is in progress under that authorization. No rung beyond `FBL-006` has been authorized to start, and `FBL-007` remains explicitly out of scope until separately authorized, per this document's own rules below.
+**Status:** `FBL-001`–`FBL-005` are **complete**. Foundry Foundation is **approved (1.0)**. The operator has explicitly authorized a bounded execution sequence covering `FBL-003`–`FBL-006`; `FBL-006` is in progress under that authorization. No rung beyond `FBL-006` has been authorized to start, and `FBL-007` remains explicitly out of scope until separately authorized, per this document's own rules below.
 **Method:** Contract-first vertical slices (ADR-003)
 
 ## How to read this document
@@ -143,7 +143,7 @@ Parallel groups are defined precisely in §4.
 | 13. Stop condition | Local boot confirmed. Hard stop before shell layout work. |
 | 14. Dependency on next rung | FBL-005 and FBL-011 both depend on this rung. |
 
-#### FBL-005 — Ultrawide application shell — 🔄 In progress (authorized, bounded sequence FBL-003–FBL-006)
+#### FBL-005 — Ultrawide application shell — ✅ Complete
 
 | Field | Content |
 | --- | --- |
@@ -162,7 +162,7 @@ Parallel groups are defined precisely in §4.
 | 13. Stop condition | Shell layout tests green at all three viewports. Hard stop before panel behavior is added. |
 | 14. Dependency on next rung | FBL-006 and FBL-011 depend on this rung. |
 
-#### FBL-006 — Panel framework
+#### FBL-006 — Panel framework — 🔄 In progress (authorized, bounded sequence FBL-003–FBL-006)
 
 | Field | Content |
 | --- | --- |

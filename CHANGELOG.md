@@ -30,9 +30,20 @@ Booted an empty `apps/agent-city` Next.js/TypeScript app with no meaningful UI, 
 - `src/app/page.test.tsx`: boot smoke test asserting the root page renders without throwing
 - `pnpm-workspace.yaml`: explicitly declined the `sharp` optional native build script (Next's image-optimization dependency) since this app does not use `next/image` yet
 
+### Added — FBL-005 Ultrawide application shell
+
+Implemented the full-viewport region layout — top system bar, left navigation, central operational world, right live-intelligence, bottom event timeline, persistent command input, and a docked selected-object detail panel — per `docs/02-specification/interface-model.md` and ADR-005, per the operator-authorized bounded sequence FBL-003–FBL-006. Static placeholders only; no operational data, mock runtime, or 3D content. Unit tests (Vitest + Testing Library) and a new Playwright layout suite covering all three target viewports (5120×1440, 3840×1080, 2560×1440) — 30/30 passing — verify every mandatory region is present, non-collapsed, and that the shell root carries no app-wide `max-width`.
+
+- `src/components/shell/AppShell.tsx`: the shell layout component (CSS grid, semantic landmarks with `aria-label` on every region, restrained placeholder text)
+- `src/app/page.tsx`: now renders `AppShell` (previously an intentionally empty page for FBL-004)
+- `src/app/page.test.tsx`: unit tests asserting every mandatory region renders, no `max-w-` utility on the shell root, and every region has an accessible label
+- `vitest.config.ts`, `vitest.setup.ts`: jsdom test environment, `@testing-library/react` + `jest-dom` matchers, explicit `afterEach(cleanup)`
+- `playwright.config.ts`, `e2e/shell-layout.spec.ts`: browser-based layout assertions across the three target viewport projects
+- `package.json`: added `test:e2e` script (`playwright test`), kept separate from the default `test` (unit) script
+
 ### Planned
 
-- Build ladder rung `FBL-005` (ultrawide application shell) — proceeding under the same operator-authorized bounded sequence
+- Build ladder rung `FBL-006` (panel framework) — proceeding under the same operator-authorized bounded sequence
 
 ## [1.0.0] — 2026-07-30
 
