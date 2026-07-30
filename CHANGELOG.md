@@ -6,9 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — FBL-003 Monorepo and tooling foundation
+
+Established workspace tooling (package manager, TypeScript, lint, format, test-runner wiring) across `apps/` and `packages/` with no application logic, per the operator-authorized bounded sequence FBL-003–FBL-006. `pnpm install`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run format`, `pnpm run test`, and `pnpm run build` all exit 0 on the empty tree.
+
+- `pnpm-workspace.yaml`: workspace globs for `apps/*` and `packages/*`
+- `package.json` (root): private workspace root, pinned `packageManager`, root `lint`/`lint:fix`/`format`/`format:write`/`typecheck`/`test`/`build` scripts
+- `tsconfig.base.json`: shared strict TypeScript compiler options
+- `eslint.config.mjs`: flat config using `typescript-eslint` recommended rules plus `eslint-config-prettier`
+- `.prettierrc.json` / `.prettierignore`: formatting config, scoped to code (`apps/`, `packages/`, root tooling config) — prose specification and governance documents under `docs/` and repo root are explicitly excluded from Prettier's scope, not reformatted
+- `packages/contracts`, `packages/event-types`, `packages/runtime-adapters`, `packages/ui`, `packages/world-model`: each given a minimal `package.json` (`lint`/`typecheck`/`test` scripts), `tsconfig.json` extending the shared base, and a placeholder `src/index.ts` (`export {}`) — still reserved, no implementation added
+- `typescript` pinned to `6.0.3` (not the newly released `7.0.x` line) because `typescript-eslint@8.65.0` does not yet support the TypeScript 7 API
+
 ### Planned
 
-- Build ladder rung `FBL-003` (monorepo and tooling foundation) — next eligible rung; requires separate, explicit operator authorization before it may begin
+- Build ladder rung `FBL-004` (frontend application scaffold) — proceeding under the same operator-authorized bounded sequence
 
 ## [1.0.0] — 2026-07-30
 

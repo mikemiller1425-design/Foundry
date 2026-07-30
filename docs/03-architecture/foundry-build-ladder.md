@@ -2,7 +2,7 @@
 
 **Foundation:** 1.0
 **Authority:** Sequential implementation program derived from `docs/03-architecture/implementation-plan.md` and all active specification documents
-**Status:** `FBL-001` (Foundation audit resolution) and `FBL-002` (Foundation 1.0 approval and freeze) are **complete**. Foundry Foundation is **approved (1.0)**. `FBL-003` is the next eligible rung — **it has not begun and may not begin without separate, explicit operator authorization**, per this document's own rules below. No rung beyond `FBL-002` has been authorized to start.
+**Status:** `FBL-001`–`FBL-003` are **complete**. Foundry Foundation is **approved (1.0)**. The operator has explicitly authorized a bounded execution sequence covering `FBL-003`–`FBL-006`; `FBL-004` is in progress under that authorization. No rung beyond `FBL-006` has been authorized to start, and `FBL-007` remains explicitly out of scope until separately authorized, per this document's own rules below.
 **Method:** Contract-first vertical slices (ADR-003)
 
 ## How to read this document
@@ -105,7 +105,7 @@ Parallel groups are defined precisely in §4.
 
 ### Phase B — Repository, contracts, and 2D interface
 
-#### FBL-003 — Monorepo and tooling foundation — ⏳ Next eligible rung; not yet authorized
+#### FBL-003 — Monorepo and tooling foundation — ✅ Complete
 
 | Field | Content |
 | --- | --- |
@@ -124,7 +124,7 @@ Parallel groups are defined precisely in §4.
 | 13. Stop condition | Tooling scripts pass on an empty tree. Hard stop before any app code is scaffolded. |
 | 14. Dependency on next rung | FBL-004 cannot begin until tooling is green. |
 
-#### FBL-004 — Frontend application scaffold
+#### FBL-004 — Frontend application scaffold — 🔄 In progress (authorized, bounded sequence FBL-003–FBL-006)
 
 | Field | Content |
 | --- | --- |

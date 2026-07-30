@@ -1,0 +1,17 @@
+node_modules
+dist
+.next
+coverage
+pnpm-lock.yaml
+playwright-report
+test-results
+
+# Prose specification and governance documents are not code-formatting
+# targets; Prettier here scopes to apps/, packages/, and root tooling config.
+docs/
+README.md
+CONTRIBUTING.md
+FOUNDATION_VERSION.md
+CHANGELOG.md
+prompts/
+assets/
