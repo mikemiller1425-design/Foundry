@@ -42,6 +42,10 @@ Every event includes: `id`, `type`, `occurredAt`, `actorType`, `actorId`, `entit
 | Audit | Required |
 | Idempotency | Apply by id once |
 
+**`newHealth` vocabulary (resolves audit finding M-02):** `healthy` \| `degraded` \| `critical` \| `disconnected`. (Lighthouse's additional `active` / `attention_required` states derive from build and approval events, not from `system.health_changed`.)
+
+**`reasons[]` vocabulary (resolves audit finding M-02):** `nominal`, `connection_lost`, `connection_restored`, `agent_unreachable`, `runtime_unavailable`. Connection loss and restoration are modeled as `reasons[]` entries on `system.health_changed` (`newHealth: disconnected` with reason `connection_lost`; the following `system.health_changed` back to a servable health with reason `connection_restored`) rather than as separate event types — this is the complete, exhaustive contract for F-10 disconnect/reconnect behavior.
+
 ---
 
 ## Operator
@@ -98,6 +102,21 @@ Every event includes: `id`, `type`, `occurredAt`, `actorType`, `actorId`, `entit
 | Audit | Required |
 | Idempotency | By id |
 
+### Demo control commands (resolves audit finding M-01)
+
+`operator.command_submitted` / `_accepted` / `_rejected` carry one of exactly these `commandType` values when the command targets demo control. No other demo `commandType` is valid in V1.
+
+| `commandType` | `params` | Effect |
+| --- | --- | --- |
+| `demo.start` | `{}` | Scheduler begins emitting the deterministic V1 event sequence from `system.started` |
+| `demo.pause` | `{}` | Scheduler stops advancing; no new events emitted until resumed |
+| `demo.resume` | `{}` | Scheduler continues from exactly where it paused; no event reordering or loss |
+| `demo.set_speed` | `{ multiplier: number }` | Scheduler's playback rate changes; does not alter event order or content, only timing |
+| `demo.reset` | `{}` | All state clears; the neighborhood re-initializes from `system.started` as if freshly booted |
+| `demo.replay` | `{ seed?: string }` | Re-emits the identical seeded sequence deterministically from the start; omitting `seed` replays the default V1 seed |
+
+The mock scheduler (and, once it exists, the backend) must apply all six without ever reordering or duplicating already-emitted events. `demo.reset` and `demo.replay` are the only commands that may clear or re-emit history; `demo.pause`/`demo.resume`/`demo.set_speed` never affect event content, only emission timing.
+
 ---
 
 ## Agent
@@ -126,7 +145,28 @@ Payload: `taskId`, `failureCode`, `message`, `evidenceIds`, `retryEligible`. Fro
 ### `agent.completed_work`
 Payload: `taskId`, `outputArtifactIds`. Frontend: work animation stops; artifacts update. **Does not** alone complete stage.
 
+### `agent.returned_home` (resolves audit finding M-03)
+Payload: `homeBuildingId`. Backend: `currentBuildingId` updates to the Agent's residence following `returnHome`. Frontend: residence occupancy marker returns to occupied/idle; workplace vacates.
+
 For all agent events: Producer backend (or adapter via backend); Audit required; Idempotency by event id; Frontend never authorizes location alone.
+
+---
+
+## AgentRun (resolves audit finding B-04)
+
+### `agentrun.started`
+Payload: `agentId`, `taskId`, `runtimeType` (`mock` \| `claude_code`), `riskClass`. Preconditions: `riskClass` is R0–R2. Backend: creates the `AgentRun` record. Frontend: workplace shows active runtime indicator.
+
+### `agentrun.completed`
+Payload: `exitCode`, `outputArtifactIds`, `evidenceIds`. Backend: `AgentRun.status` → `completed`. Frontend: evidence becomes inspectable.
+
+### `agentrun.failed`
+Payload: `failureCode`, `failureMessage`, `evidenceIds`. Frontend: red state + evidence link; failure remains inspectable.
+
+### `agentrun.timed_out`
+Payload: `evidenceIds`, `logRef`. Backend: run terminates safely; logs and evidence retained. Frontend: timeout clearly distinguished from a policy-violation failure.
+
+All `agentrun.*` events: Producer is the Runtime Adapter via the backend; Audit required; Idempotency by event id.
 
 ---
 
@@ -138,11 +178,17 @@ Payload: `projectId`, `buildId`, `objective`. Frontend: construction site activa
 ### `build.planned`
 Payload: `stageIds`, `requirementCount`, `planArtifactId`. Frontend: blueprint/progression visible.
 
+### `build.ready` (resolves audit finding M-03)
+Backend: status `ready`; all prerequisites for `build.started` are satisfied (plan exists, first stage's prerequisites met). Frontend: construction site shows "ready to start" state, distinct from `planned`.
+
 ### `build.started`
 Backend: status running. Frontend: active status; no false progress without stage events.
 
 ### `build.paused`
 Frontend: global pause; stop progress animations.
+
+### `build.resumed` (resolves audit finding M-03)
+Backend: status returns to `running` from `paused`. Frontend: progress animations resume; no stage state is re-derived or replayed — resumption continues from exactly where the build paused.
 
 ### `build.completed`
 Payload: `finalArtifactIds`, `completedAt`. Frontend: site completed structure after reconcile.
@@ -162,8 +208,11 @@ Preconditions for start: plan exists. Completion requires mandatory stages + req
 ### `stage.created`
 Stage enters plan.
 
+### `stage.ready` (resolves audit finding M-03)
+Backend: status `ready`; the stage's sequence dependency (the prior stage's completion) is satisfied. Frontend: workplace shows "queued to start," distinct from `planned`.
+
 ### `stage.started`
-Payload: `assignedAgentIds`, `sourceBuildingId`.
+Payload: `assignedAgentIds`, `sourceBuildingId`. For `qa_validation` specifically: this event's precondition additionally requires the Warehouse → QA transfer's `transfer.completed` (receipt) — Inspector validation cannot start before the artifact physically arrives at QA (resolves audit finding B-01). For `deployment_package` specifically: this event coincides with the QA → Deployment Dock transfer's `transfer.started`, once that transfer is `ready` (see `transfer.ready` above).
 
 ### `stage.blocked`
 Payload: `requirementIds` / `approvalId`, `reason`. Frontend: blocker card; cargo unsealed if relevant.
@@ -178,10 +227,25 @@ Payload: `evidenceIds`, `passedRequirementIds`. **Invariant:** cannot be produce
 Payload: `failedRequirementIds`, `evidenceIds`, `retryEligible`. Frontend: QA red; vehicle parked.
 
 ### `stage.completed`
-Payload: `artifactIds`, `completedAt`. Backend: may permit transfer creation only if invariants pass. Completed stages cannot silently return to running.
+Payload: `artifactIds`, `completedAt`. Backend: may permit transfer creation only if invariants pass. Completed stages cannot silently return to running. For `deployment_package` specifically: this event fires only after the QA → Deployment Dock transfer's `transfer.completed` and receipt at the Dock — never before — and `build.completed` follows immediately (resolves audit finding B-01).
 
 ### `stage.failed`
-Terminal unless Revision path created via approval/revision flow.
+Terminal unless a `Revision` record (see Revision below) is created via the approval/revision flow, which reopens the stage.
+
+---
+
+## Revision (resolves audit finding B-03)
+
+### `revision.requested`
+Payload: `revisionId`, `stageId`, `reason`, `requestedBy`, `sourceApprovalId?`. Preconditions: the stage is `completed` or `failed`, or its Approval resolved as `revision_requested`. Backend: creates the `Revision` record; stage status → `revision_required`. Frontend: revision badge on the stage; Builder notified.
+
+### `revision.started`
+Payload: `revisionId`. Backend: stage status → `running`, reopened for rework. Frontend: workplace becomes active again for this stage.
+
+### `revision.completed`
+Payload: `revisionId`, `resultingStageStatus`. Backend: closes the `Revision`; stage proceeds through its normal lifecycle from `running`. Frontend: revision badge clears.
+
+All `revision.*` events: Producer backend; Audit required; Idempotency by event id.
 
 ---
 
@@ -190,8 +254,8 @@ Terminal unless Revision path created via approval/revision flow.
 ### `requirement.started`
 Checklist item running.
 
-### `requirement.completed`
-Payload: `evidenceIds`, `validatorType`. (Canonical name for pass.)
+### `requirement.passed` (renamed from `requirement.completed` — resolves audit finding M-04)
+Payload: `evidenceIds`, `validatorType`. Canonical event name matching the Requirement entity's `passed` status in `domain-model.md`.
 
 ### `requirement.failed`
 Payload: `evidenceIds`, `message`, `retryEligible`. Frontend: exact failed requirement visible; transfer blocked.
@@ -221,14 +285,21 @@ All artifact gates passed. Seal visuals only with associated transfer readiness 
 ### `transfer.created`
 May still be blocked.
 
+### `transfer.blocked` (resolves audit finding M-03)
+Payload: `blockerIds`, `reason`. Backend: status `blocked`; recorded blockers must clear before `transfer.ready`. Frontend: cargo shows blocked visual; road segment does not highlight.
+
 ### `transfer.ready`
-**Preconditions:** stage completed, artifacts ready, approvals resolved if required, destination available.  
-**Backend:** status ready; vehicle may assign.  
-**Frontend:** cargo seals; vehicle loading-ready; route highlights.  
-**Never** triggered by animation completion alone.
+
+Preconditions are per-leg and never reference the transfer's own destination or containing stage (resolves audit finding B-01 — this is what removes the circularity between `transfer.ready` and `deployment_package.completed`):
+
+- **Construction Office → Warehouse:** `integration` stage `completed`; artifact ready. Not approval-gated.
+- **Warehouse → QA:** `integration` stage `completed`; artifact ready; `qa_validation` stage `ready` (queued, not yet completed). Not approval-gated. This leg's `transfer.completed` is the precondition that permits `qa_validation`'s `stage.started` — Inspector validation begins only after the artifact physically arrives at QA.
+- **QA → Deployment Dock:** `qa_validation` stage `completed`; artifact ready; the build's Approval resolved as `approved`. This is the only approval-gated leg, and occurs during `deployment_package` (see `stage.started`/`stage.completed` below).
+
+Backend: status ready; destination available; vehicle (see `Vehicle` in `domain-model.md`) may assign. Frontend: cargo seals; vehicle loading-ready; route highlights. Never triggered by animation completion alone.
 
 ### `transfer.started`
-Payload: `vehicleId`, `sourceBuildingId`, `destinationBuildingId`, `artifactIds`. Frontend: load/travel animation may begin.
+Payload: `vehicleId`, `sourceBuildingId`, `destinationBuildingId`, `artifactIds`. Frontend: load/travel animation may begin. The Vehicle entity emits no independent events — its visual state derives entirely from this and the surrounding `transfer.*` events.
 
 ### `transfer.arrived`
 Operational/visual arrival; not complete until receipt.
@@ -253,7 +324,7 @@ Payload: `resolvedBy`, `resolutionNote`. Backend: gated transition may resume.
 No transfer on rejected protected path.
 
 ### `approval.revision_requested`
-Backend: revision path; return work to Builder.
+Backend: creates a `Revision` record (see Revision above) linking back to the stage via `sourceApprovalId`; the stage moves to `revision_required` until `revision.completed`; work returns to the Builder.
 
 All approval events: audit required with actor + timestamps.
 

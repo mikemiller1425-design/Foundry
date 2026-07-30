@@ -34,12 +34,14 @@ Reduced-motion preference respected.
 7. One required item fails; progression and transfer blocked; cargo unsealed; vehicle parked.
 8. Exact failed requirement inspectable with evidence.
 9. Builder retries and repairs; Inspector validates independently.
-10. Artifact transfer-ready; vehicle moves only after `transfer.started`.
-11. Approval requested; Lighthouse attention; gate closed.
-12. Operator approves or rejects with evidence; workflow resumes only after valid approval.
-13. Build completes; construction site reflects completion.
+10. Approval requested for the validated artifact; Lighthouse attention; gate closed.
+11. Operator approves or rejects with evidence; workflow resumes only after valid approval.
+12. Artifact becomes transfer-ready; vehicle moves only after `transfer.started`, carrying the package to the Deployment Dock.
+13. Build completes; construction site and Deployment Dock reflect completion.
 14. Building becomes upgrade-eligible from real metrics; operator approves; visual level and capability both change.
 15. Reload/restart restores world, build, events, inventory, agent locations, upgrade level.
+
+**Transfer detail (resolves audit finding B-01):** step 9's Inspector validation begins only after the package has physically arrived at QA via the (non-approval-gated) Warehouse → QA transfer's receipt — never before. Step 12's transfer is specifically the QA → Deployment Dock leg, the only approval-gated leg, occurring during `deployment_package`; `build.completed` (step 13) follows only after that transfer's receipt at the Dock. Full per-leg preconditions: `docs/01-mission/v1-scope.md` § "Transfer and approval scope".
 
 ## Functional tests
 

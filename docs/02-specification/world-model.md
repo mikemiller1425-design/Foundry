@@ -111,10 +111,10 @@ Global rules:
 | Allowed states | Idle, validating, passed, failed, waiting for human approval |
 | State→visual | Matching markers; red on fail; no self-certify by Builder |
 | Interactions | Evidence, failed requirements, retry eligibility |
-| Relationships | Receives transfers; feeds approval gate |
+| Relationships | Receives the Warehouse → QA transfer; validation (`stage.started` for `qa_validation`) begins only after that transfer's `transfer.completed` — the artifact must physically arrive before Inspector validation starts (resolves audit finding B-01); feeds approval gate |
 | Required events | `stage.validation_*`, `requirement.*`, `artifact.validated`, `approval.requested` |
 | Never represents | Builder self-approval |
-| V1 limits | Inspector path required for `stage.validation_passed` |
+| V1 limits | Inspector path required for `stage.validation_passed`; the transfer QA sends onward to the Deployment Dock is the only approval-gated transfer in V1 (resolves audit finding B-01 — see `domain-model.md` Transfer invariants) |
 
 ## Deployment dock
 
@@ -165,6 +165,7 @@ Global rules:
 | Relationships | Homes↔office; office↔warehouse; warehouse↔QA; QA↔dock; visibility to Lighthouse |
 | Required events | None alone; responds to `transfer.*` |
 | Never represents | Proof that a transfer exists |
+| Note | Only the QA↔dock segment carries an approval-gated transfer in V1; the office↔warehouse and warehouse↔QA segments carry non-gated transfers (resolves audit finding B-01) |
 | V1 limits | Small neighborhood graph only |
 
 ## Utility vehicle
@@ -182,7 +183,7 @@ Global rules:
 | Relationships | One active transfer max in V1 |
 | Required events | `transfer.ready`, `transfer.started`, `transfer.arrived`, `transfer.completed`, `transfer.failed` |
 | Never represents | Authorization of transfer |
-| V1 limits | One vehicle |
+| V1 limits | One vehicle (domain entity `Vehicle`, defined in `domain-model.md` — resolves audit finding B-04) |
 
 ## Cargo
 

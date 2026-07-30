@@ -56,7 +56,8 @@ Chronological feed with filter (severity/entity/type), pause autoscroll, payload
 
 ## Persistent command input
 
-V1 commands: show blockers, open pending approval, pause/resume demonstration, focus agent/building, reset demo, replay scenario.  
+V1 commands: show blockers, open pending approval, pause/resume demonstration, focus agent/building, reset demo, replay scenario. The demo-control subset (`demo.start`/`pause`/`resume`/`set_speed`/`reset`/`replay`) is the exact, exhaustive `commandType` enumeration defined in `event-model.md` § "Demo control commands" (resolves audit finding M-01); no other demo command type is valid.
+
 **Prohibit:** unrestricted natural-language autonomous planning or shell execution.
 
 ## Selected-object details
@@ -93,4 +94,4 @@ Every meaningful animation maps to an event-feed template and/or detail explanat
 
 ## Connection / stale state
 
-On disconnect: Lighthouse disconnected, mutation controls disabled, stale banner, last-known projection labeled. On restore: reconcile snapshot, resume stream.
+On disconnect: Lighthouse disconnected, mutation controls disabled, stale banner, last-known projection labeled. On restore: reconcile snapshot, resume stream. Driven by `system.health_changed` with `reasons[]` including `connection_lost` / `connection_restored` (resolves audit finding M-02 — see `event-model.md` § `system.health_changed`).

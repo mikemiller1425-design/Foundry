@@ -8,6 +8,7 @@
 1. **Backend state owns operational truth.** Stage, requirement, transfer, approval, agent location, and upgrade transitions are validated and persisted backend-side.
 2. **Frontend state renders and temporarily caches truth.** The frontend may display, interpolate, and animate; it may not independently declare completion, approval resolution, transfer legality, authority changes, or upgrade activation.
 3. If frontend and backend disagree, backend wins and the discrepancy is visible as a synchronization or stale-state error.
+3a. **Until a persisted backend exists, the deterministic mock engine (ADR-001) is the stand-in operational authority** behind the same contracts: its emitted events, not frontend logic, are the sole source of completion, transfer, approval, and upgrade outcomes during that phase. This does not relax principle 2 — frontend logic must still never locally forge completion, transfer, approval, or upgrade outcomes; it must wait for the mock engine's events exactly as it will later wait for the backend's. (Resolves audit finding M-05.)
 
 ## World fidelity
 

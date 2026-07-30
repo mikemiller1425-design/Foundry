@@ -97,6 +97,12 @@ For each term: **Definition**, **Correct usage**, and **Incorrect alternatives**
 - **Correct usage:** “Frontend implementation is a build stage.”
 - **Incorrect:** “Step” without gate/requirement semantics.
 
+### Revision
+
+- **Definition:** Record authorizing a completed or failed `BuildStage` to reopen for additional work; created by an `approval.revision_requested` resolution or by exhausted retries.
+- **Correct usage:** “The stage returned to `running` under an open Revision.”
+- **Incorrect:** Treating a completed stage as silently reopened without a Revision record; calling ad hoc rework a “revision” without the entity.
+
 ### Requirement
 
 - **Definition:** Machine-readable condition required for stage completion.
@@ -120,6 +126,12 @@ For each term: **Definition**, **Correct usage**, and **Incorrect alternatives**
 - **Definition:** Controlled movement of artifacts or responsibility between buildings, authorized by backend state.
 - **Correct usage:** “Transfer becomes ready only after prerequisites pass.”
 - **Incorrect:** “Shipment,” “delivery quest,” or animation-driven movement as authority.
+
+### Vehicle
+
+- **Definition:** The single persistent physical resource that visualizes a Transfer; emits no independent events — its state derives entirely from the Transfer it is assigned to.
+- **Correct usage:** “The vehicle departs only after `transfer.started`.”
+- **Incorrect:** Treating vehicle motion as authorization for a transfer; giving the vehicle its own operational state independent of Transfer events.
 
 ### Approval
 
@@ -150,6 +162,12 @@ For each term: **Definition**, **Correct usage**, and **Incorrect alternatives**
 - **Definition:** Backend-controlled boundary that invokes an external runtime under policy (repository, allowlist, timeout, evidence capture).
 - **Correct usage:** “Claude Code runs behind a runtime adapter.”
 - **Incorrect:** Frontend shelling to a terminal; unrestricted autonomous loops.
+
+### AgentRun
+
+- **Definition:** Execution record for one Agent Task run through a Runtime Adapter (`mock` or `claude_code`), including risk class, logs, exit status, and evidence.
+- **Correct usage:** “The `backend_implementation` stage's AgentRun used the `claude_code` runtime.”
+- **Incorrect:** Conflating AgentRun with Task (AgentRun is the adapter-side execution record; Task is the domain work unit it executes).
 
 ### Operational Truth
 
