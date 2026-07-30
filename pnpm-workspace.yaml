@@ -1,3 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+# sharp is Next.js's optional native image-optimization dependency. FBL-004
+# ships no images/next/image usage yet, so its native build script is
+# declined rather than run; revisit if a later rung adds image optimization.
+allowBuilds:
+  sharp: false

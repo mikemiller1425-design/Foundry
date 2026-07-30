@@ -18,9 +18,21 @@ Established workspace tooling (package manager, TypeScript, lint, format, test-r
 - `packages/contracts`, `packages/event-types`, `packages/runtime-adapters`, `packages/ui`, `packages/world-model`: each given a minimal `package.json` (`lint`/`typecheck`/`test` scripts), `tsconfig.json` extending the shared base, and a placeholder `src/index.ts` (`export {}`) — still reserved, no implementation added
 - `typescript` pinned to `6.0.3` (not the newly released `7.0.x` line) because `typescript-eslint@8.65.0` does not yet support the TypeScript 7 API
 
+### Added — FBL-004 Frontend application scaffold
+
+Booted an empty `apps/agent-city` Next.js/TypeScript app with no meaningful UI, per the operator-authorized bounded sequence FBL-003–FBL-006. `pnpm install`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run format`, `pnpm run test`, and `pnpm run build` all exit 0; `next start` boots and serves HTTP 200 with no console/server errors.
+
+- `apps/agent-city/package.json`: `@foundry/agent-city`, approved-stack dependencies only (`next`, `react`, `react-dom`, `tailwindcss`, `@tailwindcss/postcss`)
+- `apps/agent-city/next.config.ts`: explicit `turbopack.root` pinned to the monorepo root (an unrelated lockfile in the host home directory otherwise causes Turbopack to mis-infer the workspace root)
+- `apps/agent-city/tsconfig.json`: extends the shared base config with Next's required App Router settings
+- `apps/agent-city/postcss.config.mjs`, `src/app/globals.css`: Tailwind CSS v4 wiring (CSS-first config, no `tailwind.config.ts` needed)
+- `src/app/layout.tsx`, `src/app/page.tsx`: minimal root layout and an intentionally empty root page (`return null`) — no meaningful Foundry interface yet
+- `src/app/page.test.tsx`: boot smoke test asserting the root page renders without throwing
+- `pnpm-workspace.yaml`: explicitly declined the `sharp` optional native build script (Next's image-optimization dependency) since this app does not use `next/image` yet
+
 ### Planned
 
-- Build ladder rung `FBL-004` (frontend application scaffold) — proceeding under the same operator-authorized bounded sequence
+- Build ladder rung `FBL-005` (ultrawide application shell) — proceeding under the same operator-authorized bounded sequence
 
 ## [1.0.0] — 2026-07-30
 
