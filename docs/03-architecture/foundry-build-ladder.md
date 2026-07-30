@@ -1,8 +1,8 @@
 # Foundry Build Ladder — Agent City V1
 
-**Foundation:** 1.0-rc1
+**Foundation:** 1.0
 **Authority:** Sequential implementation program derived from `docs/03-architecture/implementation-plan.md` and all active specification documents
-**Status:** Planning only — **no rung may begin execution.** `FBL-001` is itself blocked pending operator action (see below).
+**Status:** `FBL-001` (Foundation audit resolution) and `FBL-002` (Foundation 1.0 approval and freeze) are **complete**. Foundry Foundation is **approved (1.0)**. `FBL-003` is the next eligible rung — **it has not begun and may not begin without separate, explicit operator authorization**, per this document's own rules below. No rung beyond `FBL-002` has been authorized to start.
 **Method:** Contract-first vertical slices (ADR-003)
 
 ## How to read this document
@@ -10,7 +10,7 @@
 - Every rung has a **stable identifier** (`FBL-001`, `FBL-002`, …). Identifiers are never reused and completed rungs are never renumbered. New work discovered after a rung is closed is inserted as a lettered sub-rung of the nearest preceding rung (e.g. `FBL-006A`), never by shifting later numbers.
 - A rung may not **begin** until (a) every item in its **Prerequisites** field is true and (b) the **Stop condition** of the immediately preceding rung on its dependency path has been reached.
 - A rung may not **end** by sliding into the next rung's work. Reaching a rung's **Stop condition** halts work until a human or the designated gate explicitly authorizes the next rung.
-- This document assumes the audit at `docs/audits/foundry-foundation-v1-audit.md` (dated 2026-07-28) as current. It found **4 BLOCKER** and **6 MAJOR** findings, none of which are yet resolved. Per governing instruction, **all BLOCKER and MAJOR findings must close before `FBL-002`** — a MAJOR may cease to block only through a reviewed, written-rationale reclassification recorded in a fresh audit revision, never through silent deferral. Resolving them is the first rung (`FBL-001`), and all subsequent rungs are transitively blocked until `FBL-001` closes.
+- `FBL-001` resolved all **4 BLOCKER** and all **6 MAJOR** findings from `docs/audits/foundry-foundation-v1-audit.md` (dated 2026-07-28); finding-by-finding detail in `docs/audits/foundation-v1-fbl-001-closure-matrix.md`. `FBL-002` independently re-audited the amended baseline (`docs/audits/foundry-foundation-v1-post-fbl-001-audit.md`, dated 2026-07-30, result **PASS**, 0 open BLOCKER, 0 open MAJOR, no inaccurate closure-matrix claim found) and recorded explicit operator approval promoting Foundation from `1.0-rc1` to `1.0` (see `FOUNDATION_VERSION.md`). Both rungs are closed. `FBL-003` is next; like every rung on this ladder, it requires its own separate, explicit operator authorization before it may begin — Foundation approval is not blanket authorization to proceed past it.
 - `docs/archive/foundation-v0/` and `docs/04-future/registry.md` are **non-authoritative** for every rung below. No rung's deliverables, tests, or acceptance criteria may cite them as a requirements source.
 
 ---
@@ -63,7 +63,7 @@ Parallel groups are defined precisely in §4.
 
 ### Phase A — Governance and foundation
 
-#### FBL-001 — Foundation audit resolution
+#### FBL-001 — Foundation audit resolution — ✅ Complete
 
 | Field | Content |
 | --- | --- |
@@ -82,7 +82,7 @@ Parallel groups are defined precisely in §4.
 | 13. Stop condition | Amendments committed; zero BLOCKER findings remain open and zero MAJOR findings remain open without either a resolution or a written, reviewed reclassification. Hard stop — do not proceed to freeze review in the same action. |
 | 14. Dependency on next rung | FBL-002 cannot begin until this rung's stop condition is independently reviewed. |
 
-#### FBL-002 — Foundation 1.0 approval and freeze
+#### FBL-002 — Foundation 1.0 approval and freeze — ✅ Complete
 
 | Field | Content |
 | --- | --- |
@@ -105,7 +105,7 @@ Parallel groups are defined precisely in §4.
 
 ### Phase B — Repository, contracts, and 2D interface
 
-#### FBL-003 — Monorepo and tooling foundation
+#### FBL-003 — Monorepo and tooling foundation — ⏳ Next eligible rung; not yet authorized
 
 | Field | Content |
 | --- | --- |

@@ -6,9 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Planned
+
+- Build ladder rung `FBL-003` (monorepo and tooling foundation) — next eligible rung; requires separate, explicit operator authorization before it may begin
+
+## [1.0.0] — 2026-07-30
+
 ### Changed — FBL-001 Foundation audit resolution
 
-Resolved all 4 BLOCKER and all 6 MAJOR findings from `docs/audits/foundry-foundation-v1-audit.md` (2026-07-28) by amending active documents. Foundation remains **1.0-rc1**; this is documentation-only and does not advance, approve, or freeze the baseline (that is FBL-002, not yet executed). Full finding-by-finding detail: `docs/audits/foundation-v1-fbl-001-closure-matrix.md`.
+Resolved all 4 BLOCKER and all 6 MAJOR findings from `docs/audits/foundry-foundation-v1-audit.md` (2026-07-28) by amending active documents. Full finding-by-finding detail: `docs/audits/foundation-v1-fbl-001-closure-matrix.md`.
 
 - `docs/01-mission/v1-scope.md`: canonicalized the work→validate→approve→transfer→dock sequence (B-01); added the named, ordered V1 `BuildStage` list and the transfer/approval scope note (B-02, B-01)
 - `docs/02-specification/v1-acceptance.md`: reordered "Primary user journey" steps 9–13 to match the canonical B-01 sequence
@@ -19,10 +25,17 @@ Resolved all 4 BLOCKER and all 6 MAJOR findings from `docs/audits/foundry-founda
 - `docs/00-foundry/principles.md`: added principle 3a, the mock-engine stand-in operational authority rule (M-05)
 - `docs/00-foundry/glossary.md`: added `Revision`, `Vehicle`, `AgentRun` entries
 
-### Planned
+### Added — FBL-002 Foundation 1.0 approval and freeze
 
-- Foundation freeze (FBL-002): closure matrix review, a fresh consistency audit, and explicit operator approval before promoting `1.0-rc1` to `1.0`
-- Frontend foundation work under `apps/agent-city/` after audit clearance and promotion
+- `docs/audits/foundation-v1-fbl-001-closure-matrix.md`: closure matrix cross-referencing all 4 BLOCKER and all 6 MAJOR findings to their FBL-001 resolutions
+- `docs/audits/foundry-foundation-v1-post-fbl-001-audit.md`: independent post-FBL-001 audit (2026-07-30) — result **PASS**, 0 open BLOCKER findings, 0 open MAJOR findings, audited amendment baseline commit `377547a`; found no inaccurate closure-matrix claim
+- Recorded explicit operator approval (2026-07-30) promoting Foundry Foundation from `1.0-rc1` to `1.0`, citing the independent post-FBL-001 audit above
+
+### Changed — Foundation 1.0 promotion
+
+- `FOUNDATION_VERSION.md`: version updated to **1.0**, status **Approved for implementation**, implementation status **Ready**; operator approval record added
+- `docs/handoffs/002-frontend-foundation.md`: BLOCKED banner removed; handoff now states implementation follows `docs/03-architecture/foundry-build-ladder.md` rung by rung and does not itself authorize a single combined build; identifies `FBL-003` as the next eligible rung; all existing scope prohibitions preserved unchanged
+- `docs/03-architecture/foundry-build-ladder.md`: status and governance language updated — `FBL-001` and `FBL-002` marked complete, Foundation 1.0 approval recorded, `FBL-003` identified as next; restated that every rung still requires separate operator authorization
 
 ## [1.0.0-rc1] — 2026-07-28
 

@@ -1,14 +1,12 @@
 # Handoff 002 — Frontend Foundation
 
 ```text
-BLOCKED — requires reviewed Foundation v1 audit
+Foundation: 1.0 — approved for implementation
+Implementation follows docs/03-architecture/foundry-build-ladder.md
+Next eligible rung: FBL-003 — Monorepo and tooling foundation
 ```
 
-**Do not execute this handoff until:**
-
-1. `docs/audits/foundry-foundation-v1-audit.md` exists
-2. Blocking findings are reviewed and resolved
-3. Foundation status is explicitly advanced for implementation
+**This handoff is reference material describing eventual frontend-foundation scope — it is not a single authorized build.** It does not itself grant execution authority. Implementation proceeds rung by rung per `docs/03-architecture/foundry-build-ladder.md`; each rung — starting with `FBL-003` — requires its own separate, explicit operator authorization before it may begin. Do not treat the deliverables below as one combined task to execute now.
 
 ## Mission (future)
 
@@ -26,7 +24,7 @@ Create the production frontend foundation for Agent City V1 inside `apps/agent-c
 - Vitest
 - Playwright
 
-## Deliverables (when unblocked)
+## Deliverables (per build ladder sequencing)
 
 - full-screen ultrawide application shell
 - left navigation, center world, right live-intelligence, bottom event timeline, command input
@@ -48,6 +46,6 @@ Create the production frontend foundation for Agent City V1 inside `apps/agent-c
 - Detailed production 3D assets
 - Using `docs/archive/foundation-v0/` as authority
 
-## Definition of done (when unblocked)
+## Definition of done (per build ladder sequencing)
 
 Typecheck, lint, unit tests, Playwright smoke, production build all pass. Provide summary, folder tree, test results, and unresolved risks. Stop.
