@@ -216,9 +216,19 @@ Added the Construction Office, Warehouse, QA Building, Deployment Dock, and Cons
 - `apps/agent-city/e2e/shell-operational-buildings.spec.ts`: FBL-017's required browser-level tests — pointer hit-target selection for all five, navigator sync, Escape, no keyboard trap, and the Warehouse Level 1→2 gating proof through a full canonical run
 - `apps/agent-city/e2e/shell-residences.spec.ts`, `shell-controls.spec.ts`: updated navigator building-count and placeholder-text assertions for the now nine-entry "World objects" list
 
+### Added — FBL-018 Roads
+
+Added the small permitted-route road network — homes↔office, office↔warehouse, warehouse↔QA, QA↔dock — per `docs/02-specification/world-model.md` ("Road network") and the operator-authorized bounded sequence FBL-016–FBL-020. Static geometry only: roads visualize available routes and never authorize transfers; dynamic available/highlighted/inactive states wire to `transfer.*` events at FBL-021, not here. No traffic simulation, no selection (world-model.md: "Interactions: Informational; selection optional" — this rung keeps roads non-interactive). 200 unit tests total across the repo (up from 197, 3 new) and 243 Playwright tests (up from 231, 12 new — `shell-roads.spec.ts`'s 4 tests × 3 viewports, plus one pre-existing `shell-controls.spec.ts` placeholder-text assertion updated in place) — all passing at all three target viewports.
+
+- `apps/agent-city/src/lib/world/roadNetwork.ts` (+ `.test.ts`): pure `resolveRoadEndpoints()` resolving `@foundry/world-model`'s existing `ROAD_SEGMENTS` (built at FBL-007) to real building positions; throws if a segment names a building that doesn't exist rather than silently rendering a route to nowhere — this rung's own explicit failure condition
+- `apps/agent-city/src/components/world/Road.tsx`: a single flat static rectangle between two positions, all six segments rendering identically (no per-segment state) until FBL-021
+- `apps/agent-city/src/components/world/RoadNetwork.tsx`: renders all six resolved segments; no runtime dependency, no selection wiring — roads are informational only in V1
+- `apps/agent-city/src/components/world/WorldCanvas.tsx`: mounts `RoadNetwork` alongside the existing world objects
+- `apps/agent-city/e2e/shell-roads.spec.ts`: FBL-018's required browser-level test (render/geometry smoke test, confirmed via real rendered pixels) plus resize and existing-functionality regression checks
+
 ### Planned
 
-- Build ladder rung `FBL-018` (roads) — the next rung within the operator-authorized bounded sequence FBL-016–FBL-020
+- Build ladder rung `FBL-019` (utility vehicle) — the next rung within the operator-authorized bounded sequence FBL-016–FBL-020
 
 ## [1.0.0] — 2026-07-30
 

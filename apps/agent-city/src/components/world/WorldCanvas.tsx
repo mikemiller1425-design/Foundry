@@ -9,6 +9,7 @@ import type { CameraControllerHandle } from "./cameraController";
 import { Environment } from "./Environment";
 import type { LighthouseMarkerState } from "./lighthouseMarkerState";
 import { LighthouseSceneObject } from "./LighthouseSceneObject";
+import { RoadNetwork } from "./RoadNetwork";
 import { WorldBuildings } from "./WorldBuildings";
 import { WorldSelectionController } from "./WorldSelectionController";
 
@@ -51,6 +52,7 @@ export function WorldCanvas({
     >
       <CameraRig controllerRef={controllerRef} />
       <Environment />
+      <RoadNetwork />
       <LighthouseSceneObject
         markerRef={lighthouseMarkerRef}
         selection={selection}

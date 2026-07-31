@@ -202,8 +202,8 @@ export function AppShell() {
 
         <h2 className="pointer-events-none relative font-medium">Central operational world</h2>
         <p className="pointer-events-none relative mt-2 text-neutral-400">
-          Lighthouse, residences, and operational buildings — no roads, vehicle, or agents yet
-          until build ladder rung FBL-018+.
+          Lighthouse, residences, operational buildings, and roads — no vehicle or agents yet
+          until build ladder rung FBL-019+.
         </p>
 
         {/* Approval interaction (interface-model.md): stands in for
