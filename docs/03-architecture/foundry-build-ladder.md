@@ -2,7 +2,7 @@
 
 **Foundation:** 1.0
 **Authority:** Sequential implementation program derived from `docs/03-architecture/implementation-plan.md` and all active specification documents
-**Status:** `FBL-001`–`FBL-006` are **complete**. Foundry Foundation is **approved (1.0)**. The operator has explicitly authorized a new bounded execution sequence covering `FBL-007`–`FBL-011`; `FBL-007` is in progress under that authorization. No rung beyond `FBL-011` has been authorized to start, and `FBL-012` remains explicitly out of scope until separately authorized, per this document's own rules below.
+**Status:** `FBL-001`–`FBL-007` are **complete**. Foundry Foundation is **approved (1.0)**. The operator has explicitly authorized a bounded execution sequence covering `FBL-007`–`FBL-011`; `FBL-008` is in progress under that authorization. No rung beyond `FBL-011` has been authorized to start, and `FBL-012` remains explicitly out of scope until separately authorized, per this document's own rules below.
 **Method:** Contract-first vertical slices (ADR-003)
 
 ## How to read this document
@@ -181,7 +181,7 @@ Parallel groups are defined precisely in §4.
 | 13. Stop condition | Keyboard-path test green. Hard stop before wiring real content. |
 | 14. Dependency on next rung | FBL-009 and FBL-010 depend on this rung. |
 
-#### FBL-007 — Shared contracts — 🔄 In progress (authorized, bounded sequence FBL-007–FBL-011)
+#### FBL-007 — Shared contracts — ✅ Complete
 
 | Field | Content |
 | --- | --- |
@@ -200,7 +200,7 @@ Parallel groups are defined precisely in §4.
 | 13. Stop condition | Packages published within the monorepo and imported successfully once. Hard stop before building the mock runtime on top of them. |
 | 14. Dependency on next rung | FBL-008 depends on this rung; FBL-014/019/020 depend transitively. |
 
-#### FBL-008 — Deterministic mock runtime
+#### FBL-008 — Deterministic mock runtime — 🔄 In progress (authorized, bounded sequence FBL-007–FBL-011)
 
 | Field | Content |
 | --- | --- |

@@ -73,9 +73,20 @@ Populated `packages/contracts`, `packages/event-types`, and `packages/world-mode
 - `apps/agent-city/src/lib/contracts.test.ts`: proves all three packages import and validate successfully from the app
 - `typescript-eslint` package unaffected; `zod@^4.4.3` added as a runtime dependency of `contracts`/`event-types`/`world-model`
 
+### Added — FBL-008 Deterministic mock runtime
+
+Built a replayable, in-memory V1 demo engine (`apps/agent-city/src/lib/mock-runtime/`) using only the FBL-007 contracts, per the operator-authorized bounded sequence FBL-007–FBL-011 and ADR-001 (mock-runtime-first). Placed app-locally per the ladder's own sanctioned alternative ("packages/runtime-adapters mock implementation or app-local mock service") — this is the full V1 domain simulation, a broader concern than `packages/runtime-adapters`' policy-boundary role for individual runtime invocations. No backend, database, filesystem persistence, network runtime, or AI execution. 145 unit tests total across the repo (up from 100): 45 new in the mock-runtime module.
+
+- `script.ts`: `buildCanonicalScript(seed)` — the complete, deterministic, ordered V1 event sequence (objective submission → build creation → all 7 `BuildStage`s including the one intentional `frontend_implementation` requirement failure/retry/repair → all 3 transfer legs → Inspector validation → approval → completion → Warehouse upgrade eligibility/approval/completion)
+- `runtime.ts`: `MockRuntime` — the scheduler implementing exactly the six bounded demo commands (`demo.start`/`pause`/`resume`/`set_speed`/`reset`/`replay`); rejects any other `commandType`; pause/resume preserves cursor position (no reorder, no loss); `reset` re-initializes from scratch; `replay` re-emits the identical seeded sequence
+- `worldStateReducer.ts`: `reduceWorldState` — folds events into a `WorldState`, deduping by event id so duplicate delivery never duplicates derived state (e.g. the Warehouse's seeded-9-plus-1 package count per M-06)
+- `approvalActions.ts`: pure builders for the non-happy-path Approval resolutions (reject, request-revision) — independently testable without a second divergent "canonical" script, since `v1-scope.md`'s Required workflow describes exactly one linear journey
+- `ids.ts`, `eventFactory.ts`: deterministic id/timestamp generation and a schema-validating event builder (an authoring mistake fails immediately, not silently); fixed a real bug found by the determinism test — one event was stamping real wall-clock time instead of the deterministic clock, breaking same-seed reproducibility
+- `eslint.config.mjs`: added `argsIgnorePattern`/`varsIgnorePattern: "^_"` for the standard intentionally-unused-parameter convention
+
 ### Planned
 
-- Build ladder rung `FBL-008` (deterministic mock runtime) — proceeding under the same operator-authorized bounded sequence
+- Build ladder rung `FBL-009` (event timeline) — proceeding under the same operator-authorized bounded sequence
 
 ## [1.0.0] — 2026-07-30
 
