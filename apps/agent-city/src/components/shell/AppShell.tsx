@@ -142,7 +142,8 @@ export function AppShell() {
 
         <h2 className="pointer-events-none relative font-medium">Central operational world</h2>
         <p className="pointer-events-none relative mt-2 text-neutral-400">
-          Empty 3D world scaffold — no scene content until build ladder rung FBL-013+.
+          Neighborhood environment scaffold — no buildings or agents yet until build ladder rung
+          FBL-014+.
         </p>
 
         {/* Approval interaction (interface-model.md): stands in for

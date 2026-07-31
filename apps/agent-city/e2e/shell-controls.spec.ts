@@ -31,7 +31,7 @@ test.describe("2D operational controls — stage/requirement detail (no 3D world
     page,
   }) => {
     await page.goto("/");
-    await expect(page.getByText("Empty 3D world scaffold")).toBeVisible();
+    await expect(page.getByText("Neighborhood environment scaffold")).toBeVisible();
 
     await expect(page.getByTestId("stage-list-item").first()).toBeVisible({ timeout: 15000 });
     await page.getByTestId("stage-list-item").first().click();

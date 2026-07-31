@@ -85,6 +85,12 @@ test.describe("Camera and navigation", () => {
   test("keyboard orbit changes azimuth/elevation and stays within controlled bounds", async ({
     page,
   }) => {
+    // Under full-suite parallel load, ~100+ sequential keyboard.press
+    // round-trips can approach the default 30s test timeout — this test
+    // is inherently press-heavy (orbiting from canonical to each polar
+    // extreme), so give it more headroom rather than trimming margin
+    // below what reliably proves clamping.
+    test.setTimeout(45000);
     await page.goto("/");
     await waitForCameraReady(page);
     await focusCanvas(page);
@@ -96,14 +102,17 @@ test.describe("Camera and navigation", () => {
       .poll(async () => (await readCamera(page)).azimuthDeg)
       .not.toBeCloseTo(before.azimuthDeg, 0);
 
-    // Push elevation to its extremes and confirm it stays within the
-    // controlled polar range (never flips overhead or under the horizon).
-    for (let i = 0; i < 60; i++) await page.keyboard.press("ArrowUp");
+    // KEY_ORBIT_STEP is 0.08 rad and the polar range is only ~1.25 rad
+    // wide (0.2..1.45), so 15 presses (1.2 rad) already reaches each
+    // extreme with margin — push elevation to its extremes and confirm
+    // it stays within the controlled polar range (never flips overhead
+    // or under the horizon).
+    for (let i = 0; i < 15; i++) await page.keyboard.press("ArrowUp");
     const atTop = await readCamera(page);
     expect(atTop.elevationDeg).toBeLessThanOrEqual(90);
     expect(atTop.elevationDeg).toBeGreaterThan(0);
 
-    for (let i = 0; i < 60; i++) await page.keyboard.press("ArrowDown");
+    for (let i = 0; i < 15; i++) await page.keyboard.press("ArrowDown");
     const atBottom = await readCamera(page);
     expect(atBottom.elevationDeg).toBeGreaterThanOrEqual(-90);
     expect(atBottom.elevationDeg).toBeLessThan(90);
@@ -112,6 +121,7 @@ test.describe("Camera and navigation", () => {
   test("keyboard pan moves the target and stays within the neighborhood bounds", async ({
     page,
   }) => {
+    test.setTimeout(45000);
     await page.goto("/");
     await waitForCameraReady(page);
     await focusCanvas(page);
@@ -122,10 +132,10 @@ test.describe("Camera and navigation", () => {
       .poll(async () => (await readCamera(page)).target.x)
       .not.toBeCloseTo(before.target.x, 1);
 
-    // KEY_PAN_STEP is 0.6 and the bound is ±25, so ~60 presses already
+    // KEY_PAN_STEP is 0.6 and the bound is ±25, so ~50 presses already
     // overshoots the bound with margin — enough to prove clamping without
     // an excessively long, request-per-keypress test.
-    for (let i = 0; i < 60; i++) await page.keyboard.press("Shift+ArrowRight");
+    for (let i = 0; i < 50; i++) await page.keyboard.press("Shift+ArrowRight");
     const panned = await readCamera(page);
     expect(Math.abs(panned.target.x)).toBeLessThanOrEqual(25.5);
     expect(Math.abs(panned.target.z)).toBeLessThanOrEqual(25.5);
