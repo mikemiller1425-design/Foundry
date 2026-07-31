@@ -37,7 +37,7 @@ test.describe("Object selection", () => {
     await page.mouse.click(clickX, clickY);
 
     await expect(marker).toHaveAttribute("data-selected", "true");
-    await expect(page.getByTestId("building-list-item")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("building-list-item").first()).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("shell-detail-panel")).toContainText("Building: Lighthouse");
   });
 
@@ -47,7 +47,7 @@ test.describe("Object selection", () => {
     await page.goto("/");
     await waitForMarkerReady(page);
 
-    await page.getByTestId("building-list-item").click();
+    await page.getByTestId("building-list-item").first().click();
 
     await expect(page.getByTestId("lighthouse-marker")).toHaveAttribute("data-selected", "true");
     await expect(page.getByTestId("shell-detail-panel")).toContainText("Building: Lighthouse");
@@ -67,14 +67,14 @@ test.describe("Object selection", () => {
     await page.keyboard.press("Enter");
 
     await expect(page.getByTestId("lighthouse-marker")).toHaveAttribute("data-selected", "true");
-    await expect(page.getByTestId("building-list-item")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("building-list-item").first()).toHaveAttribute("aria-pressed", "true");
   });
 
   test("Escape clears the selection from any focus context", async ({ page }) => {
     await page.goto("/");
     await waitForMarkerReady(page);
 
-    await page.getByTestId("building-list-item").click();
+    await page.getByTestId("building-list-item").first().click();
     await expect(page.getByTestId("lighthouse-marker")).toHaveAttribute("data-selected", "true");
 
     // The navigator button (not the canvas) has focus here — Escape must
@@ -82,7 +82,7 @@ test.describe("Object selection", () => {
     await page.keyboard.press("Escape");
 
     await expect(page.getByTestId("lighthouse-marker")).toHaveAttribute("data-selected", "false");
-    await expect(page.getByTestId("building-list-item")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByTestId("building-list-item").first()).toHaveAttribute("aria-pressed", "false");
     await expect(page.getByTestId("shell-detail-panel")).toContainText("No selection");
   });
 
@@ -92,7 +92,7 @@ test.describe("Object selection", () => {
     const before = await readCameraTargetX(page);
     expect(before).toBeCloseTo(0, 0); // canonical target is (0,0,0)
 
-    await page.getByTestId("building-list-item").click();
+    await page.getByTestId("building-list-item").first().click();
 
     // The Lighthouse's focus position has z = -10; target.z should move
     // toward it (parsed from the same readout, second captured group).
@@ -109,10 +109,10 @@ test.describe("Object selection", () => {
     await page.goto("/");
     await waitForMarkerReady(page);
 
-    await page.getByTestId("building-list-item").click();
+    await page.getByTestId("building-list-item").first().click();
     await expect(page.getByTestId("lighthouse-marker")).toHaveAttribute("data-selected", "true");
     // Re-clicking the already-selected object must not add a second row.
-    await page.getByTestId("building-list-item").click();
+    await page.getByTestId("building-list-item").first().click();
     await page.waitForTimeout(300);
 
     const rows = page.getByTestId("timeline-row").filter({ hasText: "selected" });
@@ -126,7 +126,7 @@ test.describe("Object selection", () => {
     await page.goto("/");
     await waitForMarkerReady(page);
 
-    await page.getByTestId("building-list-item").click();
+    await page.getByTestId("building-list-item").first().click();
 
     await expect(page.getByTestId("lighthouse-marker")).toHaveAttribute("data-selected", "true");
     // No polling needed — reduced motion means the ease is a single-frame

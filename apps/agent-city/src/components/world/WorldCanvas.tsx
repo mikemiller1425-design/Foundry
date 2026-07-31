@@ -1,13 +1,15 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import type { RefObject } from "react";
+import { useRef, type RefObject } from "react";
 import type { Selection } from "@/components/controls/selection";
+import type { WorldObjectMarkerMap } from "@/lib/world/objectMarkerState";
 import { CameraRig } from "./CameraRig";
 import type { CameraControllerHandle } from "./cameraController";
 import { Environment } from "./Environment";
 import type { LighthouseMarkerState } from "./lighthouseMarkerState";
 import { LighthouseSceneObject } from "./LighthouseSceneObject";
+import { WorldBuildings } from "./WorldBuildings";
 import { WorldSelectionController } from "./WorldSelectionController";
 
 // FBL-011 bootstrapped an empty R3F canvas in the shell's world region
@@ -29,14 +31,18 @@ const isE2E = process.env.NEXT_PUBLIC_E2E === "1";
 export function WorldCanvas({
   controllerRef,
   lighthouseMarkerRef,
+  worldObjectMarkerMapRef,
   selection,
   onSelect,
 }: {
   controllerRef: RefObject<CameraControllerHandle | null>;
   lighthouseMarkerRef: RefObject<LighthouseMarkerState | null>;
+  worldObjectMarkerMapRef: RefObject<WorldObjectMarkerMap>;
   selection: Selection | null;
   onSelect: (id: string) => void;
 }) {
+  const hoveredIdRef = useRef<string | null>(null);
+
   return (
     <Canvas
       className="absolute inset-0"
@@ -50,7 +56,13 @@ export function WorldCanvas({
         selection={selection}
         onSelect={onSelect}
       />
-      <WorldSelectionController onSelect={onSelect} />
+      <WorldBuildings
+        markerMapRef={worldObjectMarkerMapRef}
+        selection={selection}
+        onSelect={onSelect}
+        hoveredIdRef={hoveredIdRef}
+      />
+      <WorldSelectionController onSelect={onSelect} hoveredIdRef={hoveredIdRef} />
     </Canvas>
   );
 }

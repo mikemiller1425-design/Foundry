@@ -3,6 +3,8 @@
 import { useRuntime } from "@/lib/mock-runtime";
 import { selectRequirementsByStage, selectStages } from "@/lib/mock-runtime/selectors";
 import { computeLighthouseState, LIGHTHOUSE_STATE_SHORT_LABEL } from "@/lib/world/lighthouseState";
+import { computeResidenceState, RESIDENCE_STATE_SHORT_LABEL } from "@/lib/world/residenceState";
+import { RESIDENCE_VISUALS } from "@/lib/world/residenceVisuals";
 import { LIGHTHOUSE_STATE_VISUALS } from "@foundry/world-model";
 import { useMemo } from "react";
 import type { Selection } from "./selection";
@@ -101,21 +103,53 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
     );
   }
 
-  // selection.kind === "building" (FBL-015) — today, only the Lighthouse.
-  const lighthouseState = computeLighthouseState(worldState);
-  return (
-    <>
-      <h3 className="font-medium">Building: Lighthouse</h3>
-      <dl className="mt-1 space-y-0.5 text-neutral-400">
-        <div>
-          <dt className="inline text-neutral-500">state: </dt>
-          <dd className="inline">{LIGHTHOUSE_STATE_SHORT_LABEL[lighthouseState]}</dd>
-        </div>
-        <div>
-          <dt className="inline text-neutral-500">signal: </dt>
-          <dd className="inline">{LIGHTHOUSE_STATE_VISUALS[lighthouseState]}</dd>
-        </div>
-      </dl>
-    </>
-  );
+  // selection.kind === "building" (FBL-015 framework; FBL-014 Lighthouse,
+  // FBL-016 residences).
+  if (selection.id === "lighthouse") {
+    const lighthouseState = computeLighthouseState(worldState);
+    return (
+      <>
+        <h3 className="font-medium">Building: Lighthouse</h3>
+        <dl className="mt-1 space-y-0.5 text-neutral-400">
+          <div>
+            <dt className="inline text-neutral-500">state: </dt>
+            <dd className="inline">{LIGHTHOUSE_STATE_SHORT_LABEL[lighthouseState]}</dd>
+          </div>
+          <div>
+            <dt className="inline text-neutral-500">signal: </dt>
+            <dd className="inline">{LIGHTHOUSE_STATE_VISUALS[lighthouseState]}</dd>
+          </div>
+        </dl>
+      </>
+    );
+  }
+
+  const building = worldState.buildings.find((b) => b.id === selection.id);
+  if (building?.buildingType === "home") {
+    const agent = worldState.agents.find((a) => a.homeBuildingId === building.id);
+    const residenceState = computeResidenceState(building, agent);
+    return (
+      <>
+        <h3 className="font-medium">Building: {building.name}</h3>
+        <dl className="mt-1 space-y-0.5 text-neutral-400">
+          <div>
+            <dt className="inline text-neutral-500">state: </dt>
+            <dd className="inline">{RESIDENCE_STATE_SHORT_LABEL[residenceState]}</dd>
+          </div>
+          <div>
+            <dt className="inline text-neutral-500">signal: </dt>
+            <dd className="inline">{RESIDENCE_VISUALS[residenceState].label}</dd>
+          </div>
+          {agent && (
+            <div>
+              <dt className="inline text-neutral-500">resident: </dt>
+              <dd className="inline capitalize">{agent.role}</dd>
+            </div>
+          )}
+        </dl>
+      </>
+    );
+  }
+
+  return null;
 }

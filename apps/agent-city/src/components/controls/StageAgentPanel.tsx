@@ -3,9 +3,27 @@
 import { useRuntime } from "@/lib/mock-runtime";
 import { selectStages } from "@/lib/mock-runtime/selectors";
 import { computeLighthouseState, LIGHTHOUSE_STATE_SHORT_LABEL } from "@/lib/world/lighthouseState";
+import { computeResidenceState, RESIDENCE_STATE_SHORT_LABEL } from "@/lib/world/residenceState";
 import { SELECTABLE_WORLD_OBJECTS } from "@/lib/world/selectableObjects";
+import type { WorldState } from "@foundry/contracts";
 import { useMemo } from "react";
 import type { Selection } from "./selection";
+
+// FBL-016: the "World objects" navigator list covers every registered
+// selectable world object, not only the Lighthouse — each row's status
+// label reads from that object's own state derivation rather than a single
+// hardcoded value.
+function worldObjectStatusLabel(objectId: string, worldState: WorldState): string {
+  if (objectId === "lighthouse") {
+    return LIGHTHOUSE_STATE_SHORT_LABEL[computeLighthouseState(worldState)];
+  }
+  const building = worldState.buildings.find((b) => b.id === objectId);
+  if (building?.buildingType === "home") {
+    const agent = worldState.agents.find((a) => a.homeBuildingId === objectId);
+    return RESIDENCE_STATE_SHORT_LABEL[computeResidenceState(building, agent)];
+  }
+  return building?.status ?? "";
+}
 
 const STAGE_LABEL: Record<string, string> = {
   planning: "Planning",
@@ -39,7 +57,6 @@ export function StageAgentPanel({
 }) {
   const { events, worldState } = useRuntime();
   const stages = useMemo(() => selectStages(events), [events]);
-  const lighthouseState = computeLighthouseState(worldState);
 
   return (
     <div className="space-y-4">
@@ -61,7 +78,7 @@ export function StageAgentPanel({
               >
                 <span className="truncate">{object.label}</span>
                 <span className="text-neutral-400">
-                  {LIGHTHOUSE_STATE_SHORT_LABEL[lighthouseState]}
+                  {worldObjectStatusLabel(object.id, worldState)}
                 </span>
               </button>
             </li>

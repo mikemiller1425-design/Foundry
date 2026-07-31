@@ -10,11 +10,13 @@ import { StageAgentPanel } from "@/components/controls/StageAgentPanel";
 import { EventTimeline } from "@/components/timeline/EventTimeline";
 import { useRuntime } from "@/lib/mock-runtime";
 import { SELECTABLE_WORLD_OBJECTS } from "@/lib/world/selectableObjects";
+import type { WorldObjectMarkerMap } from "@/lib/world/objectMarkerState";
 import type { CameraControllerHandle } from "@/components/world/cameraController";
 import { CameraHud } from "@/components/world/CameraHud";
 import type { LighthouseMarkerState } from "@/components/world/lighthouseMarkerState";
 import { LighthouseMarker } from "@/components/world/LighthouseMarker";
 import { WorldCanvas } from "@/components/world/WorldCanvas";
+import { WorldObjectMarkers } from "@/components/world/WorldObjectMarkers";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LEFT_NAV_PANEL, RIGHT_INTEL_PANEL, TIMELINE_PANEL } from "./panelConfig";
 import { REGION_PLACEHOLDER } from "./regionPlaceholder";
@@ -29,6 +31,7 @@ import { REGION_PLACEHOLDER } from "./regionPlaceholder";
 export function AppShell() {
   const [selection, setSelection] = useState<Selection | null>(null);
   const lighthouseMarkerRef = useRef<LighthouseMarkerState | null>(null);
+  const worldObjectMarkerMapRef = useRef<WorldObjectMarkerMap>(new Map());
   const cameraRef = useRef<CameraControllerHandle>(null);
   const { selectBuilding, clearSelection } = useRuntime();
 
@@ -189,16 +192,18 @@ export function AppShell() {
         <WorldCanvas
           controllerRef={cameraRef}
           lighthouseMarkerRef={lighthouseMarkerRef}
+          worldObjectMarkerMapRef={worldObjectMarkerMapRef}
           selection={selection}
           onSelect={handleSelectBuildingId}
         />
         <CameraHud controllerRef={cameraRef} />
         <LighthouseMarker markerRef={lighthouseMarkerRef} />
+        <WorldObjectMarkers markerMapRef={worldObjectMarkerMapRef} />
 
         <h2 className="pointer-events-none relative font-medium">Central operational world</h2>
         <p className="pointer-events-none relative mt-2 text-neutral-400">
-          Lighthouse only — no residences, workplaces, roads, or agents yet until build ladder rung
-          FBL-016+.
+          Lighthouse and residences — no operational buildings, roads, or agents yet until build
+          ladder rung FBL-017+.
         </p>
 
         {/* Approval interaction (interface-model.md): stands in for

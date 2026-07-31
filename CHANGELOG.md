@@ -185,9 +185,26 @@ Implemented a generalized pointer/keyboard object-selection framework and applie
 
 Operator authorization for this session's bounded execution sequence (FBL-012–FBL-015) is fully used. `FBL-016` (residences) and every later rung remain **not authorized** and were not started.
 
+### Added — FBL-016 Three residences
+
+Added the Architect, Builder, and Inspector residences as the first world objects to extend the FBL-015 selection framework beyond the Lighthouse, per `docs/02-specification/world-model.md` ("Architect / Builder / Inspector residences") and the operator-authorized bounded sequence FBL-016–FBL-020. Occupancy state (`occupied_idle`/`vacant_assigned`/`unavailable`/`paused`/`degraded`) is derived deterministically from the existing `Building` + `Agent` records the FBL-008 mock runtime already maintains — no new events, no timers — and never implies active work at a residence (Principle 7 / this rung's own "never represents" rule). 181 unit tests total across the repo (up from 167, 14 new) and 207 Playwright tests (up from 183, 24 new — `shell-residences.spec.ts`'s 8 tests × 3 viewports, plus one pre-existing `shell-controls.spec.ts` placeholder-text assertion updated in place) — all passing at all three target viewports.
+
+- `apps/agent-city/src/lib/world/residenceState.ts` (+ `.test.ts`): pure `computeResidenceState(building, agent)` — deterministic precedence (a building-level problem > agent offline > agent paused > agent away on assignment > the default occupied/idle), fully unit tested including that a genuine problem always outranks routine agent status
+- `apps/agent-city/src/lib/world/residenceVisuals.ts` (+ `.test.ts`): a declarative state→visual table (color, lit/unlit window, indicator shape) — checked pairwise for no two states sharing a non-color signature, the same discipline `lighthouseVisuals.ts` established
+- `apps/agent-city/src/components/world/Residence.tsx`: procedural low-poly house (body + roof + window + ridge indicator) — no interior; body/roof never change with state, only the window and indicator shape, so a residence can never visually imply the active architecture/build/validation work that belongs to a workplace building instead
+- `apps/agent-city/src/components/world/ShapeGeometry.tsx`, `SelectionRing.tsx`: shared indicator-shape and selection-ring primitives, generalizing patterns `Lighthouse.tsx` established for its own beacon/ring, factored out once so every FBL-016+ world object reuses them instead of duplicating per object type
+- `apps/agent-city/src/lib/world/objectMarkerState.ts`, `apps/agent-city/src/components/world/WorldObjectMarkers.tsx`: the generalized, multi-object counterpart to `lighthouseMarkerState.ts`/`LighthouseMarker.tsx` — a `Map<id, marker>` written every frame per world object and polled outside `<Canvas>`, so every current and future FBL-016+ object gets the same real-browser-testable "specifically mounted and rendered" proof without pixel sampling
+- `apps/agent-city/src/components/world/WorldBuildings.tsx`: the scene-object bridge iterating `WORLD_BUILDINGS` (`@foundry/world-model`) for `buildingType: "home"`, funneling every residence selection through the same `onSelect(id)` FBL-015 established for the Lighthouse — reused as-is by FBL-017 for the remaining building types
+- `apps/agent-city/src/lib/world/selectableObjects.ts`: `SelectableWorldObject` gains a `kind` field; the three residences are appended to the registry (all `kind: "building"`, since a residence is a `Building` entity per `domain-model.md`)
+- `apps/agent-city/src/components/world/WorldSelectionController.tsx`: generalized keyboard selection (Enter/Space) from "the sole selectable object" to "whichever object currently has pointer hover, falling back to the first registered object" — exactly the extension FBL-015's own comment anticipated; the Lighthouse remains that fallback, so its existing keyboard-selection behavior is unchanged
+- `apps/agent-city/src/components/controls/StageAgentPanel.tsx`, `SelectedObjectDetail.tsx`: the "World objects" navigator list now shows each object's own status label (previously hardcoded to the Lighthouse's); the detail panel branches on residence vs. Lighthouse selection
+- `apps/agent-city/e2e/shell-residences.spec.ts`: FBL-016's required browser-level tests — pointer hit-target selection for all three residences, navigator sync, camera focus, Escape deselection, no keyboard trap, and a real-runtime-driven test proving occupancy transitions from `occupied_idle` to `vacant_assigned` (and never shows "working"/"active work") as the canonical script actually assigns and moves the Architect
+- `apps/agent-city/e2e/shell-selection.spec.ts`: `building-list-item` locators scoped to `.first()` where they specifically target the Lighthouse, since the navigator's "World objects" list now has four entries instead of one
+- `apps/agent-city/src/components/controls/StageAgentPanel.test.tsx`: updated the FBL-015 building-list-item count assertion (1 → 4) and added a residence-selection test
+
 ### Planned
 
-- Build ladder rung `FBL-016` (three residences) — requires separate, explicit operator authorization before it may begin
+- Build ladder rung `FBL-017` (operational buildings) — the next rung within the operator-authorized bounded sequence FBL-016–FBL-020
 
 ## [1.0.0] — 2026-07-30
 

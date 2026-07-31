@@ -81,16 +81,25 @@ describe("StageAgentPanel", () => {
     }
   });
 
-  it("renders the Lighthouse as a selectable world object showing its current state", () => {
+  it("renders the Lighthouse and the three residences as selectable world objects showing their current state (FBL-016)", () => {
     renderPanel();
     const buildingItems = screen.getAllByTestId("building-list-item");
-    expect(buildingItems).toHaveLength(1);
+    expect(buildingItems).toHaveLength(4);
     expect(screen.getByText("Lighthouse")).toBeInTheDocument();
+    expect(screen.getByText("Architect Residence")).toBeInTheDocument();
+    expect(screen.getByText("Builder Residence")).toBeInTheDocument();
+    expect(screen.getByText("Inspector Residence")).toBeInTheDocument();
   });
 
   it("clicking the Lighthouse calls onSelect with { kind: 'building', id: 'lighthouse' }", () => {
     const { onSelect } = renderPanel();
-    fireEvent.click(screen.getByTestId("building-list-item"));
+    fireEvent.click(screen.getAllByTestId("building-list-item")[0]!);
     expect(onSelect).toHaveBeenCalledWith({ kind: "building", id: "lighthouse" });
+  });
+
+  it("clicking a residence calls onSelect with { kind: 'building', id: <residence id> }", () => {
+    const { onSelect } = renderPanel();
+    fireEvent.click(screen.getAllByTestId("building-list-item")[1]!);
+    expect(onSelect).toHaveBeenCalledWith({ kind: "building", id: "home-architect" });
   });
 });
