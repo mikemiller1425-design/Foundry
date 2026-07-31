@@ -119,3 +119,52 @@ describe("reduceWorldState — agent lifecycle", () => {
     expect(architect?.currentBuildingId).toBe(architect?.homeBuildingId);
   });
 });
+
+describe("reduceWorldState — FBL-021 transfer.arrived (previously unhandled)", () => {
+  it("moves an active transfer to unloading on transfer.arrived, and idempotently so on a duplicate delivery", () => {
+    const script = buildCanonicalScript("transfer-arrived-check");
+    const firstArrivedIndex = script.findIndex((e) => e.type === "transfer.arrived");
+    expect(firstArrivedIndex).toBeGreaterThan(0);
+    const arrivedEvent = script[firstArrivedIndex]!;
+
+    const once = reduceWorldState(script.slice(0, firstArrivedIndex + 1));
+    const transfer = once.activeTransfers.find((t) => t.id === arrivedEvent.entityId);
+    expect(transfer?.status).toBe("unloading");
+
+    const withDuplicate = reduceWorldState([
+      ...script.slice(0, firstArrivedIndex + 1),
+      arrivedEvent,
+    ]);
+    expect(withDuplicate.activeTransfers.find((t) => t.id === arrivedEvent.entityId)?.status).toBe(
+      "unloading",
+    );
+    expect(withDuplicate.activeTransfers).toHaveLength(once.activeTransfers.length);
+  });
+
+  it("transfer.arrived does not itself complete the transfer — it stays present in activeTransfers, not removed until transfer.completed", () => {
+    const script = buildCanonicalScript("transfer-arrived-not-complete");
+    const firstArrivedIndex = script.findIndex((e) => e.type === "transfer.arrived");
+    const arrivedEvent = script[firstArrivedIndex]!;
+    const state = reduceWorldState(script.slice(0, firstArrivedIndex + 1));
+    expect(state.activeTransfers.some((t) => t.id === arrivedEvent.entityId)).toBe(true);
+  });
+});
+
+describe("reduceWorldState — FBL-021 build.cancelled", () => {
+  it("sets the build status to cancelled", () => {
+    const script = buildCanonicalScript("build-cancelled-check");
+    const createdEvent = script.find((e) => e.type === "build.created")!;
+    const createdIndex = script.indexOf(createdEvent);
+    const base = reduceWorldState(script.slice(0, createdIndex + 1));
+    const cancelled = {
+      ...createdEvent,
+      id: "evt-cancel-test",
+      type: "build.cancelled" as const,
+      entityType: "Build",
+      entityId: base.currentBuild!.id,
+      payload: {},
+    };
+    const state = reduceWorldState([cancelled], base);
+    expect(state.currentBuild?.status).toBe("cancelled");
+  });
+});

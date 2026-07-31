@@ -1,13 +1,14 @@
 "use client";
 
 import { useRuntime } from "@/lib/mock-runtime";
-import { selectStages, type StageSummary } from "@/lib/mock-runtime/selectors";
+import { selectStages, selectUpgradeInProgress, type StageSummary } from "@/lib/mock-runtime/selectors";
 import { computeLighthouseState, LIGHTHOUSE_STATE_SHORT_LABEL } from "@/lib/world/lighthouseState";
 import { computeResidenceState, RESIDENCE_STATE_SHORT_LABEL } from "@/lib/world/residenceState";
 import {
   computeConstructionSitePhase,
   CONSTRUCTION_SITE_VISUALS,
 } from "@/lib/world/constructionSitePhase";
+import { computeOperationalBuildingStatus } from "@/lib/world/operationalBuildingState";
 import { OPERATIONAL_BUILDING_VISUALS } from "@/lib/world/operationalBuildingVisuals";
 import { computeVehicleState } from "@/lib/world/vehicleState";
 import { VEHICLE_VISUALS } from "@/lib/world/vehicleVisuals";
@@ -24,6 +25,7 @@ function worldObjectStatusLabel(
   object: SelectableWorldObject,
   worldState: WorldState,
   stages: readonly StageSummary[],
+  upgradeInProgress: boolean,
 ): string {
   if (object.kind === "vehicle") {
     return VEHICLE_VISUALS[computeVehicleState(worldState)].label;
@@ -40,7 +42,13 @@ function worldObjectStatusLabel(
     return CONSTRUCTION_SITE_VISUALS[computeConstructionSitePhase(stages)].label;
   }
   if (building) {
-    return OPERATIONAL_BUILDING_VISUALS[building.status].label;
+    const status = computeOperationalBuildingStatus(
+      building.id,
+      worldState,
+      stages,
+      upgradeInProgress,
+    );
+    return OPERATIONAL_BUILDING_VISUALS[status].label;
   }
   return "";
 }
@@ -77,6 +85,7 @@ export function StageAgentPanel({
 }) {
   const { events, worldState } = useRuntime();
   const stages = useMemo(() => selectStages(events), [events]);
+  const upgradeInProgress = useMemo(() => selectUpgradeInProgress(events), [events]);
 
   return (
     <div className="space-y-4">
@@ -98,7 +107,7 @@ export function StageAgentPanel({
                 >
                   <span className="truncate">{object.label}</span>
                   <span className="text-neutral-400">
-                    {worldObjectStatusLabel(object, worldState, stages)}
+                    {worldObjectStatusLabel(object, worldState, stages, upgradeInProgress)}
                   </span>
                 </button>
               </li>

@@ -1,7 +1,11 @@
 "use client";
 
 import { useRuntime } from "@/lib/mock-runtime";
-import { selectRequirementsByStage, selectStages } from "@/lib/mock-runtime/selectors";
+import {
+  selectRequirementsByStage,
+  selectStages,
+  selectUpgradeInProgress,
+} from "@/lib/mock-runtime/selectors";
 import { computeLighthouseState, LIGHTHOUSE_STATE_SHORT_LABEL } from "@/lib/world/lighthouseState";
 import { computeResidenceState, RESIDENCE_STATE_SHORT_LABEL } from "@/lib/world/residenceState";
 import { RESIDENCE_VISUALS } from "@/lib/world/residenceVisuals";
@@ -9,6 +13,7 @@ import {
   computeConstructionSitePhase,
   CONSTRUCTION_SITE_VISUALS,
 } from "@/lib/world/constructionSitePhase";
+import { computeOperationalBuildingStatus } from "@/lib/world/operationalBuildingState";
 import { OPERATIONAL_BUILDING_VISUALS } from "@/lib/world/operationalBuildingVisuals";
 import { computeVehicleState } from "@/lib/world/vehicleState";
 import { VEHICLE_VISUALS } from "@/lib/world/vehicleVisuals";
@@ -28,6 +33,7 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
   const { events, worldState } = useRuntime();
   const stages = useMemo(() => selectStages(events), [events]);
   const requirementsByStage = useMemo(() => selectRequirementsByStage(events), [events]);
+  const upgradeInProgress = useMemo(() => selectUpgradeInProgress(events), [events]);
 
   if (!selection) {
     return (
@@ -199,14 +205,20 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
   }
 
   if (building) {
-    const spec = OPERATIONAL_BUILDING_VISUALS[building.status];
+    const status = computeOperationalBuildingStatus(
+      building.id,
+      worldState,
+      stages,
+      upgradeInProgress,
+    );
+    const spec = OPERATIONAL_BUILDING_VISUALS[status];
     return (
       <>
         <h3 className="font-medium">Building: {building.name}</h3>
         <dl className="mt-1 space-y-0.5 text-neutral-400">
           <div>
             <dt className="inline text-neutral-500">status: </dt>
-            <dd className="inline">{building.status}</dd>
+            <dd className="inline">{status}</dd>
           </div>
           <div>
             <dt className="inline text-neutral-500">signal: </dt>

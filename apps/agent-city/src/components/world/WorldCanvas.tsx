@@ -6,6 +6,7 @@ import type { Selection } from "@/components/controls/selection";
 import type { WorldObjectMarkerMap } from "@/lib/world/objectMarkerState";
 import { AgentsSceneObject } from "./AgentsSceneObject";
 import { CameraRig } from "./CameraRig";
+import { CargoSceneObject } from "./CargoSceneObject";
 import type { CameraControllerHandle } from "./cameraController";
 import { Environment } from "./Environment";
 import type { LighthouseMarkerState } from "./lighthouseMarkerState";
@@ -72,6 +73,7 @@ export function WorldCanvas({
         onSelect={onSelect}
         hoveredIdRef={hoveredIdRef}
       />
+      <CargoSceneObject markerMapRef={worldObjectMarkerMapRef} />
       <AgentsSceneObject
         markerMapRef={worldObjectMarkerMapRef}
         selection={selection}

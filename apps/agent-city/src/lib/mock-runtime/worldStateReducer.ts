@@ -136,6 +136,8 @@ export function applyEvent(state: WorldState, event: FoundryEvent): WorldState {
       };
     case "build.failed":
       return updateBuild(state, { status: "failed", failureReason: event.payload.failureCode });
+    case "build.cancelled":
+      return updateBuild(state, { status: "cancelled" });
 
     case "stage.started":
       // Forward progress on a stage means any earlier block has been
@@ -212,6 +214,12 @@ export function applyEvent(state: WorldState, event: FoundryEvent): WorldState {
         destinationBuildingId: event.payload.destinationBuildingId,
         artifactIds: event.payload.artifactIds,
       });
+    case "transfer.arrived":
+      // FBL-021: previously unhandled — "unloading" (domain-model.md
+      // Vehicle lifecycle: in_transit → unloading → completed) was
+      // unreachable without this case. Operational/visual arrival only;
+      // not complete until `transfer.completed` (event-model.md).
+      return upsertTransfer(state, event.entityId, { status: "unloading" });
     case "transfer.completed":
       return upsertTransfer(state, event.entityId, {
         status: "completed",

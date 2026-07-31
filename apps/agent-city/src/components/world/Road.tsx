@@ -2,17 +2,29 @@ import type { Position } from "@foundry/contracts";
 
 const ROAD_WIDTH = 0.6;
 const ROAD_COLOR = "#9ca3af";
+const ROAD_HIGHLIGHTED_COLOR = "#facc15";
 const ROAD_Y = 0.02; // just above the ground plane — avoids z-fighting.
 
-// FBL-018 — Road network (docs/02-specification/world-model.md → "Road
-// network"). Static geometry only: a flat rectangle between two building
-// positions. Ambient, non-interactive — roads are "informational; selection
-// optional" and, per this rung's own scope boundary, carry no dynamic
-// available/highlighted/inactive state until FBL-021 wires it to
-// `transfer.*` events; every segment renders identically today. Never
-// implies a transfer exists (world-model.md "Never represents": "proof that
-// a transfer exists").
-export function Road({ from, to }: { from: Position; to: Position }) {
+// FBL-018 added the static route graph (docs/02-specification/
+// world-model.md → "Road network"); FBL-021 adds the `highlighted` signal
+// — color only, no shape/motion change, since a road is never a
+// selectable object with its own state label elsewhere to keep a
+// non-color signal consistent with (world-model.md: "Path emphasis only
+// when transfer ready/in progress"). `highlighted` is driven exclusively
+// by `computeActiveRoadSegmentId` (roadNetwork.ts), itself derived only
+// from a real Transfer's status — a road can highlight, but this
+// component has no path back into WorldState, so it can never *authorize*
+// a transfer (world-model.md "Never represents": "proof that a transfer
+// exists").
+export function Road({
+  from,
+  to,
+  highlighted = false,
+}: {
+  from: Position;
+  to: Position;
+  highlighted?: boolean;
+}) {
   const dx = to.x - from.x;
   const dz = to.z - from.z;
   const length = Math.hypot(dx, dz);
@@ -27,7 +39,11 @@ export function Road({ from, to }: { from: Position; to: Position }) {
     <group position={[midX, ROAD_Y, midZ]} rotation={[0, angleY, 0]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[length, ROAD_WIDTH]} />
-        <meshStandardMaterial color={ROAD_COLOR} />
+        <meshStandardMaterial
+          color={highlighted ? ROAD_HIGHLIGHTED_COLOR : ROAD_COLOR}
+          emissive={highlighted ? ROAD_HIGHLIGHTED_COLOR : "#000000"}
+          emissiveIntensity={highlighted ? 0.4 : 0}
+        />
       </mesh>
     </group>
   );

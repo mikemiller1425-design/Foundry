@@ -2,12 +2,13 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useRuntime } from "@/lib/mock-runtime";
-import { selectStages } from "@/lib/mock-runtime/selectors";
+import { selectStages, selectUpgradeInProgress } from "@/lib/mock-runtime/selectors";
 import { computeResidenceState, RESIDENCE_STATE_SHORT_LABEL } from "@/lib/world/residenceState";
 import {
   computeConstructionSitePhase,
   CONSTRUCTION_SITE_VISUALS,
 } from "@/lib/world/constructionSitePhase";
+import { computeOperationalBuildingStatus } from "@/lib/world/operationalBuildingState";
 import { OPERATIONAL_BUILDING_VISUALS } from "@/lib/world/operationalBuildingVisuals";
 import { WORLD_BUILDINGS, type WorldBuildingDefinition } from "@foundry/world-model";
 import { type RefObject, useMemo, useRef } from "react";
@@ -58,6 +59,7 @@ export function WorldBuildings({
   const { worldState, events } = useRuntime();
   const buildingDefs = useMemo(() => WORLD_BUILDINGS.filter((b) => b.buildingType !== "lighthouse"), []);
   const stages = useMemo(() => selectStages(events), [events]);
+  const upgradeInProgress = useMemo(() => selectUpgradeInProgress(events), [events]);
   const scratchVector = useRef(new Vector3());
 
   function stateLabelFor(def: WorldBuildingDefinition): string {
@@ -70,7 +72,8 @@ export function WorldBuildings({
     if (def.buildingType === "construction_site") {
       return CONSTRUCTION_SITE_VISUALS[computeConstructionSitePhase(stages)].label;
     }
-    return OPERATIONAL_BUILDING_VISUALS[building.status].label;
+    const status = computeOperationalBuildingStatus(def.id, worldState, stages, upgradeInProgress);
+    return OPERATIONAL_BUILDING_VISUALS[status].label;
   }
 
   useFrame(({ camera }) => {
@@ -133,7 +136,9 @@ export function WorldBuildings({
         const spec =
           def.buildingType === "construction_site"
             ? CONSTRUCTION_SITE_VISUALS[computeConstructionSitePhase(stages)]
-            : OPERATIONAL_BUILDING_VISUALS[building?.status ?? "idle"];
+            : OPERATIONAL_BUILDING_VISUALS[
+                computeOperationalBuildingStatus(def.id, worldState, stages, upgradeInProgress)
+              ];
         return (
           <OperationalBuilding
             key={def.id}

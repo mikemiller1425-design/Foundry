@@ -1,6 +1,7 @@
 import { BEACON_WORLD_POSITION } from "@/components/world/Lighthouse";
 import { WORLD_BUILDINGS, WORLD_VEHICLE } from "@foundry/world-model";
 import type { Selection } from "@/components/controls/selection";
+import { computeVehiclePosition } from "./vehiclePosition";
 
 // FBL-015 — generalized selectable-world-object registry. FBL-016 extends
 // it with the three residences rather than inventing a parallel mechanism
@@ -36,29 +37,27 @@ const OPERATIONAL_BUILDING_OBJECTS: readonly SelectableWorldObject[] = WORLD_BUI
   focusPosition: [b.position.x, b.position.y + OPERATIONAL_BUILDING_FOCUS_HEIGHT, b.position.z],
 }));
 
-// FBL-019 — the single utility vehicle, parked beside its home building
-// (WorldCanvas/VehicleSceneObject.tsx: HOME_OFFSET_X = 2.2).
+// FBL-019 — the single utility vehicle; FBL-021's computeVehiclePosition
+// (the single source of truth for where the vehicle actually renders) is
+// reused here too, rather than duplicating its offset as a second
+// constant that could drift out of sync.
 const VEHICLE_FOCUS_HEIGHT = 1.15;
-const VEHICLE_HOME_OFFSET_X = 2.2;
+const vehicleParkedPosition = computeVehiclePosition(undefined);
 
-const vehicleHomeBuilding = WORLD_BUILDINGS.find((b) => b.id === WORLD_VEHICLE.homeBuildingId);
-
-const VEHICLE_OBJECT: SelectableWorldObject | null = vehicleHomeBuilding
-  ? {
-      id: WORLD_VEHICLE.id,
-      kind: "vehicle",
-      label: WORLD_VEHICLE.name,
-      focusPosition: [
-        vehicleHomeBuilding.position.x + VEHICLE_HOME_OFFSET_X,
-        vehicleHomeBuilding.position.y + VEHICLE_FOCUS_HEIGHT,
-        vehicleHomeBuilding.position.z,
-      ],
-    }
-  : null;
+const VEHICLE_OBJECT: SelectableWorldObject = {
+  id: WORLD_VEHICLE.id,
+  kind: "vehicle",
+  label: WORLD_VEHICLE.name,
+  focusPosition: [
+    vehicleParkedPosition.x,
+    vehicleParkedPosition.y + VEHICLE_FOCUS_HEIGHT,
+    vehicleParkedPosition.z,
+  ],
+};
 
 export const SELECTABLE_WORLD_OBJECTS: readonly SelectableWorldObject[] = [
   { id: "lighthouse", kind: "building", label: "Lighthouse", focusPosition: BEACON_WORLD_POSITION },
   ...RESIDENCE_OBJECTS,
   ...OPERATIONAL_BUILDING_OBJECTS,
-  ...(VEHICLE_OBJECT ? [VEHICLE_OBJECT] : []),
+  VEHICLE_OBJECT,
 ];

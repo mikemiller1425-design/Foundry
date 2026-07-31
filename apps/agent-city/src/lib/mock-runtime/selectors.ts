@@ -7,6 +7,8 @@ export interface StageSummary {
   name: BuildStageName;
   status: BuildStageStatus;
   blockedReason?: string;
+  /** From `stage.started`'s payload — which building the stage runs at (event-model.md). Undefined until the stage has started at least once. */
+  sourceBuildingId?: string;
 }
 
 export interface RequirementSummary {
@@ -54,7 +56,11 @@ export function selectStages(events: readonly FoundryEvent[]): StageSummary[] {
         byId.set(event.entityId, { ...current, status: "ready" });
         break;
       case "stage.started":
-        byId.set(event.entityId, { ...current, status: "running" });
+        byId.set(event.entityId, {
+          ...current,
+          status: "running",
+          sourceBuildingId: (event.payload as { sourceBuildingId?: string }).sourceBuildingId,
+        });
         break;
       case "stage.blocked":
         byId.set(event.entityId, {
@@ -66,6 +72,17 @@ export function selectStages(events: readonly FoundryEvent[]): StageSummary[] {
       case "stage.validation_started":
         byId.set(event.entityId, { ...current, status: "validating" });
         break;
+      case "stage.validation_failed":
+        // No dedicated BuildStageStatus value exists for this — "blocked"
+        // is the closest allowed status (event-model.md: "QA red; vehicle
+        // parked"), consistent with how a failed mandatory requirement
+        // blocks the stage elsewhere in this same reducer.
+        byId.set(event.entityId, {
+          ...current,
+          status: "blocked",
+          blockedReason: "Independent validation failed",
+        });
+        break;
       case "stage.completed":
         byId.set(event.entityId, { ...current, status: "completed", blockedReason: undefined });
         break;
@@ -74,6 +91,33 @@ export function selectStages(events: readonly FoundryEvent[]): StageSummary[] {
         break;
       default:
         break;
+    }
+  }
+
+  // Revision events (event-model.md → "Revision") reference their stage via
+  // `stageId` — present directly on `revision.requested`'s payload, but not
+  // on `revision.started`'s (only `revisionId` there), so `started` is
+  // resolved back to a stage via the `requested` event sharing its
+  // `revisionId` (== `entityId`).
+  const stageIdByRevisionId = new Map<string, string>();
+  for (const event of events) {
+    if (event.type !== "revision.requested") continue;
+    const payload = event.payload as { stageId?: string };
+    if (payload.stageId) stageIdByRevisionId.set(event.entityId, payload.stageId);
+  }
+  for (const event of events) {
+    if (event.entityType !== "Revision") continue;
+    const stageId =
+      event.type === "revision.requested"
+        ? (event.payload as { stageId?: string }).stageId
+        : stageIdByRevisionId.get(event.entityId);
+    if (!stageId) continue;
+    const current = byId.get(stageId);
+    if (!current) continue;
+    if (event.type === "revision.requested") {
+      byId.set(stageId, { ...current, status: "revision_required" });
+    } else if (event.type === "revision.started") {
+      byId.set(stageId, { ...current, status: "running", blockedReason: undefined });
     }
   }
 
@@ -152,4 +196,23 @@ function requirementStatusForEvent(
     default:
       return previous ?? null;
   }
+}
+
+/**
+ * True while an Upgrade is between `upgrade.started` and its terminal
+ * `upgrade.completed`/`upgrade.failed` — WorldState has no standalone
+ * Upgrade record (only `Building.level`, set atomically at
+ * `upgrade.completed`), so "upgrading" is derived from the event log
+ * directly, the same pattern `selectStages` already establishes for
+ * stage-level detail WorldState doesn't carry either.
+ */
+export function selectUpgradeInProgress(events: readonly FoundryEvent[]): boolean {
+  let inProgress = false;
+  for (const event of events) {
+    if (event.type === "upgrade.started") inProgress = true;
+    else if (event.type === "upgrade.completed" || event.type === "upgrade.failed") {
+      inProgress = false;
+    }
+  }
+  return inProgress;
 }

@@ -3,22 +3,24 @@
 import { useFrame } from "@react-three/fiber";
 import { useRuntime } from "@/lib/mock-runtime";
 import { computeVehicleState } from "@/lib/world/vehicleState";
+import { computeVehiclePosition } from "@/lib/world/vehiclePosition";
 import { VEHICLE_VISUALS } from "@/lib/world/vehicleVisuals";
-import { WORLD_BUILDINGS, WORLD_VEHICLE } from "@foundry/world-model";
-import { type RefObject, useMemo, useRef } from "react";
+import { WORLD_VEHICLE } from "@foundry/world-model";
+import { type RefObject, useRef } from "react";
 import { Vector3 } from "three";
 import type { Selection } from "@/components/controls/selection";
 import type { WorldObjectMarkerMap } from "@/lib/world/objectMarkerState";
 import { Vehicle } from "./Vehicle";
 
 const MARKER_HEIGHT = 1.15;
-const HOME_OFFSET_X = 2.2; // parked beside its home building, not overlapping it.
 
-// FBL-019 — bridges the shared runtime context into R3F's render tree (the
+// FBL-019 bridged the shared runtime context into R3F's render tree (the
 // its-fine-backed pattern every prior world object uses) for the single
-// utility vehicle. Reuses the FBL-015 selection framework via the same
-// `onSelect(id)` funnel; position is fixed at its home building (motion
-// stubbed inert until FBL-021).
+// utility vehicle; FBL-021 wires its position to computeVehiclePosition —
+// home/midpoint/destination, each a discrete snap driven strictly by the
+// real Transfer record (never a timer), per Required behaviors 7/8
+// ("remains parked or waiting before transfer.started"; "movement begins
+// only after transfer.started").
 export function VehicleSceneObject({
   markerMapRef,
   selection,
@@ -31,13 +33,13 @@ export function VehicleSceneObject({
   hoveredIdRef: RefObject<string | null>;
 }) {
   const { worldState } = useRuntime();
-  const homeBuilding = useMemo(
-    () => WORLD_BUILDINGS.find((b) => b.id === WORLD_VEHICLE.homeBuildingId),
-    [],
-  );
-  const position: readonly [number, number, number] = homeBuilding
-    ? [homeBuilding.position.x + HOME_OFFSET_X, homeBuilding.position.y, homeBuilding.position.z]
-    : [0, 0, 0];
+  const activeTransfer = worldState.activeTransfers.find((t) => t.vehicleId === WORLD_VEHICLE.id);
+  const resolvedPosition = computeVehiclePosition(activeTransfer);
+  const position: readonly [number, number, number] = [
+    resolvedPosition.x,
+    resolvedPosition.y,
+    resolvedPosition.z,
+  ];
   const scratchVector = useRef(new Vector3());
   const state = computeVehicleState(worldState);
   const spec = VEHICLE_VISUALS[state];
