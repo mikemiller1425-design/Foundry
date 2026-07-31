@@ -84,9 +84,19 @@ Built a replayable, in-memory V1 demo engine (`apps/agent-city/src/lib/mock-runt
 - `ids.ts`, `eventFactory.ts`: deterministic id/timestamp generation and a schema-validating event builder (an authoring mistake fails immediately, not silently); fixed a real bug found by the determinism test — one event was stamping real wall-clock time instead of the deterministic clock, breaking same-seed reproducibility
 - `eslint.config.mjs`: added `argsIgnorePattern`/`varsIgnorePattern: "^_"` for the standard intentionally-unused-parameter convention
 
+### Added — FBL-009 Event timeline
+
+Replaced the bottom timeline placeholder with a real, filterable, virtualized event feed driven by the FBL-008 mock runtime, per `docs/02-specification/interface-model.md` ("Bottom event timeline") and the operator-authorized bounded sequence FBL-007–FBL-011. Since no command bar exists until FBL-010, `RuntimeProvider` now auto-issues the already-approved `demo.start`/`demo.resume` command on mount so the demo — and therefore the timeline — is not permanently empty; this invokes an existing bounded command, it does not invent new operational behavior. 167 unit tests total across the repo (up from 145) and 66 Playwright tests (up from 48, 18 new × 3 viewports) — all passing. Two real bugs were found and fixed by this rung's own tests: `requirement.failed`/`stage.blocked` never carried a real severity (always defaulted to "info", making the severity filter untestable against the canonical script), and a stale `scrollTop` left over from a longer unfiltered view could point past the end of a shorter filtered one, making the virtualized slice come back empty even though matching rows existed.
+
+- `src/lib/mock-runtime/RuntimeProvider.tsx`: React context sharing one `MockRuntime` instance app-wide (timeline now, controls in FBL-010); auto-starts/resumes the demo on mount
+- `src/lib/mock-runtime/sessionPersistence.ts`: frontend-local (`sessionStorage`) `{seed, cursor}` marker — never a backend — letting history reconstruct after reload by re-deriving the identical deterministic sequence from the seed, per FBL-009's explicit "without adding backend persistence" requirement
+- `src/lib/mock-runtime/runtime.ts`: added `fastForwardTo`/`getCursor`/`getSeed`, used by reload reconstruction
+- `src/components/timeline/EventTimeline.tsx`: chronological, filterable (severity/entity/type) event feed; fixed-height windowed rendering (bounded DOM node count regardless of total event count); pause/resume autoscroll; click-to-inspect payload detail panel; explicit disabled "Jump to world object — not yet available" state (no 3D world exists before FBL-016+, so this is never misleadingly enabled)
+- `src/components/timeline/describeEvent.ts`: human-readable summary for every one of the 67 authoritative V1 event types (Principle 24 — every meaningful animation/event has a textual equivalent), with a defensive fallback for any future addition
+
 ### Planned
 
-- Build ladder rung `FBL-009` (event timeline) — proceeding under the same operator-authorized bounded sequence
+- Build ladder rung `FBL-010` (2D operational controls) — proceeding under the same operator-authorized bounded sequence
 
 ## [1.0.0] — 2026-07-30
 

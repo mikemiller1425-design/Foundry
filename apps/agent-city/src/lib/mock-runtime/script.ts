@@ -215,6 +215,7 @@ export function buildCanonicalScript(seed: string): FoundryEvent[] {
     entityId: deleteRequirement,
     actorType: "agent",
     actorId: BUILDER,
+    severity: "error",
     payload: {
       evidenceIds: [],
       message:
@@ -230,6 +231,7 @@ export function buildCanonicalScript(seed: string): FoundryEvent[] {
       entityId: stageIds.frontend_implementation,
       actorType: "backend",
       actorId: "backend",
+      severity: "warning",
       payload: { requirementIds: [deleteRequirement], reason: "Mandatory requirement failed" },
       causationId: failedEvent.id,
     }),
@@ -241,6 +243,7 @@ export function buildCanonicalScript(seed: string): FoundryEvent[] {
       entityId: deleteRequirement,
       actorType: "agent",
       actorId: BUILDER,
+      severity: "notice",
       payload: { priorEventId: failedEvent.id },
       causationId: failedEvent.id,
     }),

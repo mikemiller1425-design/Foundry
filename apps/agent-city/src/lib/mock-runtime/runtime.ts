@@ -65,9 +65,30 @@ export class MockRuntime {
 
   /** Synchronously emits every remaining event with no pacing — for headless tests. */
   runToCompletion(): void {
-    while (this.cursor < this.script.length) {
+    this.fastForwardTo(this.script.length);
+  }
+
+  /**
+   * Synchronously (re)emits events up to `targetCursor` with no pacing, then
+   * pauses. Used for FBL-009 history reconstruction after reload: given the
+   * same seed, the deterministic script regenerates identical events, so a
+   * saved `{ seed, cursor }` marker (frontend-local storage — no backend
+   * persistence) is enough to replay the exact prior history to listeners.
+   */
+  fastForwardTo(targetCursor: number): void {
+    this.pause();
+    const bound = Math.min(Math.max(targetCursor, 0), this.script.length);
+    while (this.cursor < bound) {
       this.emitNext();
     }
+  }
+
+  getCursor(): number {
+    return this.cursor;
+  }
+
+  getSeed(): string {
+    return this.seed;
   }
 
   /** Validates and applies a bounded demo command. Invalid commands are rejected, never silently accepted. */

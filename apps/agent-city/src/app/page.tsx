@@ -1,5 +1,10 @@
 import { AppShell } from "@/components/shell/AppShell";
+import { RuntimeProvider } from "@/lib/mock-runtime";
 
 export default function Home() {
-  return <AppShell />;
+  return (
+    <RuntimeProvider>
+      <AppShell />
+    </RuntimeProvider>
+  );
 }

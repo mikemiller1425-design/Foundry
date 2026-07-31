@@ -1,6 +1,7 @@
 "use client";
 
 import { CollapseToggleButton, ResizeHandle, useCollapsible, useResizable } from "@foundry/ui";
+import { EventTimeline } from "@/components/timeline/EventTimeline";
 import { LEFT_NAV_PANEL, RIGHT_INTEL_PANEL, TIMELINE_PANEL } from "./panelConfig";
 import { REGION_PLACEHOLDER } from "./regionPlaceholder";
 
@@ -189,9 +190,9 @@ export function AppShell() {
       <section
         data-testid="shell-timeline"
         aria-label="Event timeline"
-        className="col-span-full flex flex-col overflow-hidden border-t border-neutral-800 text-sm"
+        className="col-span-full flex min-h-0 flex-col overflow-hidden border-t border-neutral-800 text-sm"
       >
-        <div className="flex items-center justify-between gap-2 p-2">
+        <div className="flex shrink-0 items-center justify-between gap-2 p-2 pb-0">
           <h2 className="font-medium">Bottom event timeline</h2>
           <CollapseToggleButton
             collapsed={timelineCollapsible.collapsed}
@@ -207,8 +208,8 @@ export function AppShell() {
           </CollapseToggleButton>
         </div>
         {!timelineCollapsible.collapsed && (
-          <div className="overflow-y-auto p-4 pt-0">
-            <p className="text-neutral-400">{REGION_PLACEHOLDER}</p>
+          <div className="min-h-0 flex-1">
+            <EventTimeline />
           </div>
         )}
       </section>

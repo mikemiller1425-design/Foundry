@@ -24,6 +24,7 @@ export function buildApprovalRejectedEvents(options: {
       entityId: options.approvalId,
       actorType: "operator",
       actorId: options.resolvedBy,
+      severity: "warning",
       payload: { resolvedBy: options.resolvedBy, resolutionNote: options.resolutionNote },
     }),
   ];

@@ -1,10 +1,19 @@
+import { RuntimeProvider } from "@/lib/mock-runtime";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { AppShell } from "./AppShell";
 
+function renderShell() {
+  return render(
+    <RuntimeProvider seed="app-shell-test">
+      <AppShell />
+    </RuntimeProvider>,
+  );
+}
+
 describe("AppShell panel interactivity (FBL-006)", () => {
   it("left navigation starts expanded and collapses/expands via its toggle", () => {
-    render(<AppShell />);
+    renderShell();
     const toggle = screen.getByRole("button", { name: "Collapse left navigation" });
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText(/Left navigation/)).toBeInTheDocument();
@@ -22,7 +31,7 @@ describe("AppShell panel interactivity (FBL-006)", () => {
   });
 
   it("right live-intelligence and the event timeline are independently collapsible", () => {
-    render(<AppShell />);
+    renderShell();
 
     const intelToggle = screen.getByRole("button", { name: "Collapse right live-intelligence" });
     fireEvent.click(intelToggle);
@@ -46,7 +55,7 @@ describe("AppShell panel interactivity (FBL-006)", () => {
   });
 
   it("exposes a resize handle (ARIA separator) for each resizable panel while expanded", () => {
-    render(<AppShell />);
+    renderShell();
     expect(screen.getByRole("separator", { name: "Resize left navigation" })).toBeInTheDocument();
     expect(
       screen.getByRole("separator", { name: "Resize right live-intelligence" }),
@@ -55,7 +64,7 @@ describe("AppShell panel interactivity (FBL-006)", () => {
   });
 
   it("hides a panel's resize handle while that panel is collapsed", () => {
-    render(<AppShell />);
+    renderShell();
     fireEvent.click(screen.getByRole("button", { name: "Collapse left navigation" }));
     expect(
       screen.queryByRole("separator", { name: "Resize left navigation" }),
@@ -63,7 +72,7 @@ describe("AppShell panel interactivity (FBL-006)", () => {
   });
 
   it("reset layout expands every panel again after collapsing all three", () => {
-    render(<AppShell />);
+    renderShell();
     fireEvent.click(screen.getByRole("button", { name: "Collapse left navigation" }));
     fireEvent.click(screen.getByRole("button", { name: "Collapse right live-intelligence" }));
     fireEvent.click(screen.getByRole("button", { name: "Collapse event timeline" }));
