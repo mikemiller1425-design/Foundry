@@ -23,6 +23,8 @@ export interface RuntimeContextValue {
     resolvedBy: string,
     resolutionNote?: string,
   ) => void;
+  selectBuilding: (buildingId: string) => void;
+  clearSelection: () => void;
   lastRejection: CommandRejection | null;
 }
 
@@ -129,6 +131,17 @@ export function RuntimeProvider({
     [runtime],
   );
 
+  const selectBuilding = useCallback(
+    (buildingId: string) => {
+      runtime.selectBuilding(buildingId);
+    },
+    [runtime],
+  );
+
+  const clearSelection = useCallback(() => {
+    runtime.clearSelection();
+  }, [runtime]);
+
   return (
     <RuntimeContext.Provider
       value={{
@@ -138,6 +151,8 @@ export function RuntimeProvider({
         isComplete,
         submitCommand,
         resolveApproval,
+        selectBuilding,
+        clearSelection,
         lastRejection,
       }}
     >

@@ -279,3 +279,56 @@ describe("MockRuntime — approval gating (F-06: pending approval pauses protect
     expect(runtime.getEvents()).toHaveLength(before);
   });
 });
+
+describe("MockRuntime — selectBuilding (FBL-015 object selection)", () => {
+  it("emits a real building.selected event with the correct payload", () => {
+    const runtime = new MockRuntime("select-seed");
+    runtime.selectBuilding("lighthouse");
+    const events = runtime.getEvents();
+    const selected = events.find((e) => e.type === "building.selected");
+    expect(selected).toBeDefined();
+    expect(selected?.payload).toEqual({ buildingId: "lighthouse" });
+    expect(selected?.actorType).toBe("frontend");
+  });
+
+  it("re-selecting the already-selected object emits no further event (no duplicate timeline record)", () => {
+    const runtime = new MockRuntime("select-dup-seed");
+    runtime.selectBuilding("lighthouse");
+    const countAfterFirst = runtime
+      .getEvents()
+      .filter((e) => e.type === "building.selected").length;
+    runtime.selectBuilding("lighthouse");
+    const countAfterSecond = runtime
+      .getEvents()
+      .filter((e) => e.type === "building.selected").length;
+    expect(countAfterSecond).toBe(countAfterFirst);
+    expect(countAfterFirst).toBe(1);
+  });
+
+  it("selecting again after clearSelection() emits a fresh event", () => {
+    const runtime = new MockRuntime("select-reselect-seed");
+    runtime.selectBuilding("lighthouse");
+    runtime.clearSelection();
+    runtime.selectBuilding("lighthouse");
+    const count = runtime.getEvents().filter((e) => e.type === "building.selected").length;
+    expect(count).toBe(2);
+  });
+
+  it("selection never mutates operational truth — WorldState is unaffected by selectBuilding", () => {
+    const runtime = new MockRuntime("select-no-mutation-seed");
+    const before = runtime.getWorldState();
+    runtime.selectBuilding("lighthouse");
+    const after = runtime.getWorldState();
+    expect(after.buildings).toEqual(before.buildings);
+    expect(after.currentBuild).toEqual(before.currentBuild);
+  });
+
+  it("reset() clears the selection dedup guard, so the same object can be freshly re-selected", () => {
+    const runtime = new MockRuntime("select-reset-seed");
+    runtime.selectBuilding("lighthouse");
+    runtime.reset();
+    runtime.selectBuilding("lighthouse");
+    const count = runtime.getEvents().filter((e) => e.type === "building.selected").length;
+    expect(count).toBe(1);
+  });
+});

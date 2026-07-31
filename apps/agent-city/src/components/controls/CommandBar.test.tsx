@@ -21,6 +21,8 @@ function renderCommandBar(overrides: {
           isComplete: overrides.isComplete ?? false,
           submitCommand,
           resolveApproval: vi.fn(),
+          selectBuilding: vi.fn(),
+          clearSelection: vi.fn(),
           lastRejection: overrides.lastRejection ?? null,
         }}
       >

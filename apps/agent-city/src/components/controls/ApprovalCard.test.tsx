@@ -34,6 +34,8 @@ function renderWithApproval(approval: Approval | null, resolveApproval = vi.fn()
           isComplete: false,
           submitCommand: vi.fn(),
           resolveApproval,
+          selectBuilding: vi.fn(),
+          clearSelection: vi.fn(),
           lastRejection: null,
         }}
       >

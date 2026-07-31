@@ -20,6 +20,8 @@ function renderDetail(selection: Selection | null, events = buildCanonicalScript
           isComplete: true,
           submitCommand: vi.fn(),
           resolveApproval: vi.fn(),
+          selectBuilding: vi.fn(),
+          clearSelection: vi.fn(),
           lastRejection: null,
         }}
       >
@@ -74,5 +76,14 @@ describe("SelectedObjectDetail — agent selection", () => {
 
     expect(screen.getByText("Agent: architect")).toBeInTheDocument();
     expect(screen.getByText(architect.currentBuildingId)).toBeInTheDocument();
+  });
+});
+
+describe("SelectedObjectDetail — building selection (FBL-015)", () => {
+  it("shows the Lighthouse's current state and its non-color textual signal", () => {
+    renderDetail({ kind: "building", id: "lighthouse" }, []);
+    expect(screen.getByText("Building: Lighthouse")).toBeInTheDocument();
+    expect(screen.getByText("Healthy")).toBeInTheDocument();
+    expect(screen.getByText("Steady white")).toBeInTheDocument();
   });
 });

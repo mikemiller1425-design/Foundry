@@ -167,9 +167,27 @@ Added the Lighthouse as the first persistent operational-world object, per `docs
 - `apps/agent-city/src/lib/mock-runtime/worldStateReducer.test.ts`: a regression test confirming exactly one `lighthouse` building entity survives even a fully duplicated event replay
 - An initial version of this rung used only a small beacon shape with no actual light beam, an environment-only render smoke test that couldn't distinguish "the Lighthouse renders" from "the ground renders," and an unconditional `preserveDrawingBuffer: true`. Independent review before commit caught all three; the beam, the declarative visual spec, the targeted marker-based render test, and the env-gated `preserveDrawingBuffer` above are the corrected implementation
 
+### Added — FBL-015 Object selection
+
+Implemented a generalized pointer/keyboard object-selection framework and applied it to the Lighthouse — the operator-authorized bounded sequence FBL-012–FBL-015's final rung. Pointer click and keyboard (Enter/Space while the 3D world has focus) both select; the left navigator and the Canvas stay synchronized in both directions; the selected-object detail panel reflects the selection; selecting moves the FBL-012 camera to focus on the object; Escape deselects from any focus context; and selection emits the real, typed `building.selected` event (event-model.md) rather than only mutating local UI state — never operational truth, and never duplicated when re-selecting an already-selected object. 167 unit tests total (up from 159, 8 new) and 183 Playwright tests (up from 156, 27 new) — all passing at all three target viewports.
+
+- `apps/agent-city/src/components/controls/selection.ts`: `Selection` gains a `"building"` kind, reused as-is by residences/operational buildings from FBL-016 on
+- `apps/agent-city/src/lib/world/selectableObjects.ts`: the generalized registry of selectable world objects (today, only the Lighthouse) — the reusable part of the framework the rung explicitly requires
+- `apps/agent-city/src/lib/mock-runtime/runtime.ts` (+ test): `selectBuilding(buildingId)` emits a real `building.selected` event (actorType `frontend`, matching event-model.md's "Producer: Frontend (recorded)"); re-selecting the same object is a no-op (no duplicate event/timeline record), while a fresh selection — a different object, or the same one again after `clearSelection()` — always emits its own event; `reset()`/`replay()` clear the dedup guard along with everything else
+- `apps/agent-city/src/components/world/Lighthouse.tsx`: pointer hover (subtle scale + cursor) and a selected-state ring (a distinct shape, not a color change, so it survives reduced motion and never gets confused with the six state colors) — both layered on top of, not replacing, FBL-014's state visuals
+- `apps/agent-city/src/components/world/WorldSelectionController.tsx`: Enter/Space keyboard selection, scoped to the canvas (which is already tabbable per FBL-012); deselection (Escape) is deliberately *not* canvas-scoped — it's a window-level listener in `AppShell.tsx`, since a user may have moved focus to the navigator's own selected-object button and still expect Escape to clear the selection
+- `apps/agent-city/src/components/world/LighthouseSceneObject.tsx`, `lighthouseMarkerState.ts`, `LighthouseMarker.tsx`: the FBL-014 screen-position marker now also reports hover/selected state, so both are real-browser-testable without pixel sampling
+- `apps/agent-city/src/components/shell/AppShell.tsx`: one funnel (`handleSelect`) for every selection source (3D pointer, 3D keyboard, navigator) — updates 2D state, emits the runtime event, and calls the camera's `focus()`
+- `apps/agent-city/src/components/controls/StageAgentPanel.tsx`, `SelectedObjectDetail.tsx`: a "World objects" navigator section and a building-selection branch in the detail panel; `LIGHTHOUSE_STATE_SHORT_LABEL` factored into `lighthouseState.ts` so this, `LiveIntelligence.tsx`, and the detail panel share one label table instead of three independent copies
+- `apps/agent-city/e2e/shell-selection.spec.ts`: FBL-015's required browser-level tests — pointer hit target, keyboard selection, both sync directions, detail-panel sync, camera focus, deselection, duplicate-event behavior, reduced motion, and an explicit no-keyboard-trap check (Tab still leaves the canvas)
+
+### Stop
+
+Operator authorization for this session's bounded execution sequence (FBL-012–FBL-015) is fully used. `FBL-016` (residences) and every later rung remain **not authorized** and were not started.
+
 ### Planned
 
-- Build ladder rung `FBL-015` (object selection) — proceeding under the same operator-authorized bounded sequence
+- Build ladder rung `FBL-016` (three residences) — requires separate, explicit operator authorization before it may begin
 
 ## [1.0.0] — 2026-07-30
 

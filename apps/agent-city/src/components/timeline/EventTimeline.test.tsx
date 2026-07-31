@@ -70,6 +70,8 @@ function renderWithFixture(
           isComplete: true,
           submitCommand: vi.fn(),
           resolveApproval: vi.fn(),
+          selectBuilding: vi.fn(),
+          clearSelection: vi.fn(),
           lastRejection: null,
         }}
       >

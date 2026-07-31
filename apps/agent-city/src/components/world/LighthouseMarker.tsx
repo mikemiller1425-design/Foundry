@@ -29,9 +29,12 @@ export function LighthouseMarker({
       data-x-percent={marker?.xPercent ?? ""}
       data-y-percent={marker?.yPercent ?? ""}
       data-state={marker?.state ?? ""}
+      data-hovered={marker?.hovered ?? false}
+      data-selected={marker?.selected ?? false}
     >
       Lighthouse {marker?.visible ? "visible" : "not visible"} in the 3D world, state:{" "}
-      {marker?.state ?? "unknown"}.
+      {marker?.state ?? "unknown"}
+      {marker?.selected ? ", selected" : ""}.
     </span>
   );
 }

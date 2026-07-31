@@ -1,11 +1,17 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
-import type { Group, Mesh } from "three";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { useState, useRef } from "react";
+import { DoubleSide, type Group, type Mesh } from "three";
 import { LIGHTHOUSE_VISUALS, type BeaconShape } from "@/lib/world/lighthouseVisuals";
 import type { LighthouseState } from "@/lib/world/lighthouseState";
 import { useReducedMotion } from "@/lib/world/useReducedMotion";
+
+// FBL-015: selection is never a color-only signal either — a ring at the
+// base (shape, not just color) marks the selected object, and it is
+// static (no animation), so it stays a valid signal under reduced motion.
+const SELECTION_RING_COLOR = "#4ade80";
+const HOVER_SCALE = 1.06;
 
 // FBL-014 — Lighthouse (docs/02-specification/world-model.md → "Lighthouse").
 // Simple procedural low-poly placeholder geometry — no interior, no
@@ -119,11 +125,48 @@ function Beam({ state }: { state: LighthouseState }) {
   );
 }
 
-export function Lighthouse({ state }: { state: LighthouseState }) {
+export function Lighthouse({
+  state,
+  selected = false,
+  onSelect,
+  onHoverChange,
+}: {
+  state: LighthouseState;
+  selected?: boolean;
+  onSelect?: () => void;
+  onHoverChange?: (hovered: boolean) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
   const towerColor = state === "disconnected" ? TOWER_COLOR_DISCONNECTED : TOWER_COLOR;
+  const scale = hovered ? HOVER_SCALE : 1;
+
+  function handlePointerOver(e: ThreeEvent<PointerEvent>) {
+    e.stopPropagation();
+    setHovered(true);
+    onHoverChange?.(true);
+    document.body.style.cursor = "pointer";
+  }
+
+  function handlePointerOut(e: ThreeEvent<PointerEvent>) {
+    e.stopPropagation();
+    setHovered(false);
+    onHoverChange?.(false);
+    document.body.style.cursor = "auto";
+  }
+
+  function handleClick(e: ThreeEvent<MouseEvent>) {
+    e.stopPropagation();
+    onSelect?.();
+  }
 
   return (
-    <group position={LIGHTHOUSE_POSITION}>
+    <group
+      position={LIGHTHOUSE_POSITION}
+      scale={scale}
+      onClick={handleClick}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
+    >
       <mesh position={[0, 2, 0]}>
         <cylinderGeometry args={[0.5, 0.9, 4, 8]} />
         <meshStandardMaterial color={towerColor} />
@@ -134,6 +177,12 @@ export function Lighthouse({ state }: { state: LighthouseState }) {
       </mesh>
       <Beam state={state} />
       <Beacon state={state} />
+      {selected && (
+        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[1.15, 1.35, 24]} />
+          <meshBasicMaterial color={SELECTION_RING_COLOR} side={DoubleSide} />
+        </mesh>
+      )}
     </group>
   );
 }

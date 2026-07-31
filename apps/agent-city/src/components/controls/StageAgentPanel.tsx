@@ -2,6 +2,8 @@
 
 import { useRuntime } from "@/lib/mock-runtime";
 import { selectStages } from "@/lib/mock-runtime/selectors";
+import { computeLighthouseState, LIGHTHOUSE_STATE_SHORT_LABEL } from "@/lib/world/lighthouseState";
+import { SELECTABLE_WORLD_OBJECTS } from "@/lib/world/selectableObjects";
 import { useMemo } from "react";
 import type { Selection } from "./selection";
 
@@ -37,9 +39,36 @@ export function StageAgentPanel({
 }) {
   const { events, worldState } = useRuntime();
   const stages = useMemo(() => selectStages(events), [events]);
+  const lighthouseState = computeLighthouseState(worldState);
 
   return (
     <div className="space-y-4">
+      <section aria-label="World objects">
+        <h3 className="font-medium">World objects</h3>
+        <ul className="mt-1 space-y-0.5">
+          {SELECTABLE_WORLD_OBJECTS.map((object) => (
+            <li key={object.id}>
+              <button
+                type="button"
+                onClick={() => onSelect({ kind: "building", id: object.id })}
+                aria-pressed={selection?.kind === "building" && selection.id === object.id}
+                data-testid="building-list-item"
+                className={`flex w-full items-center justify-between rounded px-1 py-0.5 text-left hover:bg-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
+                  selection?.kind === "building" && selection.id === object.id
+                    ? "bg-neutral-800"
+                    : ""
+                }`}
+              >
+                <span className="truncate">{object.label}</span>
+                <span className="text-neutral-400">
+                  {LIGHTHOUSE_STATE_SHORT_LABEL[lighthouseState]}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <section aria-label="Current build">
         <h3 className="font-medium">Current build</h3>
         {worldState.currentBuild ? (

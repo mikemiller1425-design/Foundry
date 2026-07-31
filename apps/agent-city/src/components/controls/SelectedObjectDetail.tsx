@@ -2,6 +2,8 @@
 
 import { useRuntime } from "@/lib/mock-runtime";
 import { selectRequirementsByStage, selectStages } from "@/lib/mock-runtime/selectors";
+import { computeLighthouseState, LIGHTHOUSE_STATE_SHORT_LABEL } from "@/lib/world/lighthouseState";
+import { LIGHTHOUSE_STATE_VISUALS } from "@foundry/world-model";
 import { useMemo } from "react";
 import type { Selection } from "./selection";
 
@@ -23,7 +25,8 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
       <>
         <h3 className="font-medium">Selected-object details</h3>
         <p className="mt-1 text-neutral-400">
-          No selection. Select a stage or agent from the left navigation.
+          No selection. Select a stage, agent, or world object from the left navigation, or the
+          Lighthouse in the 3D world.
         </p>
       </>
     );
@@ -72,26 +75,46 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
     );
   }
 
-  const agent = worldState.agents.find((a) => a.id === selection.id);
-  if (!agent) return null;
+  if (selection.kind === "agent") {
+    const agent = worldState.agents.find((a) => a.id === selection.id);
+    if (!agent) return null;
+    return (
+      <>
+        <h3 className="font-medium capitalize">Agent: {agent.role}</h3>
+        <dl className="mt-1 space-y-0.5 text-neutral-400">
+          <div>
+            <dt className="inline text-neutral-500">status: </dt>
+            <dd className="inline">{agent.status}</dd>
+          </div>
+          <div>
+            <dt className="inline text-neutral-500">current building: </dt>
+            <dd className="inline">{agent.currentBuildingId}</dd>
+          </div>
+          {agent.currentTaskId && (
+            <div>
+              <dt className="inline text-neutral-500">current task: </dt>
+              <dd className="inline">{agent.currentTaskId}</dd>
+            </div>
+          )}
+        </dl>
+      </>
+    );
+  }
+
+  // selection.kind === "building" (FBL-015) — today, only the Lighthouse.
+  const lighthouseState = computeLighthouseState(worldState);
   return (
     <>
-      <h3 className="font-medium capitalize">Agent: {agent.role}</h3>
+      <h3 className="font-medium">Building: Lighthouse</h3>
       <dl className="mt-1 space-y-0.5 text-neutral-400">
         <div>
-          <dt className="inline text-neutral-500">status: </dt>
-          <dd className="inline">{agent.status}</dd>
+          <dt className="inline text-neutral-500">state: </dt>
+          <dd className="inline">{LIGHTHOUSE_STATE_SHORT_LABEL[lighthouseState]}</dd>
         </div>
         <div>
-          <dt className="inline text-neutral-500">current building: </dt>
-          <dd className="inline">{agent.currentBuildingId}</dd>
+          <dt className="inline text-neutral-500">signal: </dt>
+          <dd className="inline">{LIGHTHOUSE_STATE_VISUALS[lighthouseState]}</dd>
         </div>
-        {agent.currentTaskId && (
-          <div>
-            <dt className="inline text-neutral-500">current task: </dt>
-            <dd className="inline">{agent.currentTaskId}</dd>
-          </div>
-        )}
       </dl>
     </>
   );

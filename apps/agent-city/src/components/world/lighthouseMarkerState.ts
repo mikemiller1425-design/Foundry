@@ -10,4 +10,7 @@ export interface LighthouseMarkerState {
   xPercent: number;
   yPercent: number;
   state: string;
+  /** FBL-015: real-browser-testable proof of the hover/selected interaction signals, without pixel sampling. */
+  hovered: boolean;
+  selected: boolean;
 }

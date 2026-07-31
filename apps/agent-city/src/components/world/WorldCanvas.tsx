@@ -2,18 +2,20 @@
 
 import { Canvas } from "@react-three/fiber";
 import type { RefObject } from "react";
+import type { Selection } from "@/components/controls/selection";
 import { CameraRig } from "./CameraRig";
 import type { CameraControllerHandle } from "./cameraController";
 import { Environment } from "./Environment";
 import type { LighthouseMarkerState } from "./lighthouseMarkerState";
 import { LighthouseSceneObject } from "./LighthouseSceneObject";
+import { WorldSelectionController } from "./WorldSelectionController";
 
 // FBL-011 bootstrapped an empty R3F canvas in the shell's world region
 // (ADR-004); FBL-012 added the camera rig; FBL-013 added the minimal
-// environment (ground, lighting, fog); FBL-014 adds the Lighthouse — the
-// first persistent world object. Selection (FBL-015) and every other
-// world object (residences/buildings/roads/agents/vehicle, FBL-016+) are
-// still not present. Canvas fills and tracks its positioned parent's size
+// environment (ground, lighting, fog); FBL-014 added the Lighthouse;
+// FBL-015 adds pointer/keyboard selection of it. Every other world
+// object (residences/buildings/roads/agents/vehicle, FBL-016+) is still
+// not present. Canvas fills and tracks its positioned parent's size
 // automatically (R3F's built-in ResizeObserver).
 //
 // `preserveDrawingBuffer` disables a GPU optimization and has no benefit
@@ -27,9 +29,13 @@ const isE2E = process.env.NEXT_PUBLIC_E2E === "1";
 export function WorldCanvas({
   controllerRef,
   lighthouseMarkerRef,
+  selection,
+  onSelect,
 }: {
   controllerRef: RefObject<CameraControllerHandle | null>;
   lighthouseMarkerRef: RefObject<LighthouseMarkerState | null>;
+  selection: Selection | null;
+  onSelect: (id: string) => void;
 }) {
   return (
     <Canvas
@@ -39,7 +45,12 @@ export function WorldCanvas({
     >
       <CameraRig controllerRef={controllerRef} />
       <Environment />
-      <LighthouseSceneObject markerRef={lighthouseMarkerRef} />
+      <LighthouseSceneObject
+        markerRef={lighthouseMarkerRef}
+        selection={selection}
+        onSelect={onSelect}
+      />
+      <WorldSelectionController onSelect={onSelect} />
     </Canvas>
   );
 }

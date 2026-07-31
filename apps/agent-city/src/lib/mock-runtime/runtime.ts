@@ -13,6 +13,7 @@ import { applyEvent, createInitialWorldState } from "./worldStateReducer";
 export const DEFAULT_SEED = "v1-demo";
 const BASE_INTERVAL_MS = 200;
 const OPERATOR_SESSION_ENTITY = "operator-session";
+const UI_SESSION_ENTITY = "ui-session";
 
 export type MockRuntimeListener = (event: FoundryEvent) => void;
 export type CommandRejectedListener = (rejection: { commandType: string; reason: string }) => void;
@@ -37,12 +38,15 @@ export class MockRuntime {
   private listeners = new Set<MockRuntimeListener>();
   private rejectionListeners = new Set<CommandRejectedListener>();
   private commandEvent: ReturnType<typeof createEventFactory>;
+  private selectionEvent: ReturnType<typeof createEventFactory>;
   private revisionIdGenerator: ReturnType<typeof createIdGenerator>;
+  private lastSelectedBuildingId: string | null = null;
 
   constructor(seed: string = DEFAULT_SEED) {
     this.seed = seed;
     this.script = buildCanonicalScript(seed);
     this.commandEvent = createEventFactory(seed, OPERATOR_SESSION_ENTITY, "evt-cmd");
+    this.selectionEvent = createEventFactory(seed, UI_SESSION_ENTITY, "evt-select");
     this.revisionIdGenerator = createIdGenerator(`${seed}-manual`);
   }
 
@@ -207,6 +211,35 @@ export class MockRuntime {
     for (const event of events) this.emitInjected(event);
   }
 
+  /**
+   * Records a UI-facing building.selected event (event-model.md → "Building":
+   * "Backend effect: None on operational truth (selection is UI)"; FBL-015).
+   * Re-selecting the already-selected object emits nothing further — this
+   * is the "duplicate selection events must not duplicate ... timeline
+   * records" guarantee; a fresh selection (a different object, or the same
+   * one again after an intervening deselect) always emits its own event.
+   */
+  selectBuilding(buildingId: string): void {
+    if (this.lastSelectedBuildingId === buildingId) return;
+    this.lastSelectedBuildingId = buildingId;
+    this.emitInjected(
+      this.selectionEvent({
+        type: "building.selected",
+        entityType: "Building",
+        entityId: buildingId,
+        actorType: "frontend",
+        actorId: "frontend-ui",
+        severity: "info",
+        payload: { buildingId },
+      }),
+    );
+  }
+
+  /** Deselection is pure frontend state — no event exists for it (event-model.md has no "building.deselected"). */
+  clearSelection(): void {
+    this.lastSelectedBuildingId = null;
+  }
+
   private rejectCommand(commandType: string, reason: string): void {
     for (const listener of this.rejectionListeners) listener({ commandType, reason });
   }
@@ -272,6 +305,7 @@ export class MockRuntime {
     this.emittedLog = [];
     this.worldState = createInitialWorldState();
     this.script = buildCanonicalScript(this.seed);
+    this.lastSelectedBuildingId = null;
   }
 
   /** Re-emits the identical seeded sequence deterministically from the start. */
@@ -283,6 +317,7 @@ export class MockRuntime {
     this.emittedLog = [];
     this.worldState = createInitialWorldState();
     this.script = buildCanonicalScript(this.seed);
+    this.lastSelectedBuildingId = null;
     this.start();
   }
 

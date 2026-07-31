@@ -18,6 +18,8 @@ function renderIntel(events: ReturnType<typeof buildCanonicalScript>, isRunning 
           isComplete: false,
           submitCommand: vi.fn(),
           resolveApproval: vi.fn(),
+          selectBuilding: vi.fn(),
+          clearSelection: vi.fn(),
           lastRejection: null,
         }}
       >

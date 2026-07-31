@@ -19,6 +19,8 @@ function renderPanel(onSelect = vi.fn()) {
           isComplete: true,
           submitCommand: vi.fn(),
           resolveApproval: vi.fn(),
+          selectBuilding: vi.fn(),
+          clearSelection: vi.fn(),
           lastRejection: null,
         }}
       >
@@ -77,5 +79,18 @@ describe("StageAgentPanel", () => {
       expect(item.tagName).toBe("BUTTON");
       expect(item.tabIndex).toBe(0);
     }
+  });
+
+  it("renders the Lighthouse as a selectable world object showing its current state", () => {
+    renderPanel();
+    const buildingItems = screen.getAllByTestId("building-list-item");
+    expect(buildingItems).toHaveLength(1);
+    expect(screen.getByText("Lighthouse")).toBeInTheDocument();
+  });
+
+  it("clicking the Lighthouse calls onSelect with { kind: 'building', id: 'lighthouse' }", () => {
+    const { onSelect } = renderPanel();
+    fireEvent.click(screen.getByTestId("building-list-item"));
+    expect(onSelect).toHaveBeenCalledWith({ kind: "building", id: "lighthouse" });
   });
 });

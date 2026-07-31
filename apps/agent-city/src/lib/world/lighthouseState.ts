@@ -9,6 +9,16 @@ import type { WorldState } from "@foundry/contracts";
 export type LighthouseState =
   "healthy" | "active" | "attention_required" | "degraded" | "critical" | "disconnected";
 
+/** Short accessible label per state — shared by every 2D surface that shows it (LiveIntelligence, StageAgentPanel, SelectedObjectDetail). */
+export const LIGHTHOUSE_STATE_SHORT_LABEL: Record<LighthouseState, string> = {
+  healthy: "Healthy",
+  active: "Active",
+  attention_required: "Attention required",
+  degraded: "Degraded",
+  critical: "Critical",
+  disconnected: "Disconnected",
+};
+
 /**
  * Deterministic precedence, most severe first: a genuine connectivity/health
  * problem always outranks a mere pending approval or an in-progress build —

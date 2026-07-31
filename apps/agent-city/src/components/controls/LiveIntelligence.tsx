@@ -2,18 +2,9 @@
 
 import { useRuntime } from "@/lib/mock-runtime";
 import { selectStages } from "@/lib/mock-runtime/selectors";
-import { computeLighthouseState } from "@/lib/world/lighthouseState";
+import { computeLighthouseState, LIGHTHOUSE_STATE_SHORT_LABEL } from "@/lib/world/lighthouseState";
 import { LIGHTHOUSE_STATE_VISUALS } from "@foundry/world-model";
 import { useMemo } from "react";
-
-const LIGHTHOUSE_STATE_LABEL: Record<ReturnType<typeof computeLighthouseState>, string> = {
-  healthy: "Healthy",
-  active: "Active",
-  attention_required: "Attention required",
-  degraded: "Degraded",
-  critical: "Critical",
-  disconnected: "Disconnected",
-};
 
 // docs/02-specification/interface-model.md § "Right live-intelligence
 // region": "Surfaces current facts and exceptions only — not a second full
@@ -48,7 +39,8 @@ export function LiveIntelligence() {
       <section aria-label="Lighthouse">
         <h3 className="font-medium">Lighthouse</h3>
         <p data-testid="lighthouse-status" className="text-neutral-400">
-          {LIGHTHOUSE_STATE_LABEL[lighthouseState]} — {LIGHTHOUSE_STATE_VISUALS[lighthouseState]}
+          {LIGHTHOUSE_STATE_SHORT_LABEL[lighthouseState]} —{" "}
+          {LIGHTHOUSE_STATE_VISUALS[lighthouseState]}
         </p>
       </section>
 

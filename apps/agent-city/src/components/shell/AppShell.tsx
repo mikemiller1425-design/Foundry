@@ -8,26 +8,71 @@ import { SelectedObjectDetail } from "@/components/controls/SelectedObjectDetail
 import type { Selection } from "@/components/controls/selection";
 import { StageAgentPanel } from "@/components/controls/StageAgentPanel";
 import { EventTimeline } from "@/components/timeline/EventTimeline";
+import { useRuntime } from "@/lib/mock-runtime";
+import { SELECTABLE_WORLD_OBJECTS } from "@/lib/world/selectableObjects";
 import type { CameraControllerHandle } from "@/components/world/cameraController";
 import { CameraHud } from "@/components/world/CameraHud";
 import type { LighthouseMarkerState } from "@/components/world/lighthouseMarkerState";
 import { LighthouseMarker } from "@/components/world/LighthouseMarker";
 import { WorldCanvas } from "@/components/world/WorldCanvas";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LEFT_NAV_PANEL, RIGHT_INTEL_PANEL, TIMELINE_PANEL } from "./panelConfig";
 import { REGION_PLACEHOLDER } from "./regionPlaceholder";
 
 // Ultrawide application shell (FBL-005 layout, FBL-006 interaction,
 // FBL-009 event timeline, FBL-010 2D operational controls, FBL-011 empty
 // R3F world, FBL-012 camera and navigation, FBL-013 spatial environment,
-// FBL-014 Lighthouse): full-viewport region layout with generic
-// collapse/resize/keyboard behavior (@foundry/ui) and real controls
-// driven by the FBL-008 mock runtime — see
+// FBL-014 Lighthouse, FBL-015 object selection): full-viewport region
+// layout with generic collapse/resize/keyboard behavior (@foundry/ui)
+// and real controls driven by the FBL-008 mock runtime — see
 // docs/02-specification/interface-model.md.
 export function AppShell() {
   const [selection, setSelection] = useState<Selection | null>(null);
   const lighthouseMarkerRef = useRef<LighthouseMarkerState | null>(null);
   const cameraRef = useRef<CameraControllerHandle>(null);
+  const { selectBuilding, clearSelection } = useRuntime();
+
+  // The single funnel for every selection source (3D pointer click, 3D
+  // keyboard Enter/Space, and the left navigator): updates the shared 2D
+  // selection state, emits the real building.selected event
+  // (event-model.md — never a mutation of operational truth), and moves
+  // the FBL-012 camera to focus on it.
+  const handleSelect = useCallback(
+    (next: Selection) => {
+      setSelection(next);
+      if (next.kind === "building") {
+        selectBuilding(next.id);
+        const target = SELECTABLE_WORLD_OBJECTS.find((o) => o.id === next.id);
+        if (target) {
+          const [x, y, z] = target.focusPosition;
+          cameraRef.current?.focus({ x, y, z });
+        }
+      }
+    },
+    [selectBuilding],
+  );
+
+  const handleSelectBuildingId = useCallback(
+    (id: string) => handleSelect({ kind: "building", id }),
+    [handleSelect],
+  );
+
+  // Escape clears selection regardless of which control currently has
+  // focus (interface-model.md "Keyboard operation": "Escape closes
+  // panels where appropriate") — not scoped to the canvas, since the
+  // navigator's own selected-object button may be what's focused.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      setSelection((current) => {
+        if (current) clearSelection();
+        return null;
+      });
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [clearSelection]);
+
   const leftNavCollapsible = useCollapsible();
   const leftNavResizable = useResizable({
     defaultSize: LEFT_NAV_PANEL.defaultSize,
@@ -122,7 +167,7 @@ export function AppShell() {
         </div>
         {!leftNavCollapsible.collapsed && (
           <div className="overflow-y-auto p-4 pt-0 text-xs">
-            <StageAgentPanel selection={selection} onSelect={setSelection} />
+            <StageAgentPanel selection={selection} onSelect={handleSelect} />
           </div>
         )}
       </nav>
@@ -141,7 +186,12 @@ export function AppShell() {
         aria-label="Operational world"
         className="relative overflow-hidden p-4 text-sm"
       >
-        <WorldCanvas controllerRef={cameraRef} lighthouseMarkerRef={lighthouseMarkerRef} />
+        <WorldCanvas
+          controllerRef={cameraRef}
+          lighthouseMarkerRef={lighthouseMarkerRef}
+          selection={selection}
+          onSelect={handleSelectBuildingId}
+        />
         <CameraHud controllerRef={cameraRef} />
         <LighthouseMarker markerRef={lighthouseMarkerRef} />
 
