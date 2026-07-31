@@ -2,7 +2,7 @@
 
 **Foundation:** 1.0
 **Authority:** Sequential implementation program derived from `docs/03-architecture/implementation-plan.md` and all active specification documents
-**Status:** `FBL-001`–`FBL-006` are **complete**. Foundry Foundation is **approved (1.0)**. The operator's bounded execution sequence covering `FBL-003`–`FBL-006` is fully used — that authorization is now exhausted. `FBL-007` and every later rung remain explicitly **not authorized** and have not been started, per this document's own rules below. A new, separate, explicit operator authorization is required before any further rung may begin.
+**Status:** `FBL-001`–`FBL-006` are **complete**. Foundry Foundation is **approved (1.0)**. The operator has explicitly authorized a new bounded execution sequence covering `FBL-007`–`FBL-011`; `FBL-007` is in progress under that authorization. No rung beyond `FBL-011` has been authorized to start, and `FBL-012` remains explicitly out of scope until separately authorized, per this document's own rules below.
 **Method:** Contract-first vertical slices (ADR-003)
 
 ## How to read this document
@@ -10,7 +10,7 @@
 - Every rung has a **stable identifier** (`FBL-001`, `FBL-002`, …). Identifiers are never reused and completed rungs are never renumbered. New work discovered after a rung is closed is inserted as a lettered sub-rung of the nearest preceding rung (e.g. `FBL-006A`), never by shifting later numbers.
 - A rung may not **begin** until (a) every item in its **Prerequisites** field is true and (b) the **Stop condition** of the immediately preceding rung on its dependency path has been reached.
 - A rung may not **end** by sliding into the next rung's work. Reaching a rung's **Stop condition** halts work until a human or the designated gate explicitly authorizes the next rung.
-- `FBL-001` resolved all **4 BLOCKER** and all **6 MAJOR** findings from `docs/audits/foundry-foundation-v1-audit.md` (dated 2026-07-28); finding-by-finding detail in `docs/audits/foundation-v1-fbl-001-closure-matrix.md`. `FBL-002` independently re-audited the amended baseline (`docs/audits/foundry-foundation-v1-post-fbl-001-audit.md`, dated 2026-07-30, result **PASS**, 0 open BLOCKER, 0 open MAJOR, no inaccurate closure-matrix claim found) and recorded explicit operator approval promoting Foundation from `1.0-rc1` to `1.0` (see `FOUNDATION_VERSION.md`). Both rungs are closed. `FBL-003` is next; like every rung on this ladder, it requires its own separate, explicit operator authorization before it may begin — Foundation approval is not blanket authorization to proceed past it.
+- `FBL-001` resolved all **4 BLOCKER** and all **6 MAJOR** findings from `docs/audits/foundry-foundation-v1-audit.md` (dated 2026-07-28); finding-by-finding detail in `docs/audits/foundation-v1-fbl-001-closure-matrix.md`. `FBL-002` independently re-audited the amended baseline (`docs/audits/foundry-foundation-v1-post-fbl-001-audit.md`, dated 2026-07-30, result **PASS**, 0 open BLOCKER, 0 open MAJOR, no inaccurate closure-matrix claim found) and recorded explicit operator approval promoting Foundation from `1.0-rc1` to `1.0` (see `FOUNDATION_VERSION.md`). `FBL-003` (monorepo/tooling), `FBL-004` (frontend scaffold), `FBL-005` (ultrawide shell), and `FBL-006` (panel framework) are also complete, under a prior operator-authorized bounded sequence. `FBL-001`–`FBL-006` are all closed. `FBL-007` is next, authorized as the first rung of a new bounded sequence (`FBL-007`–`FBL-011`); like every rung on this ladder, each still requires its own separate, explicit operator authorization before it may begin — Foundation approval is not blanket authorization to proceed past any of them.
 - `docs/archive/foundation-v0/` and `docs/04-future/registry.md` are **non-authoritative** for every rung below. No rung's deliverables, tests, or acceptance criteria may cite them as a requirements source.
 
 ---
@@ -181,7 +181,7 @@ Parallel groups are defined precisely in §4.
 | 13. Stop condition | Keyboard-path test green. Hard stop before wiring real content. |
 | 14. Dependency on next rung | FBL-009 and FBL-010 depend on this rung. |
 
-#### FBL-007 — Shared contracts
+#### FBL-007 — Shared contracts — 🔄 In progress (authorized, bounded sequence FBL-007–FBL-011)
 
 | Field | Content |
 | --- | --- |

@@ -1,3 +1,5 @@
-// Reserved package placeholder. No implementation in Foundation v1.0.
-// Populated at build ladder rung FBL-007 (Shared contracts) and FBL-016+ (world objects).
-export {};
+export * from "./agents";
+export * from "./buildings";
+export * from "./roads";
+export * from "./vehicle";
+export * from "./visualStates";

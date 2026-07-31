@@ -9,5 +9,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@foundry/contracts": "workspace:*",
+    "zod": "^4.4.3"
   }
 }

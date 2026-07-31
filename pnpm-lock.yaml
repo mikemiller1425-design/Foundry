@@ -35,9 +35,18 @@ importers:
 
   apps/agent-city:
     dependencies:
+      '@foundry/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@foundry/event-types':
+        specifier: workspace:*
+        version: link:../../packages/event-types
       '@foundry/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@foundry/world-model':
+        specifier: workspace:*
+        version: link:../../packages/world-model
       next:
         specifier: ^16.2.12
         version: 16.2.12(@playwright/test@1.62.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -76,9 +85,20 @@ importers:
         specifier: ^4.3.3
         version: 4.3.3
 
-  packages/contracts: {}
+  packages/contracts:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
-  packages/event-types: {}
+  packages/event-types:
+    dependencies:
+      '@foundry/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   packages/runtime-adapters: {}
 
@@ -103,7 +123,14 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8
 
-  packages/world-model: {}
+  packages/world-model:
+    dependencies:
+      '@foundry/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
 packages:
 
@@ -1699,6 +1726,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+
 snapshots:
 
   '@adobe/css-tools@4.5.0': {}
@@ -3040,3 +3070,5 @@ snapshots:
   xmlchars@2.2.0: {}
 
   yocto-queue@0.1.0: {}
+
+  zod@4.4.3: {}

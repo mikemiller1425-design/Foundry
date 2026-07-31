@@ -57,6 +57,26 @@ Added collapse/resize/keyboard-operable behavior to the left navigation, right l
 
 Operator authorization for this session's bounded execution sequence (FBL-003–FBL-006) is fully used. `FBL-007` (shared contracts) and every later rung remain **not authorized** and were not started.
 
+### Fixed — Build Ladder introduction stale status
+
+`docs/03-architecture/foundry-build-ladder.md`'s introduction still read "`FBL-003` is next" after `FBL-003`–`FBL-006` were completed. Corrected to record `FBL-001`–`FBL-006` complete and `FBL-007` as the newly authorized next rung. No rung identifier, dependency, requirement, or acceptance criterion was changed — status/governance language only.
+
+### Added — FBL-007 Shared contracts
+
+Populated `packages/contracts`, `packages/event-types`, and `packages/world-model` with the approved Foundation models as shared TypeScript types and Zod runtime-validatable schemas, per the operator-authorized bounded sequence FBL-007–FBL-011. No application/UI behavior, no runtime orchestration, no Future Registry entities. All three packages import successfully into `apps/agent-city`. 100 unit tests total across the repo (up from 31): 49 in `packages/contracts`, 14 in `packages/event-types`, 7 in `packages/world-model`, plus 3 new import-integration tests in `apps/agent-city`.
+
+- `packages/contracts/src/common.ts` + `src/entities/*.ts`: schemas for every V1 entity — `Agent`, `Building`, `Project`, `Build`, `BuildStage`, `Revision`, `Requirement`, `Task`, `AgentRun`, `Artifact`, `Transfer`, `Vehicle`, `Approval`, `Upgrade`, `WorldState` — preserving required/optional fields, closed status vocabularies, and V1-limit constraints (e.g. R0–R2 only, the seven named `BuildStage`s, the three `Transfer` legs) exactly as `domain-model.md` documents them
+- `packages/event-types/src/envelope.ts`: the shared event envelope (id, occurredAt, actorType, actorId, entityType, entityId, correlationId, optional causationId, severity, schemaVersion) plus a `defineEvent` helper
+- `packages/event-types/src/events/*.ts`: every authoritative V1 event from `event-model.md` (67 event types across System/Operator/Agent/AgentRun/Build/Stage/Revision/Requirement/Artifact/Transfer/Approval/Building/Upgrade), combined into one `FoundryEventSchema` discriminated union
+- `packages/event-types/src/commands.ts`: the exhaustive six-value `DemoCommandSchema` (`demo.start`/`pause`/`resume`/`set_speed`/`reset`/`replay`), `.strict()` on every params shape so undocumented/extra command fields are rejected, not silently accepted
+- `packages/world-model/src/*.ts`: stable identifiers, layout positions, and state→visual mapping tables for the nine required V1 buildings, three agents, one vehicle, and road network — re-uses `@foundry/contracts` enums rather than redefining them
+- `apps/agent-city/src/lib/contracts.test.ts`: proves all three packages import and validate successfully from the app
+- `typescript-eslint` package unaffected; `zod@^4.4.3` added as a runtime dependency of `contracts`/`event-types`/`world-model`
+
+### Planned
+
+- Build ladder rung `FBL-008` (deterministic mock runtime) — proceeding under the same operator-authorized bounded sequence
+
 ## [1.0.0] — 2026-07-30
 
 ### Changed — FBL-001 Foundation audit resolution

@@ -13,7 +13,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@foundry/contracts": "workspace:*",
+    "@foundry/event-types": "workspace:*",
     "@foundry/ui": "workspace:*",
+    "@foundry/world-model": "workspace:*",
     "next": "^16.2.12",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
