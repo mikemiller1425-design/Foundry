@@ -101,6 +101,15 @@ describe("reduceWorldState — upgrade sequence", () => {
   });
 });
 
+describe("reduceWorldState — Lighthouse (FBL-014) never duplicated", () => {
+  it("exactly one lighthouse building entity exists, before and after a full (even duplicated) run", () => {
+    const script = buildCanonicalScript("lighthouse-dup-check");
+    const withDuplicates = [...script, ...script]; // deliver every event twice
+    const state = reduceWorldState(withDuplicates);
+    expect(state.buildings.filter((b) => b.buildingType === "lighthouse")).toHaveLength(1);
+  });
+});
+
 describe("reduceWorldState — agent lifecycle", () => {
   it("an agent that has returned home ends idle at its home building", () => {
     const script = buildCanonicalScript("agent-lifecycle");

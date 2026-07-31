@@ -20,7 +20,12 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
   },
   webServer: {
-    command: `pnpm exec next dev -p ${PORT}`,
+    // NEXT_PUBLIC_E2E=1 is read by WorldCanvas.tsx to enable
+    // `preserveDrawingBuffer` only for this dev server — real dev/build
+    // runs never set it, so production rendering never pays that cost.
+    // It exists solely so Playwright can read back real canvas pixels
+    // (shell-environment.spec.ts, shell-lighthouse.spec.ts).
+    command: `NEXT_PUBLIC_E2E=1 pnpm exec next dev -p ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

@@ -10,6 +10,8 @@ import { StageAgentPanel } from "@/components/controls/StageAgentPanel";
 import { EventTimeline } from "@/components/timeline/EventTimeline";
 import type { CameraControllerHandle } from "@/components/world/cameraController";
 import { CameraHud } from "@/components/world/CameraHud";
+import type { LighthouseMarkerState } from "@/components/world/lighthouseMarkerState";
+import { LighthouseMarker } from "@/components/world/LighthouseMarker";
 import { WorldCanvas } from "@/components/world/WorldCanvas";
 import { useRef, useState } from "react";
 import { LEFT_NAV_PANEL, RIGHT_INTEL_PANEL, TIMELINE_PANEL } from "./panelConfig";
@@ -17,12 +19,14 @@ import { REGION_PLACEHOLDER } from "./regionPlaceholder";
 
 // Ultrawide application shell (FBL-005 layout, FBL-006 interaction,
 // FBL-009 event timeline, FBL-010 2D operational controls, FBL-011 empty
-// R3F world, FBL-012 camera and navigation): full-viewport region layout
-// with generic collapse/resize/keyboard behavior (@foundry/ui) and real
-// controls driven by the FBL-008 mock runtime — see
+// R3F world, FBL-012 camera and navigation, FBL-013 spatial environment,
+// FBL-014 Lighthouse): full-viewport region layout with generic
+// collapse/resize/keyboard behavior (@foundry/ui) and real controls
+// driven by the FBL-008 mock runtime — see
 // docs/02-specification/interface-model.md.
 export function AppShell() {
   const [selection, setSelection] = useState<Selection | null>(null);
+  const lighthouseMarkerRef = useRef<LighthouseMarkerState | null>(null);
   const cameraRef = useRef<CameraControllerHandle>(null);
   const leftNavCollapsible = useCollapsible();
   const leftNavResizable = useResizable({
@@ -137,13 +141,14 @@ export function AppShell() {
         aria-label="Operational world"
         className="relative overflow-hidden p-4 text-sm"
       >
-        <WorldCanvas controllerRef={cameraRef} />
+        <WorldCanvas controllerRef={cameraRef} lighthouseMarkerRef={lighthouseMarkerRef} />
         <CameraHud controllerRef={cameraRef} />
+        <LighthouseMarker markerRef={lighthouseMarkerRef} />
 
         <h2 className="pointer-events-none relative font-medium">Central operational world</h2>
         <p className="pointer-events-none relative mt-2 text-neutral-400">
-          Neighborhood environment scaffold — no buildings or agents yet until build ladder rung
-          FBL-014+.
+          Lighthouse only — no residences, workplaces, roads, or agents yet until build ladder rung
+          FBL-016+.
         </p>
 
         {/* Approval interaction (interface-model.md): stands in for

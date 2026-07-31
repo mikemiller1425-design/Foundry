@@ -2,7 +2,18 @@
 
 import { useRuntime } from "@/lib/mock-runtime";
 import { selectStages } from "@/lib/mock-runtime/selectors";
+import { computeLighthouseState } from "@/lib/world/lighthouseState";
+import { LIGHTHOUSE_STATE_VISUALS } from "@foundry/world-model";
 import { useMemo } from "react";
+
+const LIGHTHOUSE_STATE_LABEL: Record<ReturnType<typeof computeLighthouseState>, string> = {
+  healthy: "Healthy",
+  active: "Active",
+  attention_required: "Attention required",
+  degraded: "Degraded",
+  critical: "Critical",
+  disconnected: "Disconnected",
+};
 
 // docs/02-specification/interface-model.md § "Right live-intelligence
 // region": "Surfaces current facts and exceptions only — not a second full
@@ -17,6 +28,7 @@ export function LiveIntelligence() {
   const activeAgents = worldState.agents.filter(
     (a) => a.status === "working" || a.status === "traveling",
   );
+  const lighthouseState = computeLighthouseState(worldState);
 
   const hasExceptions = blockedStages.length > 0 || !!pendingApproval;
 
@@ -25,6 +37,18 @@ export function LiveIntelligence() {
       <section aria-label="Status">
         <p className="text-neutral-400">
           {isComplete ? "Demo complete" : isRunning ? "Running" : "Paused"}
+        </p>
+      </section>
+
+      {/* Accessible textual label for the Lighthouse's current state
+          (world-model.md: every selectable/observable object must expose
+          an accessible textual name and state; color is never the only
+          signal) — the 3D beacon's shape/color/motion (Lighthouse.tsx)
+          is the visual signal, this is its textual equivalent. */}
+      <section aria-label="Lighthouse">
+        <h3 className="font-medium">Lighthouse</h3>
+        <p data-testid="lighthouse-status" className="text-neutral-400">
+          {LIGHTHOUSE_STATE_LABEL[lighthouseState]} — {LIGHTHOUSE_STATE_VISUALS[lighthouseState]}
         </p>
       </section>
 
