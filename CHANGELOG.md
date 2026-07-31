@@ -41,9 +41,21 @@ Implemented the full-viewport region layout — top system bar, left navigation,
 - `playwright.config.ts`, `e2e/shell-layout.spec.ts`: browser-based layout assertions across the three target viewport projects
 - `package.json`: added `test:e2e` script (`playwright test`), kept separate from the default `test` (unit) script
 
-### Planned
+### Added — FBL-006 Panel framework
 
-- Build ladder rung `FBL-006` (panel framework) — proceeding under the same operator-authorized bounded sequence
+Added collapse/resize/keyboard-operable behavior to the left navigation, right live-intelligence, and bottom event timeline regions established in FBL-005, per `docs/02-specification/interface-model.md` ("Panels are collapsible and resizable") and the operator-authorized bounded sequence FBL-003–FBL-006 — the final rung in that authorization. Generic primitives only: no domain behavior, mock events, approvals, agents, buildings, or 3D objects. 9 unit tests in `apps/agent-city` (up from 4) and 18 new unit tests in `packages/ui` (hooks/components in isolation) plus 18 new Playwright tests (6 scenarios × 3 viewports, alongside FBL-005's 30) — 48/48 e2e passing — cover collapse/expand, resize via keyboard and pointer drag, Tab-only reachability of every panel control, visible focus, and layout reset.
+
+- `packages/ui/src/panel/useCollapsible.ts`, `useResizable.ts`: generic collapse and WAI-ARIA "window splitter" resize state hooks (headless — no styling, no domain content)
+- `packages/ui/src/panel/CollapseToggleButton.tsx`, `ResizeHandle.tsx`: headless presentational primitives wired to the hooks above; keyboard-operable via native `<button>` semantics and `role="separator"` + arrow-key/Home/End/Enter handling
+- `packages/ui/src/index.ts`: barrel export for the above; package gained `react` as a peer dependency and its own Vitest + Testing Library unit-test setup
+- `apps/agent-city/src/components/shell/AppShell.tsx`: rewritten as a client component wiring the three resizable/collapsible regions (left nav, right intelligence, event timeline) plus a "Reset layout" control in the top system bar; central world and command input remain always-visible per Principle 23 (critical controls must not be hidden)
+- `apps/agent-city/src/components/shell/AppShell.test.tsx`: unit tests for collapse/expand, independent panel state, handle visibility while collapsed, and layout reset
+- `apps/agent-city/e2e/shell-panels.spec.ts`: Playwright tests for Tab-only navigation order, visible focus, keyboard-driven resize, pointer-drag resize, and reset — run across all three target viewports alongside the FBL-005 layout suite
+- Layout state (collapsed/expanded, panel sizes) is frontend-local component state only — not persisted, per FBL-006's scope (persistence was explicitly not required)
+
+### Stop
+
+Operator authorization for this session's bounded execution sequence (FBL-003–FBL-006) is fully used. `FBL-007` (shared contracts) and every later rung remain **not authorized** and were not started.
 
 ## [1.0.0] — 2026-07-30
 

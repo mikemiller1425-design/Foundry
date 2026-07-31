@@ -1,75 +1,222 @@
+"use client";
+
+import { CollapseToggleButton, ResizeHandle, useCollapsible, useResizable } from "@foundry/ui";
+import { LEFT_NAV_PANEL, RIGHT_INTEL_PANEL, TIMELINE_PANEL } from "./panelConfig";
 import { REGION_PLACEHOLDER } from "./regionPlaceholder";
 
-// Ultrawide application shell (FBL-005): static full-viewport region layout
-// only. No operational data, no mock runtime, no interaction behavior — see
-// docs/02-specification/interface-model.md for the region contract this
-// implements, and FBL-006+ for interactive/panel behavior.
+// Ultrawide application shell (FBL-005 layout, FBL-006 interaction): static
+// full-viewport region layout plus generic collapse/resize/keyboard
+// behavior from @foundry/ui. No operational data, no mock runtime, no
+// domain behavior — see docs/02-specification/interface-model.md.
 export function AppShell() {
+  const leftNavCollapsible = useCollapsible();
+  const leftNavResizable = useResizable({
+    defaultSize: LEFT_NAV_PANEL.defaultSize,
+    min: LEFT_NAV_PANEL.min,
+    max: LEFT_NAV_PANEL.max,
+    axis: "x",
+  });
+
+  const rightIntelCollapsible = useCollapsible();
+  const rightIntelResizable = useResizable({
+    defaultSize: RIGHT_INTEL_PANEL.defaultSize,
+    min: RIGHT_INTEL_PANEL.min,
+    max: RIGHT_INTEL_PANEL.max,
+    axis: "x",
+    invert: true,
+  });
+
+  const timelineCollapsible = useCollapsible();
+  const timelineResizable = useResizable({
+    defaultSize: TIMELINE_PANEL.defaultSize,
+    min: TIMELINE_PANEL.min,
+    max: TIMELINE_PANEL.max,
+    axis: "y",
+    invert: true,
+  });
+
+  const leftNavSize = leftNavCollapsible.collapsed
+    ? LEFT_NAV_PANEL.collapsedSize
+    : leftNavResizable.size;
+  const rightIntelSize = rightIntelCollapsible.collapsed
+    ? RIGHT_INTEL_PANEL.collapsedSize
+    : rightIntelResizable.size;
+  const timelineSize = timelineCollapsible.collapsed
+    ? TIMELINE_PANEL.collapsedSize
+    : timelineResizable.size;
+
+  function resetLayout() {
+    leftNavCollapsible.reset();
+    leftNavResizable.reset();
+    rightIntelCollapsible.reset();
+    rightIntelResizable.reset();
+    timelineCollapsible.reset();
+    timelineResizable.reset();
+  }
+
   return (
     <div
       data-testid="shell-root"
-      className="grid h-dvh w-dvw grid-rows-[6vh_1fr_20vh_6vh] overflow-hidden bg-neutral-950 text-neutral-100"
+      className="grid h-dvh w-dvw overflow-hidden bg-neutral-950 text-neutral-100"
+      style={{
+        gridTemplateColumns: `${leftNavSize}% 6px 1fr 6px ${rightIntelSize}%`,
+        gridTemplateRows: `6vh 1fr 6px ${timelineSize}vh 6vh`,
+      }}
     >
       <header
         data-testid="shell-top-bar"
         aria-label="System status bar"
-        className="flex items-center gap-4 border-b border-neutral-800 px-4 text-sm"
+        className="col-span-full flex items-center gap-4 border-b border-neutral-800 px-4 text-sm"
       >
         <span className="font-medium">Agent City — top system bar</span>
         <span className="text-neutral-400">{REGION_PLACEHOLDER}</span>
+        <button
+          type="button"
+          onClick={resetLayout}
+          className="ml-auto rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+        >
+          Reset layout
+        </button>
       </header>
 
-      <div className="grid grid-cols-[15%_1fr_22%] overflow-hidden">
-        <nav
-          data-testid="shell-left-nav"
-          aria-label="Primary navigation"
-          className="overflow-y-auto border-r border-neutral-800 p-4 text-sm"
-        >
-          <h2 className="font-medium">Left navigation</h2>
-          <p className="mt-2 text-neutral-400">{REGION_PLACEHOLDER}</p>
-        </nav>
-
-        <main
-          data-testid="shell-world"
-          aria-label="Operational world"
-          className="relative overflow-hidden p-4 text-sm"
-        >
-          <h2 className="font-medium">Central operational world</h2>
-          <p className="mt-2 text-neutral-400">{REGION_PLACEHOLDER}</p>
-
-          <aside
-            data-testid="shell-detail-panel"
-            aria-label="Selected object details"
-            className="absolute right-4 bottom-4 w-64 rounded border border-neutral-800 bg-neutral-900/90 p-3 text-xs"
+      <nav
+        data-testid="shell-left-nav"
+        aria-label="Primary navigation"
+        className="flex flex-col overflow-hidden border-r border-neutral-800 text-sm"
+      >
+        <div className="flex items-center justify-between gap-2 p-2">
+          <h2 className="truncate font-medium">
+            {leftNavCollapsible.collapsed ? "" : "Left navigation"}
+          </h2>
+          <CollapseToggleButton
+            collapsed={leftNavCollapsible.collapsed}
+            onToggle={leftNavCollapsible.toggle}
+            expandLabel="Expand left navigation"
+            collapseLabel="Collapse left navigation"
+            aria-label={
+              leftNavCollapsible.collapsed ? "Expand left navigation" : "Collapse left navigation"
+            }
+            className="shrink-0 rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
           >
-            <h3 className="font-medium">Selected-object details</h3>
-            <p className="mt-1 text-neutral-400">No selection. {REGION_PLACEHOLDER}</p>
-          </aside>
-        </main>
+            {leftNavCollapsible.collapsed ? "»" : "«"}
+          </CollapseToggleButton>
+        </div>
+        {!leftNavCollapsible.collapsed && (
+          <div className="overflow-y-auto p-4 pt-0">
+            <p className="text-neutral-400">{REGION_PLACEHOLDER}</p>
+          </div>
+        )}
+      </nav>
+
+      {!leftNavCollapsible.collapsed && (
+        <ResizeHandle
+          handleProps={leftNavResizable.handleProps}
+          label="Resize left navigation"
+          className="cursor-col-resize bg-neutral-800 hover:bg-sky-600 focus-visible:bg-sky-500 focus-visible:outline-none"
+        />
+      )}
+      {leftNavCollapsible.collapsed && <div aria-hidden className="bg-neutral-800" />}
+
+      <main
+        data-testid="shell-world"
+        aria-label="Operational world"
+        className="relative overflow-hidden p-4 text-sm"
+      >
+        <h2 className="font-medium">Central operational world</h2>
+        <p className="mt-2 text-neutral-400">{REGION_PLACEHOLDER}</p>
 
         <aside
-          data-testid="shell-intel"
-          aria-label="Live intelligence"
-          className="overflow-y-auto border-l border-neutral-800 p-4 text-sm"
+          data-testid="shell-detail-panel"
+          aria-label="Selected object details"
+          className="absolute right-4 bottom-4 w-64 rounded border border-neutral-800 bg-neutral-900/90 p-3 text-xs"
         >
-          <h2 className="font-medium">Right live-intelligence</h2>
-          <p className="mt-2 text-neutral-400">{REGION_PLACEHOLDER}</p>
+          <h3 className="font-medium">Selected-object details</h3>
+          <p className="mt-1 text-neutral-400">No selection. {REGION_PLACEHOLDER}</p>
         </aside>
-      </div>
+      </main>
+
+      {!rightIntelCollapsible.collapsed && (
+        <ResizeHandle
+          handleProps={rightIntelResizable.handleProps}
+          label="Resize right live-intelligence"
+          className="cursor-col-resize bg-neutral-800 hover:bg-sky-600 focus-visible:bg-sky-500 focus-visible:outline-none"
+        />
+      )}
+      {rightIntelCollapsible.collapsed && <div aria-hidden className="bg-neutral-800" />}
+
+      <aside
+        data-testid="shell-intel"
+        aria-label="Live intelligence"
+        className="flex flex-col overflow-hidden border-l border-neutral-800 text-sm"
+      >
+        <div className="flex items-center justify-between gap-2 p-2">
+          <CollapseToggleButton
+            collapsed={rightIntelCollapsible.collapsed}
+            onToggle={rightIntelCollapsible.toggle}
+            expandLabel="Expand right live-intelligence"
+            collapseLabel="Collapse right live-intelligence"
+            aria-label={
+              rightIntelCollapsible.collapsed
+                ? "Expand right live-intelligence"
+                : "Collapse right live-intelligence"
+            }
+            className="shrink-0 rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+          >
+            {rightIntelCollapsible.collapsed ? "«" : "»"}
+          </CollapseToggleButton>
+          <h2 className="truncate font-medium">
+            {rightIntelCollapsible.collapsed ? "" : "Right live-intelligence"}
+          </h2>
+        </div>
+        {!rightIntelCollapsible.collapsed && (
+          <div className="overflow-y-auto p-4 pt-0">
+            <p className="text-neutral-400">{REGION_PLACEHOLDER}</p>
+          </div>
+        )}
+      </aside>
+
+      {!timelineCollapsible.collapsed && (
+        <ResizeHandle
+          handleProps={timelineResizable.handleProps}
+          label="Resize event timeline"
+          className="col-span-full cursor-row-resize bg-neutral-800 hover:bg-sky-600 focus-visible:bg-sky-500 focus-visible:outline-none"
+        />
+      )}
+      {timelineCollapsible.collapsed && (
+        <div aria-hidden className="col-span-full bg-neutral-800" />
+      )}
 
       <section
         data-testid="shell-timeline"
         aria-label="Event timeline"
-        className="overflow-y-auto border-t border-neutral-800 p-4 text-sm"
+        className="col-span-full flex flex-col overflow-hidden border-t border-neutral-800 text-sm"
       >
-        <h2 className="font-medium">Bottom event timeline (collapsible)</h2>
-        <p className="mt-2 text-neutral-400">{REGION_PLACEHOLDER}</p>
+        <div className="flex items-center justify-between gap-2 p-2">
+          <h2 className="font-medium">Bottom event timeline</h2>
+          <CollapseToggleButton
+            collapsed={timelineCollapsible.collapsed}
+            onToggle={timelineCollapsible.toggle}
+            expandLabel="Expand event timeline"
+            collapseLabel="Collapse event timeline"
+            aria-label={
+              timelineCollapsible.collapsed ? "Expand event timeline" : "Collapse event timeline"
+            }
+            className="shrink-0 rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+          >
+            {timelineCollapsible.collapsed ? "Expand" : "Collapse"}
+          </CollapseToggleButton>
+        </div>
+        {!timelineCollapsible.collapsed && (
+          <div className="overflow-y-auto p-4 pt-0">
+            <p className="text-neutral-400">{REGION_PLACEHOLDER}</p>
+          </div>
+        )}
       </section>
 
       <footer
         data-testid="shell-command-input"
         aria-label="Command input"
-        className="flex items-center gap-2 border-t border-neutral-800 px-4"
+        className="col-span-full flex items-center gap-2 border-t border-neutral-800 px-4"
       >
         <label htmlFor="command-input" className="sr-only">
           Command input

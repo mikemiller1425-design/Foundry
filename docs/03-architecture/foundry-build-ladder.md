@@ -2,7 +2,7 @@
 
 **Foundation:** 1.0
 **Authority:** Sequential implementation program derived from `docs/03-architecture/implementation-plan.md` and all active specification documents
-**Status:** `FBL-001`–`FBL-005` are **complete**. Foundry Foundation is **approved (1.0)**. The operator has explicitly authorized a bounded execution sequence covering `FBL-003`–`FBL-006`; `FBL-006` is in progress under that authorization. No rung beyond `FBL-006` has been authorized to start, and `FBL-007` remains explicitly out of scope until separately authorized, per this document's own rules below.
+**Status:** `FBL-001`–`FBL-006` are **complete**. Foundry Foundation is **approved (1.0)**. The operator's bounded execution sequence covering `FBL-003`–`FBL-006` is fully used — that authorization is now exhausted. `FBL-007` and every later rung remain explicitly **not authorized** and have not been started, per this document's own rules below. A new, separate, explicit operator authorization is required before any further rung may begin.
 **Method:** Contract-first vertical slices (ADR-003)
 
 ## How to read this document
@@ -162,7 +162,7 @@ Parallel groups are defined precisely in §4.
 | 13. Stop condition | Shell layout tests green at all three viewports. Hard stop before panel behavior is added. |
 | 14. Dependency on next rung | FBL-006 and FBL-011 depend on this rung. |
 
-#### FBL-006 — Panel framework — 🔄 In progress (authorized, bounded sequence FBL-003–FBL-006)
+#### FBL-006 — Panel framework — ✅ Complete (final rung of authorized bounded sequence FBL-003–FBL-006)
 
 | Field | Content |
 | --- | --- |
