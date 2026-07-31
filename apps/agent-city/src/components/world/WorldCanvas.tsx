@@ -4,6 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { useRef, type RefObject } from "react";
 import type { Selection } from "@/components/controls/selection";
 import type { WorldObjectMarkerMap } from "@/lib/world/objectMarkerState";
+import { AgentsSceneObject } from "./AgentsSceneObject";
 import { CameraRig } from "./CameraRig";
 import type { CameraControllerHandle } from "./cameraController";
 import { Environment } from "./Environment";
@@ -66,6 +67,12 @@ export function WorldCanvas({
         hoveredIdRef={hoveredIdRef}
       />
       <VehicleSceneObject
+        markerMapRef={worldObjectMarkerMapRef}
+        selection={selection}
+        onSelect={onSelect}
+        hoveredIdRef={hoveredIdRef}
+      />
+      <AgentsSceneObject
         markerMapRef={worldObjectMarkerMapRef}
         selection={selection}
         onSelect={onSelect}

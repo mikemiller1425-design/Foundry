@@ -11,6 +11,7 @@ import { EventTimeline } from "@/components/timeline/EventTimeline";
 import { useRuntime } from "@/lib/mock-runtime";
 import { SELECTABLE_WORLD_OBJECTS } from "@/lib/world/selectableObjects";
 import type { WorldObjectMarkerMap } from "@/lib/world/objectMarkerState";
+import { WORLD_AGENTS } from "@foundry/world-model";
 import type { CameraControllerHandle } from "@/components/world/cameraController";
 import { CameraHud } from "@/components/world/CameraHud";
 import type { LighthouseMarkerState } from "@/components/world/lighthouseMarkerState";
@@ -62,11 +63,22 @@ export function AppShell() {
 
   // The 3D canvas reports only an id; the object's own registered kind
   // (SELECTABLE_WORLD_OBJECTS) determines whether it's a building or the
-  // vehicle — never assumed.
+  // vehicle. Agents (FBL-020) have dynamic positions (they travel between
+  // buildings), so they are recognized by id against WORLD_AGENTS instead
+  // of the static SELECTABLE_WORLD_OBJECTS registry — the pre-existing 2D
+  // "Agents" list (FBL-010) already selects them the same way.
   const handleSelectWorldObjectId = useCallback(
     (id: string) => {
       const target = SELECTABLE_WORLD_OBJECTS.find((o) => o.id === id);
-      handleSelect({ kind: target?.kind ?? "building", id } as Selection);
+      if (target) {
+        handleSelect({ kind: target.kind, id } as Selection);
+        return;
+      }
+      if (WORLD_AGENTS.some((a) => a.id === id)) {
+        handleSelect({ kind: "agent", id });
+        return;
+      }
+      handleSelect({ kind: "building", id });
     },
     [handleSelect],
   );
@@ -213,8 +225,9 @@ export function AppShell() {
 
         <h2 className="pointer-events-none relative font-medium">Central operational world</h2>
         <p className="pointer-events-none relative mt-2 text-neutral-400">
-          Lighthouse, residences, operational buildings, roads, and the utility vehicle — no
-          agents yet until build ladder rung FBL-020+.
+          Full V1 operational neighborhood: Lighthouse, residences, operational buildings, roads,
+          the utility vehicle, and the Architect, Builder, and Inspector agents — all placeholder
+          geometry, event-to-world mapping is build ladder rung FBL-021+.
         </p>
 
         {/* Approval interaction (interface-model.md): stands in for

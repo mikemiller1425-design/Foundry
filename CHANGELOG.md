@@ -241,9 +241,21 @@ Added the single utility vehicle grounded in the `Vehicle` entity (domain-model.
 - `apps/agent-city/e2e/shell-vehicle.spec.ts`: FBL-019's required browser-level tests — parked-by-default, pointer/navigator selection, Escape, and a full-run test proving the vehicle never reports `in_transit` without a real backing Transfer state
 - `apps/agent-city/e2e/shell-residences.spec.ts`, `shell-operational-buildings.spec.ts`, `shell-controls.spec.ts`: updated navigator building-count and placeholder-text assertions for the now ten-entry "World objects" list
 
-### Planned
+### Added — FBL-020 Agent representations
 
-- Build ladder rung `FBL-020` (agent representations) — the final rung within the operator-authorized bounded sequence FBL-016–FBL-020
+Added the Architect, Builder, and Inspector agent world objects — the final rung of the operator-authorized bounded sequence FBL-016–FBL-020 — per `docs/02-specification/world-model.md` ("Architect / Builder / Inspector agents"). Exactly these three, never decorative citizens or additional roles. Each agent's world position resolves to exactly one building (its live `currentBuildingId`, already tracked by `WorldState` since FBL-008), so an agent can never be visually represented in two locations at once — this rung's own explicit failure condition, true by construction rather than by extra guard logic. Reuses the pre-existing FBL-010 2D "Agents" list's `"agent"` selection kind rather than inventing a parallel one; the 3D objects and that list now stay synchronized through the same funnel. 216 unit tests total across the repo (up from 208, 8 new) and 288 Playwright tests (up from 264, 24 new — `shell-agents.spec.ts`'s 8 tests × 3 viewports, plus one pre-existing `shell-controls.spec.ts` placeholder-text assertion updated in place) — all passing at all three target viewports.
+
+- `apps/agent-city/src/lib/world/agentVisuals.ts` (+ `.test.ts`): declarative `AgentStatus` (all 8 domain-model.md values) → color + indicator-shape table, checked pairwise for no two statuses sharing a non-color signature — the eighth and final `AgentStatus` value maps 1:1 onto `ShapeGeometry`'s eighth and final shape
+- `apps/agent-city/src/lib/world/agentPosition.ts` (+ `.test.ts`): pure `computeAgentPosition(currentBuildingId, agentIndex)` — resolves to exactly one building's position (plus a small per-agent-index offset so co-located agents remain visually distinguishable from each other and from the building itself); returns `null` for an unresolvable building id rather than fabricating a location
+- `apps/agent-city/src/components/world/Agent.tsx`: simple low-poly figure (capsule body + sphere head), no interior; only the indicator shape/color varies with state
+- `apps/agent-city/src/components/world/AgentsSceneObject.tsx`: the scene-object bridge (same its-fine-backed pattern as every prior world object) iterating exactly `@foundry/world-model`'s `WORLD_AGENTS`
+- `apps/agent-city/src/components/shell/AppShell.tsx`: `handleSelectWorldObjectId` now also recognizes agent ids (against `WORLD_AGENTS`) alongside the static `SELECTABLE_WORLD_OBJECTS` registry — agents have dynamic positions (they travel between buildings), so they are deliberately not added to that static-position registry; camera focus-on-select is therefore not offered for agents this rung, a scope choice, not an oversight
+- `apps/agent-city/e2e/shell-agents.spec.ts`: FBL-020's required browser-level tests — exactly three agents mounted, pointer/navigator selection (including sync with the pre-existing 2D Agents list), Escape, no keyboard trap, and a full-run test confirming exactly one marker (one location) per agent at all times
+- `apps/agent-city/e2e/shell-controls.spec.ts`: updated the placeholder-text assertion for the world region's final copy, describing the complete V1 placeholder neighborhood
+
+### Stop
+
+Operator authorization for this session's bounded execution sequence (FBL-016–FBL-020) is fully used. `FBL-021` (event-to-world mapping) and every later rung remain **not authorized** and were not started. The full placeholder V1 neighborhood — Lighthouse, residences, operational buildings, roads, the utility vehicle, and the three agents — is now in place; FBL-021 is the rung that binds real mock events to visuals without false progress, and requires its own separate, explicit operator authorization plus prior visual review of the populated neighborhood.
 
 ## [1.0.0] — 2026-07-30
 
