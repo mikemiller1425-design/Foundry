@@ -1,14 +1,22 @@
-import type { WorldState } from "@foundry/contracts";
+import type { Approval, WorldState } from "@foundry/contracts";
 import type { DemoCommand, FoundryEvent } from "@foundry/event-types";
 import { DemoCommandSchema } from "@foundry/event-types";
+import {
+  buildApprovalRejectedEvents,
+  buildApprovalRevisionRequestedEvents,
+} from "./approvalActions";
+import { createEventFactory } from "./eventFactory";
+import { createIdGenerator } from "./ids";
 import { buildCanonicalScript } from "./script";
 import { applyEvent, createInitialWorldState } from "./worldStateReducer";
 
 export const DEFAULT_SEED = "v1-demo";
 const BASE_INTERVAL_MS = 200;
+const OPERATOR_SESSION_ENTITY = "operator-session";
 
 export type MockRuntimeListener = (event: FoundryEvent) => void;
 export type CommandRejectedListener = (rejection: { commandType: string; reason: string }) => void;
+export type ApprovalDecision = "approved" | "rejected" | "revision_requested";
 
 /**
  * Deterministic, replayable, in-memory V1 demo engine (ADR-001). It is the
@@ -25,12 +33,17 @@ export class MockRuntime {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private worldState: WorldState = createInitialWorldState();
   private emittedIds = new Set<string>();
+  private emittedLog: FoundryEvent[] = [];
   private listeners = new Set<MockRuntimeListener>();
   private rejectionListeners = new Set<CommandRejectedListener>();
+  private commandEvent: ReturnType<typeof createEventFactory>;
+  private revisionIdGenerator: ReturnType<typeof createIdGenerator>;
 
   constructor(seed: string = DEFAULT_SEED) {
     this.seed = seed;
     this.script = buildCanonicalScript(seed);
+    this.commandEvent = createEventFactory(seed, OPERATOR_SESSION_ENTITY, "evt-cmd");
+    this.revisionIdGenerator = createIdGenerator(`${seed}-manual`);
   }
 
   onEvent(listener: MockRuntimeListener): () => void {
@@ -43,8 +56,9 @@ export class MockRuntime {
     return () => this.rejectionListeners.delete(listener);
   }
 
+  /** Chronological, deduped log of every event emitted so far — scripted and injected alike. */
   getEvents(): readonly FoundryEvent[] {
-    return this.script.slice(0, this.cursor);
+    return this.emittedLog;
   }
 
   getFullScriptLength(): number {
@@ -61,6 +75,11 @@ export class MockRuntime {
 
   isComplete(): boolean {
     return this.cursor >= this.script.length;
+  }
+
+  /** True once an approval.requested has fired and no resolution has followed yet. */
+  hasPendingApproval(): boolean {
+    return this.worldState.approvals.some((a) => a.status === "pending");
   }
 
   /** Synchronously emits every remaining event with no pacing — for headless tests. */
@@ -80,6 +99,10 @@ export class MockRuntime {
     const bound = Math.min(Math.max(targetCursor, 0), this.script.length);
     while (this.cursor < bound) {
       this.emitNext();
+      // The approval gate applies here too, not only to timer-paced
+      // playback — a synchronous fast-forward must not blow past a pending
+      // approval any more than the scheduled path would.
+      if (this.hasPendingApproval()) break;
     }
   }
 
@@ -91,7 +114,12 @@ export class MockRuntime {
     return this.seed;
   }
 
-  /** Validates and applies a bounded demo command. Invalid commands are rejected, never silently accepted. */
+  /**
+   * Validates and applies a bounded demo command, emitting the real
+   * operator.command_submitted/_accepted/_rejected events the domain model
+   * defines for this (event-model.md → "Operator") — not just an ad hoc UI
+   * callback. Invalid commands are rejected, never silently accepted.
+   */
   submitCommand(raw: unknown): void {
     const result = DemoCommandSchema.safeParse(raw);
     if (!result.success) {
@@ -99,10 +127,84 @@ export class MockRuntime {
         typeof raw === "object" && raw !== null && "commandType" in raw
           ? String((raw as { commandType: unknown }).commandType)
           : "unknown";
-      this.rejectCommand(commandType, "commandType is not one of the approved demo commands");
+      const reason = "commandType is not one of the approved demo commands";
+      this.emitInjected(
+        this.commandEvent({
+          type: "operator.command_rejected",
+          entityType: "Operator",
+          entityId: OPERATOR_SESSION_ENTITY,
+          actorType: "operator",
+          actorId: "operator-1",
+          severity: "warning",
+          payload: { commandType, reason },
+        }),
+      );
+      this.rejectCommand(commandType, reason);
       return;
     }
+    this.emitInjected(
+      this.commandEvent({
+        type: "operator.command_submitted",
+        entityType: "Operator",
+        entityId: OPERATOR_SESSION_ENTITY,
+        actorType: "operator",
+        actorId: "operator-1",
+        payload: result.data,
+      }),
+    );
+    this.emitInjected(
+      this.commandEvent({
+        type: "operator.command_accepted",
+        entityType: "Operator",
+        entityId: OPERATOR_SESSION_ENTITY,
+        actorType: "backend",
+        actorId: "backend",
+        payload: { commandType: result.data.commandType, params: result.data.params },
+      }),
+    );
     this.applyCommand(result.data);
+  }
+
+  /**
+   * Resolves the current pending Approval (event-model.md → "Approval").
+   * "approved" resumes playback — the scripted approval.approved event is
+   * always the next event after approval.requested, so approving simply
+   * lets the canonical journey continue. "rejected"/"revision_requested"
+   * inject the real alternate-path events (approvalActions.ts) and leave
+   * the runtime paused there — v1-scope.md's Required workflow describes
+   * exactly one canonical journey past approval, so no further scripted
+   * events exist for a non-approved outcome; nothing is invented.
+   */
+  resolveApproval(decision: ApprovalDecision, resolvedBy: string, resolutionNote?: string): void {
+    const pending = this.worldState.approvals.find((a: Approval) => a.status === "pending");
+    if (!pending) return;
+
+    if (decision === "approved") {
+      this.resume();
+      return;
+    }
+    if (decision === "rejected") {
+      const events = buildApprovalRejectedEvents({
+        seed: this.seed,
+        correlationId: pending.buildId,
+        approvalId: pending.id,
+        resolvedBy,
+        resolutionNote,
+      });
+      for (const event of events) this.emitInjected(event);
+      return;
+    }
+    const events = buildApprovalRevisionRequestedEvents({
+      seed: this.seed,
+      correlationId: pending.buildId,
+      approvalId: pending.id,
+      stageId: pending.stageId,
+      resolvedBy,
+      revisionId: this.revisionIdGenerator("revision"),
+      reason: resolutionNote ?? "Operator requested revision",
+      resolutionNote,
+    });
+    for (const event of events) this.emitInjected(event);
   }
 
   private rejectCommand(commandType: string, reason: string): void {
@@ -167,6 +269,7 @@ export class MockRuntime {
     this.pause();
     this.cursor = 0;
     this.emittedIds.clear();
+    this.emittedLog = [];
     this.worldState = createInitialWorldState();
     this.script = buildCanonicalScript(this.seed);
   }
@@ -177,6 +280,7 @@ export class MockRuntime {
     if (seed) this.seed = seed;
     this.cursor = 0;
     this.emittedIds.clear();
+    this.emittedLog = [];
     this.worldState = createInitialWorldState();
     this.script = buildCanonicalScript(this.seed);
     this.start();
@@ -199,12 +303,24 @@ export class MockRuntime {
     if (!event) return;
     this.cursor += 1;
     this.applyAndNotify(event);
+    // Pending approval pauses protected progression (domain-model.md
+    // Approval invariants; F-06) — the engine enforces this itself, not
+    // just the UI.
+    if (event.type === "approval.requested") {
+      this.pause();
+    }
+  }
+
+  /** For events outside script playback (commands, approval resolutions). */
+  private emitInjected(event: FoundryEvent): void {
+    this.applyAndNotify(event);
   }
 
   /** Idempotent apply: a duplicated event id is ignored, never re-applied. */
   private applyAndNotify(event: FoundryEvent): void {
     if (this.emittedIds.has(event.id)) return;
     this.emittedIds.add(event.id);
+    this.emittedLog.push(event);
     this.worldState = applyEvent(this.worldState, event);
     this.worldState = { ...this.worldState, lastProcessedEventId: event.id };
     for (const listener of this.listeners) listener(event);

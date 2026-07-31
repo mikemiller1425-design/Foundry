@@ -18,6 +18,11 @@ export interface RuntimeContextValue {
   isRunning: boolean;
   isComplete: boolean;
   submitCommand: (raw: unknown) => void;
+  resolveApproval: (
+    decision: "approved" | "rejected" | "revision_requested",
+    resolvedBy: string,
+    resolutionNote?: string,
+  ) => void;
   lastRejection: CommandRejection | null;
 }
 
@@ -77,11 +82,10 @@ export function RuntimeProvider({
       setLastRejection(rejection);
     });
 
-    // No command bar exists to press "start" until FBL-010. Until then,
-    // auto-issue the already-approved demo.start (or demo.resume, if
-    // reconstructed mid-run) command so the demo — and therefore the event
-    // timeline — is not permanently empty. This invokes an existing bounded
-    // command; it does not invent new operational behavior.
+    // Auto-issue demo.start (or demo.resume, if reconstructed mid-run) on
+    // mount so the demo is never permanently idle before the operator
+    // touches the command bar. This invokes an existing bounded command; it
+    // does not invent new operational behavior.
     if (!runtime.isComplete()) {
       if (runtime.getCursor() > 0) {
         runtime.submitCommand({ commandType: "demo.resume", params: {} });
@@ -112,9 +116,30 @@ export function RuntimeProvider({
     [runtime],
   );
 
+  const resolveApproval = useCallback(
+    (
+      decision: "approved" | "rejected" | "revision_requested",
+      resolvedBy: string,
+      resolutionNote?: string,
+    ) => {
+      // Injected/resumed events flow back through the onEvent subscription
+      // above, which already keeps events/worldState/isRunning in sync.
+      runtime.resolveApproval(decision, resolvedBy, resolutionNote);
+    },
+    [runtime],
+  );
+
   return (
     <RuntimeContext.Provider
-      value={{ events, worldState, isRunning, isComplete, submitCommand, lastRejection }}
+      value={{
+        events,
+        worldState,
+        isRunning,
+        isComplete,
+        submitCommand,
+        resolveApproval,
+        lastRejection,
+      }}
     >
       {children}
     </RuntimeContext.Provider>

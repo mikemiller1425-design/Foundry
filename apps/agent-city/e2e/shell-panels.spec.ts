@@ -20,14 +20,24 @@ test.describe("Panel framework keyboard and pointer interaction", () => {
   test("Tab-only navigation reaches every panel control in a stable order", async ({ page }) => {
     await page.goto("/");
 
+    // Bounded, not exact: FBL-009/FBL-010 legitimately added their own
+    // keyboard-focusable content (timeline rows, stage/agent list items,
+    // command bar controls) ahead of some panel controls in tab order.
+    // This test only asserts every panel control from FBL-006 remains
+    // reachable by Tab alone, not that no other focusable content exists
+    // between them — a generous cap avoids an infinite loop if a control
+    // regresses out of the tab order entirely.
+    const remaining = new Set(PANEL_CONTROL_NAMES);
     const reachedNames: string[] = [];
-    for (let i = 0; i < PANEL_CONTROL_NAMES.length; i++) {
+    const MAX_TAB_PRESSES = 60;
+    for (let i = 0; i < MAX_TAB_PRESSES && remaining.size > 0; i++) {
       await page.keyboard.press("Tab");
       const name = await page.evaluate(() => {
         const el = document.activeElement;
         return el ? (el.getAttribute("aria-label") ?? el.textContent?.trim() ?? "") : "";
       });
       reachedNames.push(name);
+      remaining.delete(name);
     }
 
     for (const expectedName of PANEL_CONTROL_NAMES) {

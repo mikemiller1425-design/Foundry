@@ -29,12 +29,15 @@ describe("RuntimeProvider — auto-start (no command bar exists before FBL-010)"
         <Probe />
       </RuntimeProvider>,
     );
-    expect(screen.getByTestId("event-count").textContent).toBe("0");
+    // The auto-issued demo.start command's own feedback events are
+    // synchronous; script playback is what's paced over time.
+    const initialCount = Number(screen.getByTestId("event-count").textContent);
+    expect(initialCount).toBeGreaterThan(0);
 
     act(() => {
       vi.advanceTimersByTime(1000);
     });
-    expect(Number(screen.getByTestId("event-count").textContent)).toBeGreaterThan(0);
+    expect(Number(screen.getByTestId("event-count").textContent)).toBeGreaterThan(initialCount);
   });
 
   it("persists a {seed, cursor} marker to sessionStorage as events are emitted", () => {
@@ -102,6 +105,8 @@ describe("RuntimeProvider — history reconstruction after reload", () => {
         <Probe />
       </RuntimeProvider>,
     );
-    expect(screen.getByTestId("event-count").textContent).toBe("0");
+    // Starts fresh — only its own auto-issued demo.start feedback events,
+    // never seed-a's accumulated history reconstructed onto the wrong seed.
+    expect(screen.getByTestId("event-count").textContent).toBe("2");
   });
 });

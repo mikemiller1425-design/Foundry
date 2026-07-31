@@ -1,21 +1,44 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockRuntime } from "./runtime";
 
+/**
+ * Runs a headless demo to true completion, including approving the one
+ * pending approval the canonical script always produces (F-06: the engine
+ * itself pauses there — see the "approval gating" describe block below —
+ * so a real decision is required to proceed past it, exactly as it would
+ * be for a live operator).
+ */
+function runFullDemo(runtime: MockRuntime): void {
+  runtime.runToCompletion();
+  if (runtime.hasPendingApproval()) {
+    runtime.resolveApproval("approved", "operator-1");
+    runtime.runToCompletion();
+  }
+}
+
 describe("MockRuntime — complete canonical demo (headless)", () => {
-  it("runToCompletion emits the full script exactly once, in order", () => {
+  it("runToCompletion (plus approving the one gated approval) emits the full script exactly once, in order", () => {
     const runtime = new MockRuntime("headless-seed");
     const received: string[] = [];
     runtime.onEvent((e) => received.push(e.type));
-    runtime.runToCompletion();
+    runFullDemo(runtime);
     expect(received).toHaveLength(runtime.getFullScriptLength());
     expect(received[0]).toBe("system.started");
     expect(received[received.length - 1]).toBe("upgrade.completed");
     expect(runtime.isComplete()).toBe(true);
   });
 
-  it("getWorldState reflects a completed build after runToCompletion", () => {
-    const runtime = new MockRuntime("headless-world-state");
+  it("runToCompletion alone halts exactly at the pending approval, short of the full script", () => {
+    const runtime = new MockRuntime("headless-halt-seed");
     runtime.runToCompletion();
+    expect(runtime.isComplete()).toBe(false);
+    expect(runtime.hasPendingApproval()).toBe(true);
+    expect(runtime.getEvents().length).toBeLessThan(runtime.getFullScriptLength());
+  });
+
+  it("getWorldState reflects a completed build after the full demo (approval included)", () => {
+    const runtime = new MockRuntime("headless-world-state");
+    runFullDemo(runtime);
     expect(runtime.getWorldState().currentBuild?.status).toBe("completed");
     expect(runtime.getWorldState().inventoryCounts.successfulPackages).toBe(10);
   });
@@ -35,10 +58,12 @@ describe("MockRuntime — command semantics (fake timers)", () => {
     runtime.onEvent((e) => received.push(e.type));
 
     runtime.submitCommand({ commandType: "demo.start", params: {} });
-    expect(received).toHaveLength(0); // first emission is scheduled, not synchronous
+    // The command's own feedback events (submitted/accepted) are synchronous;
+    // *script* playback is what's paced.
+    expect(received).toEqual(["operator.command_submitted", "operator.command_accepted"]);
 
     vi.advanceTimersByTime(200);
-    expect(received.length).toBeGreaterThanOrEqual(1);
+    expect(received.length).toBeGreaterThan(2);
     const afterFirstBatch = received.length;
 
     vi.advanceTimersByTime(2000);
@@ -52,11 +77,11 @@ describe("MockRuntime — command semantics (fake timers)", () => {
 
     runtime.submitCommand({ commandType: "demo.start", params: {} });
     vi.advanceTimersByTime(1000);
-    const countAtPauseTime = received.length;
     runtime.submitCommand({ commandType: "demo.pause", params: {} });
+    const countAtPauseTime = received.length;
 
     vi.advanceTimersByTime(5000);
-    expect(received).toHaveLength(countAtPauseTime); // nothing emitted while paused
+    expect(received).toHaveLength(countAtPauseTime); // nothing further emitted while paused
 
     runtime.submitCommand({ commandType: "demo.resume", params: {} });
     vi.advanceTimersByTime(1000);
@@ -84,14 +109,19 @@ describe("MockRuntime — command semantics (fake timers)", () => {
     runtimeFast.submitCommand({ commandType: "demo.set_speed", params: { multiplier: 4 } });
 
     vi.advanceTimersByTime(2000);
-    expect(fastReceived.length).toBeGreaterThan(slowReceived.length);
-    // Content emitted so far is a strict prefix match — same order, just further along.
-    expect(fastReceived.slice(0, slowReceived.length)).toEqual(slowReceived);
+    // Exclude each runtime's own command-feedback events (their counts
+    // differ by design — the fast one issued one extra command) and compare
+    // only *script* event order, which must remain an identical prefix.
+    const isCommandFeedback = (t: string) => t.startsWith("operator.command_");
+    const slowScriptEvents = slowReceived.filter((t) => !isCommandFeedback(t));
+    const fastScriptEvents = fastReceived.filter((t) => !isCommandFeedback(t));
+    expect(fastScriptEvents.length).toBeGreaterThan(slowScriptEvents.length);
+    expect(fastScriptEvents.slice(0, slowScriptEvents.length)).toEqual(slowScriptEvents);
   });
 
   it("demo.reset clears all state and re-initializes as if freshly booted", () => {
     const runtime = new MockRuntime("reset-seed");
-    runtime.runToCompletion();
+    runFullDemo(runtime);
     expect(runtime.isComplete()).toBe(true);
 
     runtime.submitCommand({ commandType: "demo.reset", params: {} });
@@ -141,7 +171,12 @@ describe("MockRuntime — rejects commands outside the approved set", () => {
     expect(rejections).toHaveLength(1);
     expect(rejections[0]?.commandType).toBe("shell.execute");
     expect(runtime.isRunning()).toBe(false);
-    expect(runtime.getEvents()).toHaveLength(0);
+    // The rejection itself is the only (real, auditable) event — no script
+    // playback and no domain-state mutation resulted from it.
+    const events = runtime.getEvents();
+    expect(events).toHaveLength(1);
+    expect(events[0]?.type).toBe("operator.command_rejected");
+    expect(runtime.getWorldState().currentBuild).toBeNull();
   });
 
   it("rejects a well-known commandType with malformed params", () => {
@@ -169,5 +204,78 @@ describe("MockRuntime — idempotent duplicate event handling", () => {
     runtime.runToCompletion();
 
     expect(runtime.getWorldState().inventoryCounts.successfulPackages).toBe(before);
+  });
+});
+
+describe("MockRuntime — approval gating (F-06: pending approval pauses protected progression)", () => {
+  it("auto-pauses the instant approval.requested fires, before the scripted approval.approved", () => {
+    const runtime = new MockRuntime("approval-pause-seed");
+    runtime.start();
+    // fastForwardTo (which runToCompletion uses) itself respects the
+    // approval gate, so this halts exactly at the pause point rather than
+    // running to the literal end of the script.
+    runtime.runToCompletion();
+
+    expect(runtime.hasPendingApproval()).toBe(true);
+    expect(runtime.isRunning()).toBe(false);
+    expect(runtime.isComplete()).toBe(false);
+    const types = runtime.getEvents().map((e) => e.type);
+    expect(types[types.length - 1]).toBe("approval.requested");
+    expect(types).not.toContain("approval.approved");
+  });
+
+  it('resolveApproval("approved") resumes playback and the scripted approval.approved follows', () => {
+    const runtime = new MockRuntime("approval-approve-seed");
+    runtime.start();
+    runtime.runToCompletion(); // runs until the auto-pause at approval.requested, since isComplete() is false
+    // runToCompletion cannot pass the auto-pause (it's not "complete" yet);
+    // confirm we're gated, then approve and finish.
+    expect(runtime.hasPendingApproval()).toBe(true);
+    expect(runtime.isComplete()).toBe(false);
+
+    runtime.resolveApproval("approved", "operator-1");
+    runtime.runToCompletion();
+
+    expect(runtime.isComplete()).toBe(true);
+    expect(runtime.getEvents().map((e) => e.type)).toContain("approval.approved");
+    expect(runtime.getWorldState().currentBuild?.status).toBe("completed");
+  });
+
+  it('resolveApproval("rejected") injects a real approval.rejected event and does not fabricate further progress', () => {
+    const runtime = new MockRuntime("approval-reject-seed");
+    runtime.start();
+    runtime.runToCompletion();
+    expect(runtime.hasPendingApproval()).toBe(true);
+
+    runtime.resolveApproval("rejected", "operator-1", "Evidence insufficient");
+
+    const types = runtime.getEvents().map((e) => e.type);
+    expect(types).toContain("approval.rejected");
+    expect(types).not.toContain("approval.approved");
+    expect(runtime.getWorldState().approvals[0]?.status).toBe("rejected");
+    expect(runtime.getWorldState().currentBuild?.status).not.toBe("completed");
+  });
+
+  it('resolveApproval("revision_requested") injects the full revision chain', () => {
+    const runtime = new MockRuntime("approval-revision-seed");
+    runtime.start();
+    runtime.runToCompletion();
+    expect(runtime.hasPendingApproval()).toBe(true);
+
+    runtime.resolveApproval("revision_requested", "operator-1", "Please re-check evidence");
+
+    const types = runtime.getEvents().map((e) => e.type);
+    expect(types).toContain("approval.revision_requested");
+    expect(types).toContain("revision.requested");
+    expect(types).toContain("revision.started");
+    expect(types).toContain("revision.completed");
+    expect(runtime.getWorldState().approvals[0]?.status).toBe("revision_requested");
+  });
+
+  it("resolveApproval is a no-op when there is no pending approval", () => {
+    const runtime = new MockRuntime("approval-noop-seed");
+    const before = runtime.getEvents().length;
+    runtime.resolveApproval("approved", "operator-1");
+    expect(runtime.getEvents()).toHaveLength(before);
   });
 });

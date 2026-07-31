@@ -138,7 +138,19 @@ export function applyEvent(state: WorldState, event: FoundryEvent): WorldState {
       return updateBuild(state, { status: "failed", failureReason: event.payload.failureCode });
 
     case "stage.started":
-      return updateBuild(state, { currentStageId: event.entityId });
+      // Forward progress on a stage means any earlier block has been
+      // resolved (retry/revision) — nothing in the event vocabulary emits
+      // a dedicated "unblocked" event (this exact gap is documented as
+      // audit finding MI-01), so recovery is inferred the same way the
+      // block itself was: from the next stage-level transition.
+      return updateBuild(state, {
+        currentStageId: event.entityId,
+        status: state.currentBuild?.status === "blocked" ? "running" : state.currentBuild?.status,
+      });
+    case "stage.completed":
+      return state.currentBuild?.status === "blocked"
+        ? updateBuild(state, { status: "running" })
+        : state;
     case "stage.blocked":
       return updateBuild(state, { status: "blocked" });
 

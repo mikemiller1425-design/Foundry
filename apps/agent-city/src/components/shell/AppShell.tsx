@@ -1,15 +1,24 @@
 "use client";
 
 import { CollapseToggleButton, ResizeHandle, useCollapsible, useResizable } from "@foundry/ui";
+import { ApprovalCard } from "@/components/controls/ApprovalCard";
+import { CommandBar } from "@/components/controls/CommandBar";
+import { LiveIntelligence } from "@/components/controls/LiveIntelligence";
+import { SelectedObjectDetail } from "@/components/controls/SelectedObjectDetail";
+import type { Selection } from "@/components/controls/selection";
+import { StageAgentPanel } from "@/components/controls/StageAgentPanel";
 import { EventTimeline } from "@/components/timeline/EventTimeline";
+import { useState } from "react";
 import { LEFT_NAV_PANEL, RIGHT_INTEL_PANEL, TIMELINE_PANEL } from "./panelConfig";
 import { REGION_PLACEHOLDER } from "./regionPlaceholder";
 
-// Ultrawide application shell (FBL-005 layout, FBL-006 interaction): static
-// full-viewport region layout plus generic collapse/resize/keyboard
-// behavior from @foundry/ui. No operational data, no mock runtime, no
-// domain behavior — see docs/02-specification/interface-model.md.
+// Ultrawide application shell (FBL-005 layout, FBL-006 interaction,
+// FBL-009 event timeline, FBL-010 2D operational controls): full-viewport
+// region layout with generic collapse/resize/keyboard behavior
+// (@foundry/ui) and real controls driven by the FBL-008 mock runtime —
+// see docs/02-specification/interface-model.md.
 export function AppShell() {
+  const [selection, setSelection] = useState<Selection | null>(null);
   const leftNavCollapsible = useCollapsible();
   const leftNavResizable = useResizable({
     defaultSize: LEFT_NAV_PANEL.defaultSize,
@@ -103,8 +112,8 @@ export function AppShell() {
           </CollapseToggleButton>
         </div>
         {!leftNavCollapsible.collapsed && (
-          <div className="overflow-y-auto p-4 pt-0">
-            <p className="text-neutral-400">{REGION_PLACEHOLDER}</p>
+          <div className="overflow-y-auto p-4 pt-0 text-xs">
+            <StageAgentPanel selection={selection} onSelect={setSelection} />
           </div>
         )}
       </nav>
@@ -124,15 +133,23 @@ export function AppShell() {
         className="relative overflow-hidden p-4 text-sm"
       >
         <h2 className="font-medium">Central operational world</h2>
-        <p className="mt-2 text-neutral-400">{REGION_PLACEHOLDER}</p>
+        <p className="mt-2 text-neutral-400">
+          No 3D world yet — placeholder until build ladder rung FBL-011+.
+        </p>
+
+        {/* Approval interaction (interface-model.md): stands in for
+            "Lighthouse attention" until the Lighthouse world object exists
+            (FBL-014+) — pending approvals must still be unmissable. */}
+        <div className="absolute top-4 right-4">
+          <ApprovalCard />
+        </div>
 
         <aside
           data-testid="shell-detail-panel"
           aria-label="Selected object details"
           className="absolute right-4 bottom-4 w-64 rounded border border-neutral-800 bg-neutral-900/90 p-3 text-xs"
         >
-          <h3 className="font-medium">Selected-object details</h3>
-          <p className="mt-1 text-neutral-400">No selection. {REGION_PLACEHOLDER}</p>
+          <SelectedObjectDetail selection={selection} />
         </aside>
       </main>
 
@@ -170,8 +187,8 @@ export function AppShell() {
           </h2>
         </div>
         {!rightIntelCollapsible.collapsed && (
-          <div className="overflow-y-auto p-4 pt-0">
-            <p className="text-neutral-400">{REGION_PLACEHOLDER}</p>
+          <div className="overflow-y-auto p-4 pt-0 text-xs">
+            <LiveIntelligence />
           </div>
         )}
       </aside>
@@ -219,16 +236,7 @@ export function AppShell() {
         aria-label="Command input"
         className="col-span-full flex items-center gap-2 border-t border-neutral-800 px-4"
       >
-        <label htmlFor="command-input" className="sr-only">
-          Command input
-        </label>
-        <input
-          id="command-input"
-          type="text"
-          disabled
-          placeholder="Command input — available in a later build ladder rung"
-          className="w-full rounded border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-sm text-neutral-400 disabled:cursor-not-allowed"
-        />
+        <CommandBar />
       </footer>
     </div>
   );

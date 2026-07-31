@@ -69,6 +69,7 @@ function renderWithFixture(
           isRunning: false,
           isComplete: true,
           submitCommand: vi.fn(),
+          resolveApproval: vi.fn(),
           lastRejection: null,
         }}
       >

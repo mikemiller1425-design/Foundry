@@ -22,7 +22,10 @@ test.describe("Event timeline", () => {
     );
 
     const texts = await page.getByTestId("timeline-row").allTextContents();
-    expect(texts[0]).toContain("started");
+    // The very first row is the auto-issued demo.start command's own
+    // feedback event; the canonical script's system.started follows it.
+    expect(texts[0]).toContain("command submitted: demo.start");
+    expect(texts.some((t) => t.includes("started") && t.includes("Neighborhood"))).toBe(true);
     expect(texts.some((t) => t.includes("registered as architect"))).toBe(true);
     expect(texts.some((t) => t.includes("submitted objective"))).toBe(true);
 

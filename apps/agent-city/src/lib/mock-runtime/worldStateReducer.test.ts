@@ -56,6 +56,18 @@ describe("reduceWorldState — blocked progression", () => {
     const finalState = reduceWorldState(script);
     expect(finalState.currentBuild?.status).toBe("completed");
   });
+
+  it("build status recovers from 'blocked' well before completion — it does not stay stuck for the rest of the run", () => {
+    // Regression: reaching build.completed always overwrites status, which
+    // previously masked a bug where nothing ever cleared "blocked" in
+    // between — the build showed as permanently blocked through backend
+    // implementation, integration, and QA validation.
+    const script = buildCanonicalScript("unblock-midstream-check");
+    const qaValidationPassedIndex = script.findIndex((e) => e.type === "stage.validation_passed");
+    expect(qaValidationPassedIndex).toBeGreaterThan(0);
+    const state = reduceWorldState(script.slice(0, qaValidationPassedIndex + 1));
+    expect(state.currentBuild?.status).not.toBe("blocked");
+  });
 });
 
 describe("reduceWorldState — approval gating", () => {

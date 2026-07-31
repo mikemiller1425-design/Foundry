@@ -35,20 +35,13 @@ export const STAGE_NAMES = [
   "deployment_package",
 ] as const;
 
-/**
- * Builds the complete, ordered, deterministic V1 demonstration event
- * sequence (docs/01-mission/v1-scope.md § "Required workflow", canonical
- * B-01 sequence work→validate→approve→transfer→dock). Pure function: same
- * seed always produces the identical event sequence (ids/timestamps
- * included) — FBL-008's determinism requirement.
- */
-export function buildCanonicalScript(seed: string): FoundryEvent[] {
+export type StageIdMap = Record<(typeof STAGE_NAMES)[number], string>;
+
+function computeCoreIds(seed: string) {
   const id = createIdGenerator(seed);
   const projectId = id("project");
   const buildId = id("build");
-  const event = createEventFactory(seed, buildId);
-
-  const stageIds: Record<(typeof STAGE_NAMES)[number], string> = {
+  const stageIds: StageIdMap = {
     planning: id("stage-planning"),
     scaffold: id("stage-scaffold"),
     frontend_implementation: id("stage-frontend"),
@@ -57,6 +50,19 @@ export function buildCanonicalScript(seed: string): FoundryEvent[] {
     qa_validation: id("stage-qa"),
     deployment_package: id("stage-deploy"),
   };
+  return { id, projectId, buildId, stageIds };
+}
+
+/**
+ * Builds the complete, ordered, deterministic V1 demonstration event
+ * sequence (docs/01-mission/v1-scope.md § "Required workflow", canonical
+ * B-01 sequence work→validate→approve→transfer→dock). Pure function: same
+ * seed always produces the identical event sequence (ids/timestamps
+ * included) — FBL-008's determinism requirement.
+ */
+export function buildCanonicalScript(seed: string): FoundryEvent[] {
+  const { id, projectId, buildId, stageIds } = computeCoreIds(seed);
+  const event = createEventFactory(seed, buildId);
 
   const events: FoundryEvent[] = [];
   const push = (e: FoundryEvent) => events.push(e);

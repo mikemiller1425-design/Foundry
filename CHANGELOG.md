@@ -94,9 +94,27 @@ Replaced the bottom timeline placeholder with a real, filterable, virtualized ev
 - `src/components/timeline/EventTimeline.tsx`: chronological, filterable (severity/entity/type) event feed; fixed-height windowed rendering (bounded DOM node count regardless of total event count); pause/resume autoscroll; click-to-inspect payload detail panel; explicit disabled "Jump to world object — not yet available" state (no 3D world exists before FBL-016+, so this is never misleadingly enabled)
 - `src/components/timeline/describeEvent.ts`: human-readable summary for every one of the 67 authoritative V1 event types (Principle 24 — every meaningful animation/event has a textual equivalent), with a defensive fallback for any future addition
 
+### Added — FBL-010 2D operational controls
+
+Implemented the selected-object detail panel, the approval card (Approve/Reject/Request revision), the stage/agent list, live-intelligence panel, and command-bar handling for the bounded V1 demo command set, per `docs/02-specification/interface-model.md` and the operator-authorized bounded sequence FBL-007–FBL-011, so an operator can inspect state and act entirely without the 3D world (Principle 23; F-02/F-06/F-07). 210 unit tests total across the repo (up from 167, 43 new) and 90 Playwright tests (up from 66, 24 new × 3 viewports) — all passing.
+
+- `apps/agent-city/src/components/controls/StageAgentPanel.tsx`: build-stage and agent list in the left navigation region, selectable (mouse and keyboard) to drive the detail panel
+- `apps/agent-city/src/components/controls/SelectedObjectDetail.tsx`: docked detail panel showing the selected stage's requirement checklist or the selected agent's state
+- `apps/agent-city/src/components/controls/ApprovalCard.tsx`: unmissable pending-approval surface (stands in for "Lighthouse attention" until the Lighthouse world object exists at FBL-014+) with keyboard-reachable Approve/Reject/Request revision actions
+- `apps/agent-city/src/components/controls/CommandBar.tsx`: button-only (no free-text/natural-language input) handlers for the exhaustive six-value demo command set, with visible run/paused/rejected feedback
+- `apps/agent-city/src/components/controls/LiveIntelligence.tsx`, `selection.ts`: right-panel summary content and the shared `Selection` type threaded through `AppShell`
+- `apps/agent-city/src/lib/mock-runtime/selectors.ts`: pure projections (stages, requirements, agents) over the runtime's event log, shared by the new controls
+- `apps/agent-city/src/lib/mock-runtime/runtime.ts`: `resolveApproval` (approve/reject/request-revision against the one pending `Approval`) and real `operator.command_submitted`/`_accepted`/`_rejected` event emission for every `submitCommand` call — not just an ad hoc UI callback; a pending approval now pauses playback itself (engine-level, not just UI-level) per F-06
+- `apps/agent-city/src/lib/mock-runtime/RuntimeProvider.tsx`: exposes `resolveApproval` through the shared runtime context, used by `ApprovalCard`
+- `apps/agent-city/src/lib/mock-runtime/worldStateReducer.ts`: infers a `blocked` build's recovery to `running` from the next `stage.started`/`stage.completed` transition — the event vocabulary has no dedicated "unblocked" event (a documented gap), so recovery is read the same way the block itself is, from the next stage-level transition; without this, FBL-010's stage detail view kept showing a resolved requirement failure as still-blocked
+- `apps/agent-city/e2e/shell-timeline.spec.ts`: updated the "first row" assertion — the first timeline row is now the auto-issued `demo.start` command's own `operator.command_submitted` feedback event (a real, correct consequence of `runtime.ts` now emitting real command events), with the canonical script's `system.started` immediately after it
+- `packages/event-types/src/events/operator.ts`: loosened `operator.command_rejected`'s `commandType` field to `z.string()` — a command is often rejected precisely because its `commandType` isn't one of the approved values, so the field must be able to name whatever was actually submitted
+- `apps/agent-city/e2e/shell-controls.spec.ts`: FBL-010's required browser-level tests — keyboard-only approval resolution, reject/request-revision producing real non-fabricated events, typed command emission, rejected-command feedback, and command-bar/stage-list keyboard reachability
+- `apps/agent-city/e2e/shell-panels.spec.ts`: the FBL-006 Tab-order test now tabs up to a generous bound rather than exactly the panel-control count, since FBL-009/FBL-010 legitimately added their own focusable content (timeline rows, stage/agent list items, command bar controls) ahead of some panel controls in tab order — it still asserts every FBL-006 panel control remains reachable
+
 ### Planned
 
-- Build ladder rung `FBL-010` (2D operational controls) — proceeding under the same operator-authorized bounded sequence
+- Build ladder rung `FBL-011` (empty React Three Fiber world) — proceeding under the same operator-authorized bounded sequence
 
 ## [1.0.0] — 2026-07-30
 

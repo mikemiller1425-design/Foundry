@@ -2,7 +2,7 @@
 
 **Foundation:** 1.0
 **Authority:** Sequential implementation program derived from `docs/03-architecture/implementation-plan.md` and all active specification documents
-**Status:** `FBL-001`–`FBL-008` are **complete**. Foundry Foundation is **approved (1.0)**. The operator has explicitly authorized a bounded execution sequence covering `FBL-007`–`FBL-011`; `FBL-009` is in progress under that authorization. No rung beyond `FBL-011` has been authorized to start, and `FBL-012` remains explicitly out of scope until separately authorized, per this document's own rules below.
+**Status:** `FBL-001`–`FBL-010` are **complete**. Foundry Foundation is **approved (1.0)**. The operator has explicitly authorized a bounded execution sequence covering `FBL-007`–`FBL-011`; `FBL-011` is next under that authorization. No rung beyond `FBL-011` has been authorized to start, and `FBL-012` remains explicitly out of scope until separately authorized, per this document's own rules below.
 **Method:** Contract-first vertical slices (ADR-003)
 
 ## How to read this document
@@ -219,7 +219,7 @@ Parallel groups are defined precisely in §4.
 | 13. Stop condition | Headless demo script completes reliably. Hard stop before wiring any UI to it. |
 | 14. Dependency on next rung | FBL-009, FBL-010, FBL-014, FBL-019, FBL-020, FBL-021 depend on this rung. |
 
-#### FBL-009 — Event timeline — 🔄 In progress (authorized, bounded sequence FBL-007–FBL-011)
+#### FBL-009 — Event timeline — ✅ Complete
 
 | Field | Content |
 | --- | --- |
@@ -238,7 +238,7 @@ Parallel groups are defined precisely in §4.
 | 13. Stop condition | Timeline passes its tests against the mock stream. Hard stop before mapping events onto the 3D world (FBL-021). |
 | 14. Dependency on next rung | FBL-021 depends on this rung. |
 
-#### FBL-010 — 2D operational controls
+#### FBL-010 — 2D operational controls — ✅ Complete (final rung completed so far in authorized bounded sequence FBL-007–FBL-011; FBL-011 remains)
 
 | Field | Content |
 | --- | --- |

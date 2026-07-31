@@ -29,7 +29,10 @@ export const OperatorCommandAcceptedEvent = defineEvent(
 export const OperatorCommandRejectedEvent = defineEvent(
   "operator.command_rejected",
   z.object({
-    commandType: DemoCommandTypeSchema,
+    // Free-form, not DemoCommandTypeSchema: a command is often rejected
+    // precisely because its commandType is not one of the approved values,
+    // so this field must still be able to name whatever was submitted.
+    commandType: z.string(),
     reason: z.string().min(1),
     correctiveAction: z.string().optional(),
   }),
