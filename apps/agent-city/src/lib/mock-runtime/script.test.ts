@@ -1,4 +1,5 @@
 import { FoundryEventSchema } from "@foundry/event-types";
+import { WORLD_AGENTS } from "@foundry/world-model";
 import { describe, expect, it } from "vitest";
 import { buildCanonicalScript } from "./script";
 
@@ -70,6 +71,19 @@ describe("buildCanonicalScript — complete canonical demo coverage", () => {
     expect(types).toContain("stage.validation_started");
     expect(types).toContain("stage.validation_passed");
     expect(types.filter((t) => t === "stage.validation_failed")).toHaveLength(0);
+  });
+
+  it("F-05: only the Inspector ever authors stage.validation_started/passed — the Builder cannot self-certify", () => {
+    const builderId = WORLD_AGENTS.find((a) => a.role === "builder")!.id;
+    const inspectorId = WORLD_AGENTS.find((a) => a.role === "inspector")!.id;
+    const validationEvents = script.filter(
+      (e) => e.type === "stage.validation_started" || e.type === "stage.validation_passed",
+    );
+    expect(validationEvents.length).toBeGreaterThan(0);
+    for (const event of validationEvents) {
+      expect(event.actorId).toBe(inspectorId);
+      expect(event.actorId).not.toBe(builderId);
+    }
   });
 
   it("covers all three transfer legs in order (resolves audit finding B-01)", () => {

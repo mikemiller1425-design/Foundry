@@ -42,6 +42,22 @@ function isResetCommand(raw: unknown): boolean {
   );
 }
 
+// FBL-022: both `demo.reset` and `demo.replay` restart the runtime's own
+// event history from scratch (runtime.ts clears `emittedIds`/`emittedLog`
+// for each) — so both must also clear this component's locally
+// accumulated `events` React state. Previously only `demo.reset` did;
+// `demo.replay` left the prior run's events in place and then appended
+// the replayed sequence on top (the runtime's own idempotency guard
+// couldn't catch this, since it was cleared too), so a replay silently
+// duplicated every timeline row from the run being replayed — exactly
+// the "duplicate events cannot duplicate ... timeline records" invariant
+// this rung requires.
+function isHistoryResettingCommand(raw: unknown): boolean {
+  if (typeof raw !== "object" || raw === null || !("commandType" in raw)) return false;
+  const commandType = (raw as { commandType: unknown }).commandType;
+  return commandType === "demo.reset" || commandType === "demo.replay";
+}
+
 /**
  * Shares one MockRuntime instance across the app (timeline, controls, and
  * later rungs all observe the same demo run). Reconstructs history after
@@ -105,11 +121,11 @@ export function RuntimeProvider({
 
   const submitCommand = useCallback(
     (raw: unknown) => {
-      const wasReset = isResetCommand(raw);
-      if (wasReset) clearRuntimeCursor();
+      const resetsHistory = isHistoryResettingCommand(raw);
+      if (isResetCommand(raw)) clearRuntimeCursor();
       runtime.submitCommand(raw);
       setIsRunning(runtime.isRunning());
-      if (wasReset) {
+      if (resetsHistory) {
         setEvents([]);
         setWorldState(runtime.getWorldState());
         setIsComplete(false);

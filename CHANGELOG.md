@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — FBL-022 Complete simulated V1 workflow
+
+Completed the entire Agent City V1 primary journey against the deterministic mock runtime, from objective submission through planning, implementation, the intentional mandatory-requirement failure, repair, independent Inspector validation, human approval, transfer, build completion, and the Warehouse Level 1→2 capability upgrade. The mock engine remains the temporary stand-in authority only; no backend, database, persistence service, network runtime, or Claude Code adapter was introduced. The recorded canonical run is now the comparison baseline for later backend-authoritative work.
+
+- `apps/agent-city/src/lib/mock-runtime/v1PrimaryJourney.test.ts`: asserts all 22 authorized journey checkpoints in narrative order against the canonical event script and the same reducers/selectors used by the UI
+- `apps/agent-city/src/lib/mock-runtime/v1AcceptanceInvariants.test.ts`: proves no early Warehouse Level 2/capacity state, full-run idempotency under appended and interleaved duplicate delivery, event-history completeness, and textual equivalents
+- `apps/agent-city/src/lib/mock-runtime/recordedRun.test.ts` and `__fixtures__/v1-canonical-run.json`: checked-in deterministic event-history/final-WorldState artifact for later backend comparison
+- `apps/agent-city/e2e/shell-v1-primary-journey.spec.ts`: complete browser journey across 5120×1440, 3840×1080, and 2560×1440, including blocked cargo/vehicle gating, approval, upgrade, 2D-only comprehension, selection synchronization, reduced motion, replay idempotency, and preservation of existing controls
+- `worldStateReducer.ts`: applies `upgrade.completed` level and added capabilities atomically, so Warehouse Level 2 and `capacity_100` cannot diverge
+- `RuntimeProvider.tsx`: clears accumulated React event history for both reset and replay, preventing duplicated timeline rows after deterministic replay
+- `apps/agent-city/README.md`: repeatable operator demonstration instructions and explicit mock-authority/backend boundary
+- Verification: typecheck and lint clean; 393 unit tests pass; targeted primary-journey suite 24/24; complete Playwright suite 342/342 at a stable three-worker load; production build passes
+
+### Stop — FBL-022
+
+The frontend-first simulated V1 workflow is complete. `FBL-023` (persistence foundation) and every later rung remain unauthorized and were not started.
+
 ### Added — FBL-003 Monorepo and tooling foundation
 
 Established workspace tooling (package manager, TypeScript, lint, format, test-runner wiring) across `apps/` and `packages/` with no application logic, per the operator-authorized bounded sequence FBL-003–FBL-006. `pnpm install`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run format`, `pnpm run test`, and `pnpm run build` all exit 0 on the empty tree.

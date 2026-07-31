@@ -99,6 +99,43 @@ describe("reduceWorldState — upgrade sequence", () => {
     const warehouseAfter = finalState.buildings.find((b) => b.buildingType === "warehouse");
     expect(warehouseAfter?.level).toBe(2);
   });
+
+  it("FBL-022: level and capabilities (the domain-model.md 'capacity 25→100' stand-in) change atomically, only at upgrade.completed", () => {
+    const script = buildCanonicalScript("upgrade-capabilities-check");
+    const completedIndex = script.findIndex((e) => e.type === "upgrade.completed");
+    expect(completedIndex).toBeGreaterThan(0);
+
+    const before = reduceWorldState(script.slice(0, completedIndex));
+    const warehouseBefore = before.buildings.find((b) => b.buildingType === "warehouse")!;
+    expect(warehouseBefore.level).toBe(1);
+    expect(warehouseBefore.capabilities).not.toContain("capacity_100");
+
+    const after = reduceWorldState(script.slice(0, completedIndex + 1));
+    const warehouseAfter = after.buildings.find((b) => b.buildingType === "warehouse")!;
+    expect(warehouseAfter.level).toBe(2);
+    expect(warehouseAfter.capabilities).toEqual(
+      expect.arrayContaining(["capacity_100", "batch_intake"]),
+    );
+  });
+
+  it("FBL-022: duplicate upgrade.completed delivery does not duplicate capabilities or re-bump an already-upgraded level", () => {
+    const script = buildCanonicalScript("upgrade-duplicate-check");
+    const completedEvent = script.find((e) => e.type === "upgrade.completed")!;
+    const completedIndex = script.indexOf(completedEvent);
+
+    const once = reduceWorldState(script.slice(0, completedIndex + 1));
+    const withDuplicate = reduceWorldState([
+      ...script.slice(0, completedIndex + 1),
+      completedEvent,
+    ]);
+
+    const warehouseOnce = once.buildings.find((b) => b.buildingType === "warehouse")!;
+    const warehouseTwice = withDuplicate.buildings.find((b) => b.buildingType === "warehouse")!;
+    expect(warehouseTwice.level).toBe(warehouseOnce.level);
+    expect(warehouseTwice.capabilities).toEqual(warehouseOnce.capabilities);
+    // No duplicated "capacity_100" entries from the second delivery.
+    expect(warehouseTwice.capabilities.filter((c) => c === "capacity_100")).toHaveLength(1);
+  });
 });
 
 describe("reduceWorldState — Lighthouse (FBL-014) never duplicated", () => {

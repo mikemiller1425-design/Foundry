@@ -14,6 +14,18 @@ function Probe() {
   );
 }
 
+function ProbeWithReplay() {
+  const { events, submitCommand } = useRuntime();
+  return (
+    <div>
+      <span data-testid="event-count">{events.length}</span>
+      <button onClick={() => submitCommand({ commandType: "demo.replay", params: {} })}>
+        Replay
+      </button>
+    </div>
+  );
+}
+
 describe("RuntimeProvider — auto-start (no command bar exists before FBL-010)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -108,5 +120,49 @@ describe("RuntimeProvider — history reconstruction after reload", () => {
     // Starts fresh — only its own auto-issued demo.start feedback events,
     // never seed-a's accumulated history reconstructed onto the wrong seed.
     expect(screen.getByTestId("event-count").textContent).toBe("2");
+  });
+});
+
+describe("RuntimeProvider — FBL-022 demo.replay resets local event history", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    window.sessionStorage.clear();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("demo.replay clears the locally accumulated events, rather than appending the replayed sequence on top of the prior run's", () => {
+    render(
+      <RuntimeProvider seed="provider-replay-reset">
+        <ProbeWithReplay />
+      </RuntimeProvider>,
+    );
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    const countBeforeReplay = Number(screen.getByTestId("event-count").textContent);
+    expect(countBeforeReplay).toBeGreaterThan(0);
+
+    act(() => {
+      screen.getByRole("button", { name: "Replay" }).click();
+    });
+    // Immediately after replay — before any of the replayed script's own
+    // events have had time to re-emit — the count must not still include
+    // the prior run's history. (Regression: previously only `demo.reset`
+    // cleared this local state; `demo.replay` left it in place, so the
+    // freshly re-emitted sequence was appended on top of the old one,
+    // silently duplicating every timeline row from the run being
+    // replayed.)
+    const countRightAfterReplay = Number(screen.getByTestId("event-count").textContent);
+    expect(countRightAfterReplay).toBeLessThan(countBeforeReplay);
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    const countAfterReplayRuns = Number(screen.getByTestId("event-count").textContent);
+    // The replayed run accumulates its own fresh history — never stacked
+    // on top of the pre-replay count.
+    expect(countAfterReplayRuns).toBeLessThan(countBeforeReplay * 1.5);
   });
 });

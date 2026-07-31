@@ -1,0 +1,2225 @@
+{
+  "seed": "v1-demo",
+  "eventCount": 124,
+  "events": [
+    {
+      "id": "v1-demo-evt-1",
+      "occurredAt": "2026-07-30T00:00:00.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "System",
+      "entityId": "neighborhood-1",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "system.started",
+      "payload": {
+        "serviceVersion": "1.0.0",
+        "neighborhoodId": "neighborhood-1"
+      }
+    },
+    {
+      "id": "v1-demo-evt-2",
+      "occurredAt": "2026-07-30T00:00:01.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Agent",
+      "entityId": "agent-architect",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.registered",
+      "payload": {
+        "role": "architect",
+        "homeBuildingId": "home-architect"
+      }
+    },
+    {
+      "id": "v1-demo-evt-3",
+      "occurredAt": "2026-07-30T00:00:02.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Agent",
+      "entityId": "agent-builder",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.registered",
+      "payload": {
+        "role": "builder",
+        "homeBuildingId": "home-builder"
+      }
+    },
+    {
+      "id": "v1-demo-evt-4",
+      "occurredAt": "2026-07-30T00:00:03.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Agent",
+      "entityId": "agent-inspector",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.registered",
+      "payload": {
+        "role": "inspector",
+        "homeBuildingId": "home-inspector"
+      }
+    },
+    {
+      "id": "v1-demo-evt-5",
+      "occurredAt": "2026-07-30T00:00:04.000Z",
+      "actorType": "operator",
+      "actorId": "operator-1",
+      "entityType": "Project",
+      "entityId": "v1-demo-project-1",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "operator.objective_submitted",
+      "payload": {
+        "objective": "Build a basic task-management web application supporting task creation, completion, deletion, loading states, error states, persistence, and tests.",
+        "projectId": "v1-demo-project-1"
+      }
+    },
+    {
+      "id": "v1-demo-evt-6",
+      "occurredAt": "2026-07-30T00:00:05.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Build",
+      "entityId": "v1-demo-build-2",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "build.created",
+      "payload": {
+        "projectId": "v1-demo-project-1",
+        "buildId": "v1-demo-build-2",
+        "objective": "Build a basic task-management web application supporting task creation, completion, deletion, loading states, error states, persistence, and tests."
+      }
+    },
+    {
+      "id": "v1-demo-evt-7",
+      "occurredAt": "2026-07-30T00:00:06.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-planning-3",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.created",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-8",
+      "occurredAt": "2026-07-30T00:00:07.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-planning-3",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-9",
+      "occurredAt": "2026-07-30T00:00:08.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Agent",
+      "entityId": "agent-architect",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.assigned",
+      "payload": {
+        "taskId": "v1-demo-task-planning-11",
+        "stageId": "v1-demo-stage-planning-3",
+        "destinationBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-10",
+      "occurredAt": "2026-07-30T00:00:09.000Z",
+      "actorType": "agent",
+      "actorId": "agent-architect",
+      "entityType": "Agent",
+      "entityId": "agent-architect",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.departed",
+      "payload": {
+        "sourceBuildingId": "home-architect",
+        "destinationBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-11",
+      "occurredAt": "2026-07-30T00:00:10.000Z",
+      "actorType": "agent",
+      "actorId": "agent-architect",
+      "entityType": "Agent",
+      "entityId": "agent-architect",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.arrived",
+      "payload": {
+        "destinationBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-12",
+      "occurredAt": "2026-07-30T00:00:11.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-planning-3",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.started",
+      "payload": {
+        "assignedAgentIds": [
+          "agent-architect"
+        ],
+        "sourceBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-13",
+      "occurredAt": "2026-07-30T00:00:12.000Z",
+      "actorType": "agent",
+      "actorId": "agent-architect",
+      "entityType": "Agent",
+      "entityId": "agent-architect",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.started_work",
+      "payload": {
+        "taskId": "v1-demo-task-planning-11",
+        "stageId": "v1-demo-stage-planning-3",
+        "runtimeType": "mock"
+      }
+    },
+    {
+      "id": "v1-demo-evt-14",
+      "occurredAt": "2026-07-30T00:00:13.000Z",
+      "actorType": "agent",
+      "actorId": "agent-architect",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-task-planning-11-run",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.started",
+      "payload": {
+        "agentId": "agent-architect",
+        "taskId": "v1-demo-task-planning-11",
+        "runtimeType": "mock",
+        "riskClass": "R0"
+      }
+    },
+    {
+      "id": "v1-demo-evt-15",
+      "occurredAt": "2026-07-30T00:00:14.000Z",
+      "actorType": "runtime_adapter",
+      "actorId": "runtime-adapter-mock",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-task-planning-11-run",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.completed",
+      "payload": {
+        "exitCode": 0,
+        "outputArtifactIds": [
+          "v1-demo-artifact-plan-10"
+        ],
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-16",
+      "occurredAt": "2026-07-30T00:00:15.000Z",
+      "actorType": "agent",
+      "actorId": "agent-architect",
+      "entityType": "Agent",
+      "entityId": "agent-architect",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.completed_work",
+      "payload": {
+        "taskId": "v1-demo-task-planning-11",
+        "outputArtifactIds": [
+          "v1-demo-artifact-plan-10"
+        ]
+      }
+    },
+    {
+      "id": "v1-demo-evt-17",
+      "occurredAt": "2026-07-30T00:00:16.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-plan-10",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.created",
+      "payload": {
+        "artifactId": "v1-demo-artifact-plan-10",
+        "artifactType": "plan",
+        "name": "Build plan",
+        "checksumStatus": "pending"
+      }
+    },
+    {
+      "id": "v1-demo-evt-18",
+      "occurredAt": "2026-07-30T00:00:17.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-plan-10",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.validated",
+      "payload": {
+        "checksum": "sha256:v1-demo-artifact-plan-10",
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-19",
+      "occurredAt": "2026-07-30T00:00:18.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-plan-10",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-20",
+      "occurredAt": "2026-07-30T00:00:19.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Build",
+      "entityId": "v1-demo-build-2",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "build.planned",
+      "payload": {
+        "stageIds": [
+          "v1-demo-stage-planning-3",
+          "v1-demo-stage-scaffold-4",
+          "v1-demo-stage-frontend-5",
+          "v1-demo-stage-backend-6",
+          "v1-demo-stage-integration-7",
+          "v1-demo-stage-qa-8",
+          "v1-demo-stage-deploy-9"
+        ],
+        "requirementCount": 3,
+        "planArtifactId": "v1-demo-artifact-plan-10"
+      }
+    },
+    {
+      "id": "v1-demo-evt-21",
+      "occurredAt": "2026-07-30T00:00:20.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-planning-3",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.completed",
+      "payload": {
+        "artifactIds": [
+          "v1-demo-artifact-plan-10"
+        ],
+        "completedAt": "2026-07-30T00:00:20.000Z"
+      }
+    },
+    {
+      "id": "v1-demo-evt-22",
+      "occurredAt": "2026-07-30T00:00:21.000Z",
+      "actorType": "agent",
+      "actorId": "agent-architect",
+      "entityType": "Agent",
+      "entityId": "agent-architect",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.returned_home",
+      "payload": {
+        "homeBuildingId": "home-architect"
+      }
+    },
+    {
+      "id": "v1-demo-evt-23",
+      "occurredAt": "2026-07-30T00:00:22.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Build",
+      "entityId": "v1-demo-build-2",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "build.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-24",
+      "occurredAt": "2026-07-30T00:00:23.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Build",
+      "entityId": "v1-demo-build-2",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "build.started",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-25",
+      "occurredAt": "2026-07-30T00:00:24.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-scaffold-4",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.created",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-26",
+      "occurredAt": "2026-07-30T00:00:25.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-scaffold-4",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-27",
+      "occurredAt": "2026-07-30T00:00:26.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Agent",
+      "entityId": "agent-builder",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.assigned",
+      "payload": {
+        "taskId": "v1-demo-task-scaffold-13",
+        "stageId": "v1-demo-stage-scaffold-4",
+        "destinationBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-28",
+      "occurredAt": "2026-07-30T00:00:27.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Agent",
+      "entityId": "agent-builder",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.departed",
+      "payload": {
+        "sourceBuildingId": "home-builder",
+        "destinationBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-29",
+      "occurredAt": "2026-07-30T00:00:28.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Agent",
+      "entityId": "agent-builder",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.arrived",
+      "payload": {
+        "destinationBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-30",
+      "occurredAt": "2026-07-30T00:00:29.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-scaffold-4",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.started",
+      "payload": {
+        "assignedAgentIds": [
+          "agent-builder"
+        ],
+        "sourceBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-31",
+      "occurredAt": "2026-07-30T00:00:30.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Agent",
+      "entityId": "agent-builder",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.started_work",
+      "payload": {
+        "taskId": "v1-demo-task-scaffold-13",
+        "stageId": "v1-demo-stage-scaffold-4",
+        "runtimeType": "mock"
+      }
+    },
+    {
+      "id": "v1-demo-evt-32",
+      "occurredAt": "2026-07-30T00:00:31.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-task-scaffold-13-run",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.started",
+      "payload": {
+        "agentId": "agent-builder",
+        "taskId": "v1-demo-task-scaffold-13",
+        "runtimeType": "mock",
+        "riskClass": "R1"
+      }
+    },
+    {
+      "id": "v1-demo-evt-33",
+      "occurredAt": "2026-07-30T00:00:32.000Z",
+      "actorType": "runtime_adapter",
+      "actorId": "runtime-adapter-mock",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-task-scaffold-13-run",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.completed",
+      "payload": {
+        "exitCode": 0,
+        "outputArtifactIds": [
+          "v1-demo-artifact-scaffold-12"
+        ],
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-34",
+      "occurredAt": "2026-07-30T00:00:33.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Agent",
+      "entityId": "agent-builder",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.completed_work",
+      "payload": {
+        "taskId": "v1-demo-task-scaffold-13",
+        "outputArtifactIds": [
+          "v1-demo-artifact-scaffold-12"
+        ]
+      }
+    },
+    {
+      "id": "v1-demo-evt-35",
+      "occurredAt": "2026-07-30T00:00:34.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-scaffold-12",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.created",
+      "payload": {
+        "artifactId": "v1-demo-artifact-scaffold-12",
+        "artifactType": "source_code",
+        "name": "Application scaffold",
+        "checksumStatus": "pending"
+      }
+    },
+    {
+      "id": "v1-demo-evt-36",
+      "occurredAt": "2026-07-30T00:00:35.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-scaffold-12",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.validated",
+      "payload": {
+        "checksum": "sha256:v1-demo-artifact-scaffold-12",
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-37",
+      "occurredAt": "2026-07-30T00:00:36.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-scaffold-12",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-38",
+      "occurredAt": "2026-07-30T00:00:37.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-scaffold-4",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.completed",
+      "payload": {
+        "artifactIds": [
+          "v1-demo-artifact-scaffold-12"
+        ],
+        "completedAt": "2026-07-30T00:00:37.000Z"
+      }
+    },
+    {
+      "id": "v1-demo-evt-39",
+      "occurredAt": "2026-07-30T00:00:38.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-frontend-5",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.created",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-40",
+      "occurredAt": "2026-07-30T00:00:39.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-frontend-5",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-41",
+      "occurredAt": "2026-07-30T00:00:40.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-frontend-5",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.started",
+      "payload": {
+        "assignedAgentIds": [
+          "agent-builder"
+        ],
+        "sourceBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-42",
+      "occurredAt": "2026-07-30T00:00:41.000Z",
+      "actorType": "agent",
+      "actorId": "backend",
+      "entityType": "Requirement",
+      "entityId": "v1-demo-requirement-create-task-15",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "requirement.passed",
+      "payload": {
+        "evidenceIds": [],
+        "validatorType": "automated"
+      }
+    },
+    {
+      "id": "v1-demo-evt-43",
+      "occurredAt": "2026-07-30T00:00:42.000Z",
+      "actorType": "agent",
+      "actorId": "backend",
+      "entityType": "Requirement",
+      "entityId": "v1-demo-requirement-complete-task-16",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "requirement.passed",
+      "payload": {
+        "evidenceIds": [],
+        "validatorType": "automated"
+      }
+    },
+    {
+      "id": "v1-demo-evt-44",
+      "occurredAt": "2026-07-30T00:00:43.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Requirement",
+      "entityId": "v1-demo-requirement-delete-task-17",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "requirement.started",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-45",
+      "occurredAt": "2026-07-30T00:00:44.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Requirement",
+      "entityId": "v1-demo-requirement-delete-task-17",
+      "correlationId": "v1-demo-build-2",
+      "severity": "error",
+      "schemaVersion": 1,
+      "type": "requirement.failed",
+      "payload": {
+        "evidenceIds": [],
+        "message": "Delete task — error-state handling: deleting a task does not surface an error state on failure",
+        "retryEligible": true
+      }
+    },
+    {
+      "id": "v1-demo-evt-46",
+      "occurredAt": "2026-07-30T00:00:45.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-frontend-5",
+      "correlationId": "v1-demo-build-2",
+      "causationId": "v1-demo-evt-45",
+      "severity": "warning",
+      "schemaVersion": 1,
+      "type": "stage.blocked",
+      "payload": {
+        "requirementIds": [
+          "v1-demo-requirement-delete-task-17"
+        ],
+        "reason": "Mandatory requirement failed"
+      }
+    },
+    {
+      "id": "v1-demo-evt-47",
+      "occurredAt": "2026-07-30T00:00:46.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Requirement",
+      "entityId": "v1-demo-requirement-delete-task-17",
+      "correlationId": "v1-demo-build-2",
+      "causationId": "v1-demo-evt-45",
+      "severity": "notice",
+      "schemaVersion": 1,
+      "type": "requirement.retried",
+      "payload": {
+        "priorEventId": "v1-demo-evt-45"
+      }
+    },
+    {
+      "id": "v1-demo-evt-48",
+      "occurredAt": "2026-07-30T00:00:47.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Requirement",
+      "entityId": "v1-demo-requirement-delete-task-17",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "requirement.started",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-49",
+      "occurredAt": "2026-07-30T00:00:48.000Z",
+      "actorType": "agent",
+      "actorId": "backend",
+      "entityType": "Requirement",
+      "entityId": "v1-demo-requirement-delete-task-17",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "requirement.passed",
+      "payload": {
+        "evidenceIds": [],
+        "validatorType": "automated"
+      }
+    },
+    {
+      "id": "v1-demo-evt-50",
+      "occurredAt": "2026-07-30T00:00:49.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-run-frontend-18",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.started",
+      "payload": {
+        "agentId": "agent-builder",
+        "taskId": "v1-demo-task-frontend-19",
+        "runtimeType": "mock",
+        "riskClass": "R1"
+      }
+    },
+    {
+      "id": "v1-demo-evt-51",
+      "occurredAt": "2026-07-30T00:00:50.000Z",
+      "actorType": "runtime_adapter",
+      "actorId": "runtime-adapter-mock",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-run-frontend-18",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.completed",
+      "payload": {
+        "exitCode": 0,
+        "outputArtifactIds": [
+          "v1-demo-artifact-frontend-14"
+        ],
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-52",
+      "occurredAt": "2026-07-30T00:00:51.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-frontend-14",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.created",
+      "payload": {
+        "artifactId": "v1-demo-artifact-frontend-14",
+        "artifactType": "source_code",
+        "name": "Frontend implementation",
+        "checksumStatus": "pending"
+      }
+    },
+    {
+      "id": "v1-demo-evt-53",
+      "occurredAt": "2026-07-30T00:00:52.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-frontend-14",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.validated",
+      "payload": {
+        "checksum": "sha256:v1-demo-artifact-frontend-14",
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-54",
+      "occurredAt": "2026-07-30T00:00:53.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-frontend-14",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-55",
+      "occurredAt": "2026-07-30T00:00:54.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-frontend-5",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.completed",
+      "payload": {
+        "artifactIds": [
+          "v1-demo-artifact-frontend-14"
+        ],
+        "completedAt": "2026-07-30T00:00:54.000Z"
+      }
+    },
+    {
+      "id": "v1-demo-evt-56",
+      "occurredAt": "2026-07-30T00:00:55.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-backend-6",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.created",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-57",
+      "occurredAt": "2026-07-30T00:00:56.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-backend-6",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-58",
+      "occurredAt": "2026-07-30T00:00:57.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-backend-6",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.started",
+      "payload": {
+        "assignedAgentIds": [
+          "agent-builder"
+        ],
+        "sourceBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-59",
+      "occurredAt": "2026-07-30T00:00:58.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-run-backend-21",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.started",
+      "payload": {
+        "agentId": "agent-builder",
+        "taskId": "v1-demo-task-backend-22",
+        "runtimeType": "claude_code",
+        "riskClass": "R1"
+      }
+    },
+    {
+      "id": "v1-demo-evt-60",
+      "occurredAt": "2026-07-30T00:00:59.000Z",
+      "actorType": "runtime_adapter",
+      "actorId": "runtime-adapter-mock",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-run-backend-21",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.completed",
+      "payload": {
+        "exitCode": 0,
+        "outputArtifactIds": [
+          "v1-demo-artifact-backend-20"
+        ],
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-61",
+      "occurredAt": "2026-07-30T00:01:00.000Z",
+      "actorType": "agent",
+      "actorId": "backend",
+      "entityType": "Requirement",
+      "entityId": "v1-demo-requirement-backend-tests-23",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "requirement.passed",
+      "payload": {
+        "evidenceIds": [],
+        "validatorType": "automated"
+      }
+    },
+    {
+      "id": "v1-demo-evt-62",
+      "occurredAt": "2026-07-30T00:01:01.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-backend-20",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.created",
+      "payload": {
+        "artifactId": "v1-demo-artifact-backend-20",
+        "artifactType": "source_code",
+        "name": "Backend implementation",
+        "checksumStatus": "pending"
+      }
+    },
+    {
+      "id": "v1-demo-evt-63",
+      "occurredAt": "2026-07-30T00:01:02.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-backend-20",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.validated",
+      "payload": {
+        "checksum": "sha256:v1-demo-artifact-backend-20",
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-64",
+      "occurredAt": "2026-07-30T00:01:03.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-backend-20",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-65",
+      "occurredAt": "2026-07-30T00:01:04.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-backend-6",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.completed",
+      "payload": {
+        "artifactIds": [
+          "v1-demo-artifact-backend-20"
+        ],
+        "completedAt": "2026-07-30T00:01:04.000Z"
+      }
+    },
+    {
+      "id": "v1-demo-evt-66",
+      "occurredAt": "2026-07-30T00:01:05.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-integration-7",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.created",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-67",
+      "occurredAt": "2026-07-30T00:01:06.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-integration-7",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-68",
+      "occurredAt": "2026-07-30T00:01:07.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Agent",
+      "entityId": "agent-builder",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.assigned",
+      "payload": {
+        "taskId": "v1-demo-task-integration-25",
+        "stageId": "v1-demo-stage-integration-7",
+        "destinationBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-69",
+      "occurredAt": "2026-07-30T00:01:08.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-integration-7",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.started",
+      "payload": {
+        "assignedAgentIds": [
+          "agent-builder"
+        ],
+        "sourceBuildingId": "construction-office"
+      }
+    },
+    {
+      "id": "v1-demo-evt-70",
+      "occurredAt": "2026-07-30T00:01:09.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Agent",
+      "entityId": "agent-builder",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.started_work",
+      "payload": {
+        "taskId": "v1-demo-task-integration-25",
+        "stageId": "v1-demo-stage-integration-7",
+        "runtimeType": "mock"
+      }
+    },
+    {
+      "id": "v1-demo-evt-71",
+      "occurredAt": "2026-07-30T00:01:10.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-task-integration-25-run",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.started",
+      "payload": {
+        "agentId": "agent-builder",
+        "taskId": "v1-demo-task-integration-25",
+        "runtimeType": "mock",
+        "riskClass": "R1"
+      }
+    },
+    {
+      "id": "v1-demo-evt-72",
+      "occurredAt": "2026-07-30T00:01:11.000Z",
+      "actorType": "runtime_adapter",
+      "actorId": "runtime-adapter-mock",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-task-integration-25-run",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.completed",
+      "payload": {
+        "exitCode": 0,
+        "outputArtifactIds": [
+          "v1-demo-artifact-build-package-24"
+        ],
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-73",
+      "occurredAt": "2026-07-30T00:01:12.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Agent",
+      "entityId": "agent-builder",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.completed_work",
+      "payload": {
+        "taskId": "v1-demo-task-integration-25",
+        "outputArtifactIds": [
+          "v1-demo-artifact-build-package-24"
+        ]
+      }
+    },
+    {
+      "id": "v1-demo-evt-74",
+      "occurredAt": "2026-07-30T00:01:13.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-build-package-24",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.created",
+      "payload": {
+        "artifactId": "v1-demo-artifact-build-package-24",
+        "artifactType": "build_package",
+        "name": "Integrated build package",
+        "checksumStatus": "pending"
+      }
+    },
+    {
+      "id": "v1-demo-evt-75",
+      "occurredAt": "2026-07-30T00:01:14.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-build-package-24",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.validated",
+      "payload": {
+        "checksum": "sha256:v1-demo-artifact-build-package-24",
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-76",
+      "occurredAt": "2026-07-30T00:01:15.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-build-package-24",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-77",
+      "occurredAt": "2026-07-30T00:01:16.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-integration-7",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.completed",
+      "payload": {
+        "artifactIds": [
+          "v1-demo-artifact-build-package-24"
+        ],
+        "completedAt": "2026-07-30T00:01:16.000Z"
+      }
+    },
+    {
+      "id": "v1-demo-evt-78",
+      "occurredAt": "2026-07-30T00:01:17.000Z",
+      "actorType": "agent",
+      "actorId": "agent-builder",
+      "entityType": "Agent",
+      "entityId": "agent-builder",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.returned_home",
+      "payload": {
+        "homeBuildingId": "home-builder"
+      }
+    },
+    {
+      "id": "v1-demo-evt-79",
+      "occurredAt": "2026-07-30T00:01:18.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-co-wh-26",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.created",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-80",
+      "occurredAt": "2026-07-30T00:01:19.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-co-wh-26",
+      "correlationId": "v1-demo-build-2",
+      "causationId": "v1-demo-evt-77",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-81",
+      "occurredAt": "2026-07-30T00:01:20.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-co-wh-26",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.started",
+      "payload": {
+        "vehicleId": "vehicle-utility-1",
+        "sourceBuildingId": "construction-office",
+        "destinationBuildingId": "warehouse",
+        "artifactIds": [
+          "v1-demo-artifact-build-package-24"
+        ]
+      }
+    },
+    {
+      "id": "v1-demo-evt-82",
+      "occurredAt": "2026-07-30T00:01:21.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-co-wh-26",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.arrived",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-83",
+      "occurredAt": "2026-07-30T00:01:22.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-co-wh-26",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.completed",
+      "payload": {
+        "receiptArtifactId": "v1-demo-artifact-build-package-24"
+      }
+    },
+    {
+      "id": "v1-demo-evt-84",
+      "occurredAt": "2026-07-30T00:01:23.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-qa-8",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.created",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-85",
+      "occurredAt": "2026-07-30T00:01:24.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-qa-8",
+      "correlationId": "v1-demo-build-2",
+      "causationId": "v1-demo-evt-77",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-86",
+      "occurredAt": "2026-07-30T00:01:25.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-wh-qa-27",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.created",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-87",
+      "occurredAt": "2026-07-30T00:01:26.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-wh-qa-27",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-88",
+      "occurredAt": "2026-07-30T00:01:27.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-wh-qa-27",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.started",
+      "payload": {
+        "vehicleId": "vehicle-utility-1",
+        "sourceBuildingId": "warehouse",
+        "destinationBuildingId": "qa",
+        "artifactIds": [
+          "v1-demo-artifact-build-package-24"
+        ]
+      }
+    },
+    {
+      "id": "v1-demo-evt-89",
+      "occurredAt": "2026-07-30T00:01:28.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-wh-qa-27",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.arrived",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-90",
+      "occurredAt": "2026-07-30T00:01:29.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-wh-qa-27",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.completed",
+      "payload": {
+        "receiptArtifactId": "v1-demo-artifact-build-package-24"
+      }
+    },
+    {
+      "id": "v1-demo-evt-91",
+      "occurredAt": "2026-07-30T00:01:30.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-qa-8",
+      "correlationId": "v1-demo-build-2",
+      "causationId": "v1-demo-evt-90",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.started",
+      "payload": {
+        "assignedAgentIds": [
+          "agent-inspector"
+        ],
+        "sourceBuildingId": "qa"
+      }
+    },
+    {
+      "id": "v1-demo-evt-92",
+      "occurredAt": "2026-07-30T00:01:31.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Agent",
+      "entityId": "agent-inspector",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.assigned",
+      "payload": {
+        "taskId": "v1-demo-task-qa-28",
+        "stageId": "v1-demo-stage-qa-8",
+        "destinationBuildingId": "qa"
+      }
+    },
+    {
+      "id": "v1-demo-evt-93",
+      "occurredAt": "2026-07-30T00:01:32.000Z",
+      "actorType": "agent",
+      "actorId": "agent-inspector",
+      "entityType": "Agent",
+      "entityId": "agent-inspector",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.departed",
+      "payload": {
+        "sourceBuildingId": "home-inspector",
+        "destinationBuildingId": "qa"
+      }
+    },
+    {
+      "id": "v1-demo-evt-94",
+      "occurredAt": "2026-07-30T00:01:33.000Z",
+      "actorType": "agent",
+      "actorId": "agent-inspector",
+      "entityType": "Agent",
+      "entityId": "agent-inspector",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.arrived",
+      "payload": {
+        "destinationBuildingId": "qa"
+      }
+    },
+    {
+      "id": "v1-demo-evt-95",
+      "occurredAt": "2026-07-30T00:01:34.000Z",
+      "actorType": "agent",
+      "actorId": "agent-inspector",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-qa-8",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.validation_started",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-96",
+      "occurredAt": "2026-07-30T00:01:35.000Z",
+      "actorType": "agent",
+      "actorId": "agent-inspector",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-run-qa-29",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.started",
+      "payload": {
+        "agentId": "agent-inspector",
+        "taskId": "v1-demo-task-qa-run-30",
+        "runtimeType": "mock",
+        "riskClass": "R0"
+      }
+    },
+    {
+      "id": "v1-demo-evt-97",
+      "occurredAt": "2026-07-30T00:01:36.000Z",
+      "actorType": "runtime_adapter",
+      "actorId": "runtime-adapter-mock",
+      "entityType": "AgentRun",
+      "entityId": "v1-demo-run-qa-29",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agentrun.completed",
+      "payload": {
+        "exitCode": 0,
+        "outputArtifactIds": [],
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-98",
+      "occurredAt": "2026-07-30T00:01:37.000Z",
+      "actorType": "agent",
+      "actorId": "backend",
+      "entityType": "Requirement",
+      "entityId": "v1-demo-requirement-independent-validation-31",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "requirement.passed",
+      "payload": {
+        "evidenceIds": [],
+        "validatorType": "automated"
+      }
+    },
+    {
+      "id": "v1-demo-evt-99",
+      "occurredAt": "2026-07-30T00:01:38.000Z",
+      "actorType": "agent",
+      "actorId": "agent-inspector",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-qa-8",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.validation_passed",
+      "payload": {
+        "evidenceIds": [],
+        "passedRequirementIds": [
+          "v1-demo-requirement-independent-validation-31"
+        ]
+      }
+    },
+    {
+      "id": "v1-demo-evt-100",
+      "occurredAt": "2026-07-30T00:01:39.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-test-report-32",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.created",
+      "payload": {
+        "artifactId": "v1-demo-artifact-test-report-32",
+        "artifactType": "test_report",
+        "name": "QA test report",
+        "checksumStatus": "pending"
+      }
+    },
+    {
+      "id": "v1-demo-evt-101",
+      "occurredAt": "2026-07-30T00:01:40.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-test-report-32",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.validated",
+      "payload": {
+        "checksum": "sha256:v1-demo-artifact-test-report-32",
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-102",
+      "occurredAt": "2026-07-30T00:01:41.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-test-report-32",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-103",
+      "occurredAt": "2026-07-30T00:01:42.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-qa-8",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.completed",
+      "payload": {
+        "artifactIds": [
+          "v1-demo-artifact-test-report-32",
+          "v1-demo-artifact-build-package-24"
+        ],
+        "completedAt": "2026-07-30T00:01:42.000Z"
+      }
+    },
+    {
+      "id": "v1-demo-evt-104",
+      "occurredAt": "2026-07-30T00:01:43.000Z",
+      "actorType": "agent",
+      "actorId": "agent-inspector",
+      "entityType": "Agent",
+      "entityId": "agent-inspector",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "agent.returned_home",
+      "payload": {
+        "homeBuildingId": "home-inspector"
+      }
+    },
+    {
+      "id": "v1-demo-evt-105",
+      "occurredAt": "2026-07-30T00:01:44.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Approval",
+      "entityId": "v1-demo-approval-deploy-33",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "approval.requested",
+      "payload": {
+        "approvalId": "v1-demo-approval-deploy-33",
+        "title": "Approve deployment package",
+        "reason": "QA validation passed; artifact ready for final transfer",
+        "riskClass": "R1",
+        "evidenceIds": [
+          "v1-demo-artifact-test-report-32"
+        ],
+        "recommendedAction": "approve"
+      }
+    },
+    {
+      "id": "v1-demo-evt-106",
+      "occurredAt": "2026-07-30T00:01:45.000Z",
+      "actorType": "operator",
+      "actorId": "operator-1",
+      "entityType": "Approval",
+      "entityId": "v1-demo-approval-deploy-33",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "approval.approved",
+      "payload": {
+        "resolvedBy": "operator-1",
+        "resolutionNote": "Validated build package approved for deployment"
+      }
+    },
+    {
+      "id": "v1-demo-evt-107",
+      "occurredAt": "2026-07-30T00:01:46.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-deploy-9",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.created",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-108",
+      "occurredAt": "2026-07-30T00:01:47.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-deploy-9",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-109",
+      "occurredAt": "2026-07-30T00:01:48.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-qa-dock-34",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.created",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-110",
+      "occurredAt": "2026-07-30T00:01:49.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-qa-dock-34",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-111",
+      "occurredAt": "2026-07-30T00:01:50.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-deploy-9",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.started",
+      "payload": {
+        "assignedAgentIds": [],
+        "sourceBuildingId": "qa"
+      }
+    },
+    {
+      "id": "v1-demo-evt-112",
+      "occurredAt": "2026-07-30T00:01:51.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-qa-dock-34",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.started",
+      "payload": {
+        "vehicleId": "vehicle-utility-1",
+        "sourceBuildingId": "qa",
+        "destinationBuildingId": "deployment-dock",
+        "artifactIds": [
+          "v1-demo-artifact-build-package-24"
+        ]
+      }
+    },
+    {
+      "id": "v1-demo-evt-113",
+      "occurredAt": "2026-07-30T00:01:52.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-qa-dock-34",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.arrived",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-114",
+      "occurredAt": "2026-07-30T00:01:53.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Transfer",
+      "entityId": "v1-demo-transfer-qa-dock-34",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "transfer.completed",
+      "payload": {
+        "receiptArtifactId": "v1-demo-artifact-build-package-24"
+      }
+    },
+    {
+      "id": "v1-demo-evt-115",
+      "occurredAt": "2026-07-30T00:01:54.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-deployment-package-35",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.created",
+      "payload": {
+        "artifactId": "v1-demo-artifact-deployment-package-35",
+        "artifactType": "deployment_package",
+        "name": "Final deployment package",
+        "checksumStatus": "pending"
+      }
+    },
+    {
+      "id": "v1-demo-evt-116",
+      "occurredAt": "2026-07-30T00:01:55.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-deployment-package-35",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.validated",
+      "payload": {
+        "checksum": "sha256:v1-demo-artifact-deployment-package-35",
+        "evidenceIds": []
+      }
+    },
+    {
+      "id": "v1-demo-evt-117",
+      "occurredAt": "2026-07-30T00:01:56.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Artifact",
+      "entityId": "v1-demo-artifact-deployment-package-35",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "artifact.ready",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-118",
+      "occurredAt": "2026-07-30T00:01:57.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "BuildStage",
+      "entityId": "v1-demo-stage-deploy-9",
+      "correlationId": "v1-demo-build-2",
+      "causationId": "v1-demo-evt-114",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "stage.completed",
+      "payload": {
+        "artifactIds": [
+          "v1-demo-artifact-deployment-package-35"
+        ],
+        "completedAt": "2026-07-30T00:01:53.000Z"
+      }
+    },
+    {
+      "id": "v1-demo-evt-119",
+      "occurredAt": "2026-07-30T00:01:58.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Build",
+      "entityId": "v1-demo-build-2",
+      "correlationId": "v1-demo-build-2",
+      "causationId": "v1-demo-evt-118",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "build.completed",
+      "payload": {
+        "finalArtifactIds": [
+          "v1-demo-artifact-deployment-package-35"
+        ],
+        "completedAt": "2026-07-30T00:01:57.000Z"
+      }
+    },
+    {
+      "id": "v1-demo-evt-120",
+      "occurredAt": "2026-07-30T00:01:59.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Upgrade",
+      "entityId": "v1-demo-upgrade-warehouse-36",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "upgrade.eligible",
+      "payload": {
+        "buildingId": "warehouse",
+        "upgradeId": "v1-demo-upgrade-warehouse-36",
+        "requirementEvidence": [
+          "10 successful artifact packages processed",
+          "No unresolved critical event",
+          "≥ 90% validation pass rate after retries",
+          "Event persistence verified"
+        ]
+      }
+    },
+    {
+      "id": "v1-demo-evt-121",
+      "occurredAt": "2026-07-30T00:02:00.000Z",
+      "actorType": "operator",
+      "actorId": "operator-1",
+      "entityType": "Upgrade",
+      "entityId": "v1-demo-upgrade-warehouse-36",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "upgrade.requested",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-122",
+      "occurredAt": "2026-07-30T00:02:01.000Z",
+      "actorType": "operator",
+      "actorId": "operator-1",
+      "entityType": "Upgrade",
+      "entityId": "v1-demo-upgrade-warehouse-36",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "upgrade.approved",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-123",
+      "occurredAt": "2026-07-30T00:02:02.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Upgrade",
+      "entityId": "v1-demo-upgrade-warehouse-36",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "upgrade.started",
+      "payload": {}
+    },
+    {
+      "id": "v1-demo-evt-124",
+      "occurredAt": "2026-07-30T00:02:03.000Z",
+      "actorType": "backend",
+      "actorId": "backend",
+      "entityType": "Upgrade",
+      "entityId": "v1-demo-upgrade-warehouse-36",
+      "correlationId": "v1-demo-build-2",
+      "severity": "info",
+      "schemaVersion": 1,
+      "type": "upgrade.completed",
+      "payload": {
+        "fromLevel": 1,
+        "toLevel": 2,
+        "capabilitiesAdded": [
+          "capacity_100",
+          "batch_intake"
+        ]
+      }
+    }
+  ],
+  "finalWorldState": {
+    "buildings": [
+      {
+        "id": "lighthouse",
+        "name": "Lighthouse",
+        "buildingType": "lighthouse",
+        "level": 1,
+        "status": "idle",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": -10
+        },
+        "capabilities": [],
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z"
+      },
+      {
+        "id": "home-architect",
+        "name": "Architect Residence",
+        "buildingType": "home",
+        "level": 1,
+        "status": "idle",
+        "position": {
+          "x": -8,
+          "y": 0,
+          "z": 4
+        },
+        "capabilities": [],
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z"
+      },
+      {
+        "id": "home-builder",
+        "name": "Builder Residence",
+        "buildingType": "home",
+        "level": 1,
+        "status": "idle",
+        "position": {
+          "x": -4,
+          "y": 0,
+          "z": 4
+        },
+        "capabilities": [],
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z"
+      },
+      {
+        "id": "home-inspector",
+        "name": "Inspector Residence",
+        "buildingType": "home",
+        "level": 1,
+        "status": "idle",
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 4
+        },
+        "capabilities": [],
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z"
+      },
+      {
+        "id": "construction-office",
+        "name": "Construction Office",
+        "buildingType": "construction_office",
+        "level": 1,
+        "status": "idle",
+        "position": {
+          "x": -4,
+          "y": 0,
+          "z": 0
+        },
+        "capabilities": [],
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z"
+      },
+      {
+        "id": "warehouse",
+        "name": "Warehouse",
+        "buildingType": "warehouse",
+        "level": 2,
+        "status": "idle",
+        "position": {
+          "x": 4,
+          "y": 0,
+          "z": 0
+        },
+        "capabilities": [
+          "capacity_100",
+          "batch_intake"
+        ],
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z"
+      },
+      {
+        "id": "qa",
+        "name": "QA Building",
+        "buildingType": "qa",
+        "level": 1,
+        "status": "idle",
+        "position": {
+          "x": 8,
+          "y": 0,
+          "z": 0
+        },
+        "capabilities": [],
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z"
+      },
+      {
+        "id": "deployment-dock",
+        "name": "Deployment Dock",
+        "buildingType": "deployment_dock",
+        "level": 1,
+        "status": "idle",
+        "position": {
+          "x": 12,
+          "y": 0,
+          "z": 0
+        },
+        "capabilities": [],
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z"
+      },
+      {
+        "id": "construction-site",
+        "name": "Construction Site",
+        "buildingType": "construction_site",
+        "level": 1,
+        "status": "idle",
+        "position": {
+          "x": -12,
+          "y": 0,
+          "z": -2
+        },
+        "capabilities": [],
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z"
+      }
+    ],
+    "agents": [
+      {
+        "id": "agent-architect",
+        "name": "Architect",
+        "role": "architect",
+        "status": "idle",
+        "homeBuildingId": "home-architect",
+        "currentBuildingId": "home-architect",
+        "authorityLevel": 1,
+        "runtimeType": "mock",
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z",
+        "lastHeartbeatAt": "2026-07-30T00:00:00.000Z"
+      },
+      {
+        "id": "agent-builder",
+        "name": "Builder",
+        "role": "builder",
+        "status": "idle",
+        "homeBuildingId": "home-builder",
+        "currentBuildingId": "home-builder",
+        "authorityLevel": 1,
+        "runtimeType": "mock",
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z",
+        "lastHeartbeatAt": "2026-07-30T00:00:00.000Z"
+      },
+      {
+        "id": "agent-inspector",
+        "name": "Inspector",
+        "role": "inspector",
+        "status": "idle",
+        "homeBuildingId": "home-inspector",
+        "currentBuildingId": "home-inspector",
+        "authorityLevel": 1,
+        "runtimeType": "mock",
+        "createdAt": "2026-07-30T00:00:00.000Z",
+        "updatedAt": "2026-07-30T00:00:00.000Z",
+        "lastHeartbeatAt": "2026-07-30T00:00:00.000Z"
+      }
+    ],
+    "currentBuild": {
+      "id": "v1-demo-build-2",
+      "projectId": "v1-demo-project-1",
+      "sequenceNumber": 1,
+      "status": "completed",
+      "objectiveSnapshot": "Build a basic task-management web application supporting task creation, completion, deletion, loading states, error states, persistence, and tests.",
+      "currentStageId": "v1-demo-stage-deploy-9",
+      "createdAt": "2026-07-30T00:00:05.000Z",
+      "updatedAt": "2026-07-30T00:00:00.000Z",
+      "startedAt": "2026-07-30T00:00:23.000Z",
+      "completedAt": "2026-07-30T00:01:57.000Z"
+    },
+    "activeTransfers": [],
+    "approvals": [
+      {
+        "id": "v1-demo-approval-deploy-33",
+        "buildId": "v1-demo-build-2",
+        "stageId": "v1-demo-stage-qa-8",
+        "status": "approved",
+        "riskClass": "R1",
+        "title": "Approve deployment package",
+        "reason": "QA validation passed; artifact ready for final transfer",
+        "recommendedAction": "approve",
+        "evidenceIds": [
+          "v1-demo-artifact-test-report-32"
+        ],
+        "requestedAt": "2026-07-30T00:01:44.000Z",
+        "resolvedAt": "2026-07-30T00:01:45.000Z",
+        "resolvedBy": "operator-1",
+        "resolutionNote": "Validated build package approved for deployment"
+      }
+    ],
+    "inventoryCounts": {
+      "successfulPackages": 10
+    },
+    "health": {
+      "status": "healthy",
+      "reasons": [
+        "nominal"
+      ]
+    },
+    "lastProcessedEventId": "v1-demo-evt-124"
+  }
+}

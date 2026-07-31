@@ -22,7 +22,10 @@ const BUILDER = WORLD_AGENTS.find((a) => a.role === "builder")!.id;
 const INSPECTOR = WORLD_AGENTS.find((a) => a.role === "inspector")!.id;
 const VEHICLE = WORLD_VEHICLE.id;
 
-const OBJECTIVE =
+// v1-scope.md § "Demonstration objective" — exported so FBL-022's
+// full-journey test can assert step 1 ("Operator submits the seeded V1
+// objective") against the same string, not a duplicated copy.
+export const OBJECTIVE =
   "Build a basic task-management web application supporting task creation, completion, deletion, loading states, error states, persistence, and tests.";
 
 export const STAGE_NAMES = [

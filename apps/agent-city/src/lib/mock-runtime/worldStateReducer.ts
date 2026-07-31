@@ -267,8 +267,22 @@ export function applyEvent(state: WorldState, event: FoundryEvent): WorldState {
       });
 
     case "upgrade.completed": {
+      // FBL-022: `capabilitiesAdded` (domain-model.md Upgrade V1 limits:
+      // "capacity 25→100") was carried on the event payload but never
+      // actually applied to the Building record — level changed, but the
+      // capacity change had no real, inspectable state behind it. Level
+      // and capabilities now change together, atomically, in this one
+      // reducer case, so "Level 2" and "capacity_100" can never appear
+      // independently of one another.
       const buildings = state.buildings.map((b) =>
-        b.buildingType === "warehouse" ? { ...b, level: event.payload.toLevel, updatedAt: NOW } : b,
+        b.buildingType === "warehouse"
+          ? {
+              ...b,
+              level: event.payload.toLevel,
+              capabilities: [...new Set([...b.capabilities, ...event.payload.capabilitiesAdded])],
+              updatedAt: NOW,
+            }
+          : b,
       );
       return { ...state, buildings };
     }
