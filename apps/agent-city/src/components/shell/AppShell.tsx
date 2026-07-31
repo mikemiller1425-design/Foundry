@@ -8,15 +8,16 @@ import { SelectedObjectDetail } from "@/components/controls/SelectedObjectDetail
 import type { Selection } from "@/components/controls/selection";
 import { StageAgentPanel } from "@/components/controls/StageAgentPanel";
 import { EventTimeline } from "@/components/timeline/EventTimeline";
+import { WorldCanvas } from "@/components/world/WorldCanvas";
 import { useState } from "react";
 import { LEFT_NAV_PANEL, RIGHT_INTEL_PANEL, TIMELINE_PANEL } from "./panelConfig";
 import { REGION_PLACEHOLDER } from "./regionPlaceholder";
 
 // Ultrawide application shell (FBL-005 layout, FBL-006 interaction,
-// FBL-009 event timeline, FBL-010 2D operational controls): full-viewport
-// region layout with generic collapse/resize/keyboard behavior
-// (@foundry/ui) and real controls driven by the FBL-008 mock runtime —
-// see docs/02-specification/interface-model.md.
+// FBL-009 event timeline, FBL-010 2D operational controls, FBL-011 empty
+// R3F world): full-viewport region layout with generic collapse/resize/
+// keyboard behavior (@foundry/ui) and real controls driven by the
+// FBL-008 mock runtime — see docs/02-specification/interface-model.md.
 export function AppShell() {
   const [selection, setSelection] = useState<Selection | null>(null);
   const leftNavCollapsible = useCollapsible();
@@ -132,9 +133,11 @@ export function AppShell() {
         aria-label="Operational world"
         className="relative overflow-hidden p-4 text-sm"
       >
-        <h2 className="font-medium">Central operational world</h2>
-        <p className="mt-2 text-neutral-400">
-          No 3D world yet — placeholder until build ladder rung FBL-011+.
+        <WorldCanvas />
+
+        <h2 className="pointer-events-none relative font-medium">Central operational world</h2>
+        <p className="pointer-events-none relative mt-2 text-neutral-400">
+          Empty 3D world scaffold — no scene content until build ladder rung FBL-012+.
         </p>
 
         {/* Approval interaction (interface-model.md): stands in for

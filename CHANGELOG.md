@@ -112,9 +112,24 @@ Implemented the selected-object detail panel, the approval card (Approve/Reject/
 - `apps/agent-city/e2e/shell-controls.spec.ts`: FBL-010's required browser-level tests — keyboard-only approval resolution, reject/request-revision producing real non-fabricated events, typed command emission, rejected-command feedback, and command-bar/stage-list keyboard reachability
 - `apps/agent-city/e2e/shell-panels.spec.ts`: the FBL-006 Tab-order test now tabs up to a generous bound rather than exactly the panel-control count, since FBL-009/FBL-010 legitimately added their own focusable content (timeline rows, stage/agent list items, command bar controls) ahead of some panel controls in tab order — it still asserts every FBL-006 panel control remains reachable
 
+### Added — FBL-011 Empty React Three Fiber world
+
+Bootstrapped an empty React Three Fiber canvas (Three.js via `@react-three/fiber`, per ADR-004) hosted in the shell's central world region, per the operator-authorized bounded sequence FBL-007–FBL-011 — the final rung in that authorization. No scene content: no geometry, lights, or camera rig — that begins at FBL-012. 211 unit tests total across the repo (up from 210, 1 new) and 96 Playwright tests (up from 90, 6 new × 3 viewports, plus 1 pre-existing assertion updated in place) — all passing. Canvas mounting cannot be meaningfully verified under jsdom (no real WebGL context), so the rung's "no console/WebGL errors" and "resize handling" requirements are verified at the browser level (Playwright), consistent with how this repo has always verified real-rendering behavior (see FBL-005/006's layout/panel suites); a Vitest smoke test still confirms the component mounts without throwing, since R3F only measures (and only attempts WebGL context creation) once its container reports a non-zero size, which jsdom never does.
+
+- `apps/agent-city/src/components/world/WorldCanvas.tsx`: empty `<Canvas>`, absolutely positioned to fill the world region; resize handling is R3F's built-in `ResizeObserver`-based container measurement — no manual wiring needed until a camera exists (FBL-012)
+- `apps/agent-city/src/components/world/WorldCanvas.test.tsx`: Vitest smoke test — mounts without throwing
+- `apps/agent-city/src/components/shell/AppShell.tsx`: mounts `WorldCanvas` in the world region, behind the existing FBL-010 approval card/detail panel overlays; updated the region's placeholder copy from "No 3D world yet" to reflect that the canvas now exists (no scene content until FBL-012+)
+- `apps/agent-city/e2e/shell-world.spec.ts`: FBL-011's required browser-level tests — canvas mounts with no console/page errors, and the canvas fills and tracks the world region's size (including on panel-driven resize, not just initial load) — run across all three target viewports
+- `apps/agent-city/e2e/shell-controls.spec.ts`: updated one FBL-010 assertion that checked for the now-changed placeholder text ("No 3D world yet" → "Empty 3D world scaffold")
+- `three`, `@react-three/fiber` added as dependencies of `apps/agent-city`; `@types/three` as a dev dependency
+
+### Stop
+
+Operator authorization for this session's bounded execution sequence (FBL-007–FBL-011) is fully used. `FBL-012` and every later rung remain **not authorized** and were not started.
+
 ### Planned
 
-- Build ladder rung `FBL-011` (empty React Three Fiber world) — proceeding under the same operator-authorized bounded sequence
+- Build ladder rung `FBL-012` (camera and navigation) — requires separate, explicit operator authorization before it may begin
 
 ## [1.0.0] — 2026-07-30
 
