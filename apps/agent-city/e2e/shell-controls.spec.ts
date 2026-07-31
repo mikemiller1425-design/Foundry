@@ -55,10 +55,7 @@ test.describe("2D operational controls — stage/requirement detail (no 3D world
     await expect
       .poll(
         async () =>
-          page
-            .getByTestId("shell-detail-panel")
-            .getByTestId("requirement-checklist-item")
-            .count(),
+          page.getByTestId("shell-detail-panel").getByTestId("requirement-checklist-item").count(),
         { timeout: 15000 },
       )
       .toBe(3);
@@ -73,7 +70,9 @@ test.describe("2D operational controls — approval workflow", () => {
     await page.selectOption("#demo-speed", "4");
 
     await expect(page.getByTestId("approval-card")).toBeVisible({ timeout: 30000 });
-    const approveButton = page.getByTestId("approval-card").getByRole("button", { name: "Approve" });
+    const approveButton = page
+      .getByTestId("approval-card")
+      .getByRole("button", { name: "Approve" });
     await approveButton.focus();
     await expect(approveButton).toBeFocused();
     await page.keyboard.press("Enter");
@@ -82,10 +81,7 @@ test.describe("2D operational controls — approval workflow", () => {
     await expect
       .poll(
         async () =>
-          page
-            .getByTestId("timeline-row")
-            .filter({ hasText: "Approval approved" })
-            .count(),
+          page.getByTestId("timeline-row").filter({ hasText: "Approval approved" }).count(),
         { timeout: 10000 },
       )
       .toBeGreaterThan(0);

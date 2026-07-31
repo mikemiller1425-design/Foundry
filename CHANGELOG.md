@@ -127,9 +127,23 @@ Bootstrapped an empty React Three Fiber canvas (Three.js via `@react-three/fiber
 
 Operator authorization for this session's bounded execution sequence (FBL-007–FBL-011) is fully used. `FBL-012` and every later rung remain **not authorized** and were not started.
 
+### Added — FBL-012 Camera and navigation
+
+Implemented a reusable camera-control system for the FBL-011 R3F viewport, per `docs/02-specification/world-model.md` ("World camera") and the operator-authorized bounded sequence FBL-012–FBL-015. Pan, zoom, controlled orbit, canonical reset, and a `focus()` API for future selected objects (FBL-015), all built on pure, framework-free spherical-coordinate math so bounds/limits/reset/easing are fully unit tested without a real WebGL context. No world geometry added — the scene is still empty; a temporary reference object used during development was removed before this commit, per the rung's own rule. 139 unit tests total across the repo (up from 123, 16 new) and 123 Playwright tests (up from 96, 27 new — some existing shell-controls/shell-timeline text and count assertions also updated, see below) — all passing at all three target viewports.
+
+- `apps/agent-city/src/lib/world/cameraMath.ts` (+ `.test.ts`): pure spherical camera state — target/azimuth/polar/distance clamping to neighborhood bounds, zoom limits, and controlled-orbit polar range; a final ground-clearance clamp on the computed Cartesian position so no clamped-input combination can place the camera beneath the future ground plane (FBL-013); an `easeCameraState` lerp whose `t = 1` case is exactly the reduced-motion "instant" path, not a separate code branch
+- `apps/agent-city/src/lib/world/useReducedMotion.ts`: tracks the `prefers-reduced-motion` media query
+- `apps/agent-city/src/components/world/CameraRig.tsx`: rendered inside `<Canvas>`; applies the spherical state to the real Three.js camera every frame, eases toward a pending `focus()` target (or snaps instantly under reduced motion), and wires pointer (drag-to-orbit, Shift+drag-to-pan, wheel-to-zoom) and keyboard (arrow keys orbit, Shift+arrow keys pan, +/− zoom, Home resets) input directly onto the real canvas element so the focus target and the input-listener target are always the same node
+- `apps/agent-city/src/components/world/cameraController.ts`: the imperative handle type shared between `CameraRig` (inside the canvas's separate R3F render tree) and 2D controls outside it — a plain mutable ref, not React context, since a ref works across both trees with no bridging needed
+- `apps/agent-city/src/components/world/CameraHud.tsx`: the 2D "Reset View" control required outside the Canvas, a live distance/target/azimuth/elevation readout (also the browser-level test observability surface, since a WebGL canvas exposes nothing else to assert against), and visible textual camera instructions available without any pointer gesture
+- `apps/agent-city/src/components/world/WorldCanvas.tsx`, `AppShell.tsx`: thread a `cameraRef` from `AppShell` down into the canvas (`CameraRig`) and across to the 2D `CameraHud`
+- `apps/agent-city/e2e/shell-camera.spec.ts`: FBL-012's required browser-level tests — bounds, zoom limits, reset (via both Home and the 2D button), keyboard orbit/pan/zoom, reduced motion, panel resize/collapse coexistence, no console/WebGL errors, textual instructions present
+- Two pre-existing tests were fixed after the full verification suite (run per this rung's own requirement) surfaced real defects unrelated to the camera itself: `shell-timeline.spec.ts`'s severity-filter test compared virtualized DOM row counts across a filter change, which is only valid while the event list stays under the render window's capacity — once the always-playing demo produces enough events to exceed it, the count legitimately shrinks even though nothing is wrong; it now reads the timeline's own "N / M events" total instead (a `data-testid="event-count-summary"` added to `EventTimeline.tsx` for this). `shell-controls.spec.ts`'s reachability test also targeted "Start," which is legitimately disabled (and unfocusable) once the demo auto-starts on mount (FBL-009) — it now targets "Reset," which is never disabled
+- Focus()'s reduced-motion behavior is unit-tested via the pure easing function; it is not yet exercised end-to-end in a real browser because nothing is selectable to focus on until FBL-015 wires the Lighthouse into it — a scope boundary the ladder itself draws (FBL-012 §7 explicitly excludes "binding camera behavior to real object selection")
+
 ### Planned
 
-- Build ladder rung `FBL-012` (camera and navigation) — requires separate, explicit operator authorization before it may begin
+- Build ladder rung `FBL-013` (lighting and environment) — proceeding under the same operator-authorized bounded sequence
 
 ## [1.0.0] — 2026-07-30
 

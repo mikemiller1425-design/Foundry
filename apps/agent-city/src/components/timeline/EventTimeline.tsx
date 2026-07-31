@@ -161,7 +161,7 @@ export function EventTimeline() {
         >
           {autoscrollPaused ? "Resume autoscroll" : "Pause autoscroll"}
         </button>
-        <span className="text-neutral-500">
+        <span data-testid="event-count-summary" className="text-neutral-500">
           {filteredEvents.length} / {events.length} events
         </span>
       </div>

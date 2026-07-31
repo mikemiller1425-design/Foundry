@@ -8,18 +8,22 @@ import { SelectedObjectDetail } from "@/components/controls/SelectedObjectDetail
 import type { Selection } from "@/components/controls/selection";
 import { StageAgentPanel } from "@/components/controls/StageAgentPanel";
 import { EventTimeline } from "@/components/timeline/EventTimeline";
+import type { CameraControllerHandle } from "@/components/world/cameraController";
+import { CameraHud } from "@/components/world/CameraHud";
 import { WorldCanvas } from "@/components/world/WorldCanvas";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { LEFT_NAV_PANEL, RIGHT_INTEL_PANEL, TIMELINE_PANEL } from "./panelConfig";
 import { REGION_PLACEHOLDER } from "./regionPlaceholder";
 
 // Ultrawide application shell (FBL-005 layout, FBL-006 interaction,
 // FBL-009 event timeline, FBL-010 2D operational controls, FBL-011 empty
-// R3F world): full-viewport region layout with generic collapse/resize/
-// keyboard behavior (@foundry/ui) and real controls driven by the
-// FBL-008 mock runtime — see docs/02-specification/interface-model.md.
+// R3F world, FBL-012 camera and navigation): full-viewport region layout
+// with generic collapse/resize/keyboard behavior (@foundry/ui) and real
+// controls driven by the FBL-008 mock runtime — see
+// docs/02-specification/interface-model.md.
 export function AppShell() {
   const [selection, setSelection] = useState<Selection | null>(null);
+  const cameraRef = useRef<CameraControllerHandle>(null);
   const leftNavCollapsible = useCollapsible();
   const leftNavResizable = useResizable({
     defaultSize: LEFT_NAV_PANEL.defaultSize,
@@ -133,11 +137,12 @@ export function AppShell() {
         aria-label="Operational world"
         className="relative overflow-hidden p-4 text-sm"
       >
-        <WorldCanvas />
+        <WorldCanvas controllerRef={cameraRef} />
+        <CameraHud controllerRef={cameraRef} />
 
         <h2 className="pointer-events-none relative font-medium">Central operational world</h2>
         <p className="pointer-events-none relative mt-2 text-neutral-400">
-          Empty 3D world scaffold — no scene content until build ladder rung FBL-012+.
+          Empty 3D world scaffold — no scene content until build ladder rung FBL-013+.
         </p>
 
         {/* Approval interaction (interface-model.md): stands in for
