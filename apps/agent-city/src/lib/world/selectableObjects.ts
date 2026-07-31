@@ -14,6 +14,7 @@ export interface SelectableWorldObject {
 }
 
 const RESIDENCE_FOCUS_HEIGHT = 2.05;
+const OPERATIONAL_BUILDING_FOCUS_HEIGHT = 2.4;
 
 const RESIDENCE_OBJECTS: readonly SelectableWorldObject[] = WORLD_BUILDINGS.filter(
   (b) => b.buildingType === "home",
@@ -24,7 +25,19 @@ const RESIDENCE_OBJECTS: readonly SelectableWorldObject[] = WORLD_BUILDINGS.filt
   focusPosition: [b.position.x, b.position.y + RESIDENCE_FOCUS_HEIGHT, b.position.z],
 }));
 
+// FBL-017 — Construction Office, Warehouse, QA, Deployment Dock,
+// Construction Site.
+const OPERATIONAL_BUILDING_OBJECTS: readonly SelectableWorldObject[] = WORLD_BUILDINGS.filter(
+  (b) => b.buildingType !== "home" && b.buildingType !== "lighthouse",
+).map((b) => ({
+  id: b.id,
+  kind: "building",
+  label: b.name,
+  focusPosition: [b.position.x, b.position.y + OPERATIONAL_BUILDING_FOCUS_HEIGHT, b.position.z],
+}));
+
 export const SELECTABLE_WORLD_OBJECTS: readonly SelectableWorldObject[] = [
   { id: "lighthouse", kind: "building", label: "Lighthouse", focusPosition: BEACON_WORLD_POSITION },
   ...RESIDENCE_OBJECTS,
+  ...OPERATIONAL_BUILDING_OBJECTS,
 ];

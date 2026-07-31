@@ -55,7 +55,12 @@ export const WORLD_BUILDINGS: readonly WorldBuildingDefinition[] = [
     id: "construction-site",
     name: "Construction Site",
     buildingType: "construction_site",
-    position: { x: -4, y: 0, z: -4 },
+    // FBL-017: given a distinct x lane (not shared with any other building)
+    // so it never visually collapses into the Construction Office from the
+    // canonical camera angle — the two previously shared x = -4, differing
+    // only in z, which projected to overlapping screen positions once both
+    // had real geometry.
+    position: { x: -12, y: 0, z: -2 },
   },
 ] as const;
 

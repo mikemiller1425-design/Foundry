@@ -41,7 +41,7 @@ test.describe("Residences (FBL-016)", () => {
       await expect(marker(page, id)).toHaveAttribute("data-visible", "true");
     }
     const buildingItems = page.getByTestId("building-list-item");
-    await expect(buildingItems).toHaveCount(4); // Lighthouse + 3 residences
+    await expect(buildingItems).toHaveCount(9); // Lighthouse + 3 residences + 5 operational buildings (FBL-017)
   });
 
   test("pointer click on the Architect residence selects it (hit target) and syncs navigator + detail panel", async ({

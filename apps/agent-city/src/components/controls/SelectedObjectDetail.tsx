@@ -5,6 +5,11 @@ import { selectRequirementsByStage, selectStages } from "@/lib/mock-runtime/sele
 import { computeLighthouseState, LIGHTHOUSE_STATE_SHORT_LABEL } from "@/lib/world/lighthouseState";
 import { computeResidenceState, RESIDENCE_STATE_SHORT_LABEL } from "@/lib/world/residenceState";
 import { RESIDENCE_VISUALS } from "@/lib/world/residenceVisuals";
+import {
+  computeConstructionSitePhase,
+  CONSTRUCTION_SITE_VISUALS,
+} from "@/lib/world/constructionSitePhase";
+import { OPERATIONAL_BUILDING_VISUALS } from "@/lib/world/operationalBuildingVisuals";
 import { LIGHTHOUSE_STATE_VISUALS } from "@foundry/world-model";
 import { useMemo } from "react";
 import type { Selection } from "./selection";
@@ -146,6 +151,49 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
               <dd className="inline capitalize">{agent.role}</dd>
             </div>
           )}
+        </dl>
+      </>
+    );
+  }
+
+  if (building?.buildingType === "construction_site") {
+    const phase = computeConstructionSitePhase(stages);
+    const spec = CONSTRUCTION_SITE_VISUALS[phase];
+    return (
+      <>
+        <h3 className="font-medium">Building: {building.name}</h3>
+        <dl className="mt-1 space-y-0.5 text-neutral-400">
+          <div>
+            <dt className="inline text-neutral-500">phase: </dt>
+            <dd className="inline capitalize">{phase}</dd>
+          </div>
+          <div>
+            <dt className="inline text-neutral-500">signal: </dt>
+            <dd className="inline">{spec.label}</dd>
+          </div>
+        </dl>
+      </>
+    );
+  }
+
+  if (building) {
+    const spec = OPERATIONAL_BUILDING_VISUALS[building.status];
+    return (
+      <>
+        <h3 className="font-medium">Building: {building.name}</h3>
+        <dl className="mt-1 space-y-0.5 text-neutral-400">
+          <div>
+            <dt className="inline text-neutral-500">status: </dt>
+            <dd className="inline">{building.status}</dd>
+          </div>
+          <div>
+            <dt className="inline text-neutral-500">signal: </dt>
+            <dd className="inline">{spec.label}</dd>
+          </div>
+          <div>
+            <dt className="inline text-neutral-500">level: </dt>
+            <dd className="inline">{building.level}</dd>
+          </div>
         </dl>
       </>
     );

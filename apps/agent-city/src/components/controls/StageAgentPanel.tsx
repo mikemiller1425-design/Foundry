@@ -1,19 +1,28 @@
 "use client";
 
 import { useRuntime } from "@/lib/mock-runtime";
-import { selectStages } from "@/lib/mock-runtime/selectors";
+import { selectStages, type StageSummary } from "@/lib/mock-runtime/selectors";
 import { computeLighthouseState, LIGHTHOUSE_STATE_SHORT_LABEL } from "@/lib/world/lighthouseState";
 import { computeResidenceState, RESIDENCE_STATE_SHORT_LABEL } from "@/lib/world/residenceState";
+import {
+  computeConstructionSitePhase,
+  CONSTRUCTION_SITE_VISUALS,
+} from "@/lib/world/constructionSitePhase";
+import { OPERATIONAL_BUILDING_VISUALS } from "@/lib/world/operationalBuildingVisuals";
 import { SELECTABLE_WORLD_OBJECTS } from "@/lib/world/selectableObjects";
 import type { WorldState } from "@foundry/contracts";
 import { useMemo } from "react";
 import type { Selection } from "./selection";
 
-// FBL-016: the "World objects" navigator list covers every registered
-// selectable world object, not only the Lighthouse — each row's status
-// label reads from that object's own state derivation rather than a single
-// hardcoded value.
-function worldObjectStatusLabel(objectId: string, worldState: WorldState): string {
+// FBL-016/FBL-017: the "World objects" navigator list covers every
+// registered selectable world object, not only the Lighthouse — each row's
+// status label reads from that object's own state derivation rather than a
+// single hardcoded value.
+function worldObjectStatusLabel(
+  objectId: string,
+  worldState: WorldState,
+  stages: readonly StageSummary[],
+): string {
   if (objectId === "lighthouse") {
     return LIGHTHOUSE_STATE_SHORT_LABEL[computeLighthouseState(worldState)];
   }
@@ -22,7 +31,13 @@ function worldObjectStatusLabel(objectId: string, worldState: WorldState): strin
     const agent = worldState.agents.find((a) => a.homeBuildingId === objectId);
     return RESIDENCE_STATE_SHORT_LABEL[computeResidenceState(building, agent)];
   }
-  return building?.status ?? "";
+  if (building?.buildingType === "construction_site") {
+    return CONSTRUCTION_SITE_VISUALS[computeConstructionSitePhase(stages)].label;
+  }
+  if (building) {
+    return OPERATIONAL_BUILDING_VISUALS[building.status].label;
+  }
+  return "";
 }
 
 const STAGE_LABEL: Record<string, string> = {
@@ -78,7 +93,7 @@ export function StageAgentPanel({
               >
                 <span className="truncate">{object.label}</span>
                 <span className="text-neutral-400">
-                  {worldObjectStatusLabel(object.id, worldState)}
+                  {worldObjectStatusLabel(object.id, worldState, stages)}
                 </span>
               </button>
             </li>
