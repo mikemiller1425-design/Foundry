@@ -37,26 +37,37 @@ export function AppShell() {
 
   // The single funnel for every selection source (3D pointer click, 3D
   // keyboard Enter/Space, and the left navigator): updates the shared 2D
-  // selection state, emits the real building.selected event
-  // (event-model.md — never a mutation of operational truth), and moves
-  // the FBL-012 camera to focus on it.
+  // selection state, emits the real building.selected event for buildings
+  // specifically (event-model.md — never a mutation of operational
+  // truth; no equivalent event exists for agent/vehicle selection, so
+  // those stay pure frontend state, same as the pre-existing 2D agent
+  // list), and moves the FBL-012 camera to focus on any selected object
+  // registered in SELECTABLE_WORLD_OBJECTS regardless of kind (FBL-019
+  // generalized this from "building only" once the vehicle became the
+  // first non-building 3D-selectable object).
   const handleSelect = useCallback(
     (next: Selection) => {
       setSelection(next);
       if (next.kind === "building") {
         selectBuilding(next.id);
-        const target = SELECTABLE_WORLD_OBJECTS.find((o) => o.id === next.id);
-        if (target) {
-          const [x, y, z] = target.focusPosition;
-          cameraRef.current?.focus({ x, y, z });
-        }
+      }
+      const target = SELECTABLE_WORLD_OBJECTS.find((o) => o.id === next.id);
+      if (target) {
+        const [x, y, z] = target.focusPosition;
+        cameraRef.current?.focus({ x, y, z });
       }
     },
     [selectBuilding],
   );
 
-  const handleSelectBuildingId = useCallback(
-    (id: string) => handleSelect({ kind: "building", id }),
+  // The 3D canvas reports only an id; the object's own registered kind
+  // (SELECTABLE_WORLD_OBJECTS) determines whether it's a building or the
+  // vehicle — never assumed.
+  const handleSelectWorldObjectId = useCallback(
+    (id: string) => {
+      const target = SELECTABLE_WORLD_OBJECTS.find((o) => o.id === id);
+      handleSelect({ kind: target?.kind ?? "building", id } as Selection);
+    },
     [handleSelect],
   );
 
@@ -194,7 +205,7 @@ export function AppShell() {
           lighthouseMarkerRef={lighthouseMarkerRef}
           worldObjectMarkerMapRef={worldObjectMarkerMapRef}
           selection={selection}
-          onSelect={handleSelectBuildingId}
+          onSelect={handleSelectWorldObjectId}
         />
         <CameraHud controllerRef={cameraRef} />
         <LighthouseMarker markerRef={lighthouseMarkerRef} />
@@ -202,8 +213,8 @@ export function AppShell() {
 
         <h2 className="pointer-events-none relative font-medium">Central operational world</h2>
         <p className="pointer-events-none relative mt-2 text-neutral-400">
-          Lighthouse, residences, operational buildings, and roads — no vehicle or agents yet
-          until build ladder rung FBL-019+.
+          Lighthouse, residences, operational buildings, roads, and the utility vehicle — no
+          agents yet until build ladder rung FBL-020+.
         </p>
 
         {/* Approval interaction (interface-model.md): stands in for

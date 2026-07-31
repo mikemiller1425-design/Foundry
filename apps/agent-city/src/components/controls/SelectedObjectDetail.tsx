@@ -10,7 +10,9 @@ import {
   CONSTRUCTION_SITE_VISUALS,
 } from "@/lib/world/constructionSitePhase";
 import { OPERATIONAL_BUILDING_VISUALS } from "@/lib/world/operationalBuildingVisuals";
-import { LIGHTHOUSE_STATE_VISUALS } from "@foundry/world-model";
+import { computeVehicleState } from "@/lib/world/vehicleState";
+import { VEHICLE_VISUALS } from "@/lib/world/vehicleVisuals";
+import { LIGHTHOUSE_STATE_VISUALS, WORLD_VEHICLE } from "@foundry/world-model";
 import { useMemo } from "react";
 import type { Selection } from "./selection";
 
@@ -103,6 +105,26 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
               <dd className="inline">{agent.currentTaskId}</dd>
             </div>
           )}
+        </dl>
+      </>
+    );
+  }
+
+  if (selection.kind === "vehicle") {
+    const vehicleState = computeVehicleState(worldState);
+    const spec = VEHICLE_VISUALS[vehicleState];
+    return (
+      <>
+        <h3 className="font-medium">Vehicle: {WORLD_VEHICLE.name}</h3>
+        <dl className="mt-1 space-y-0.5 text-neutral-400">
+          <div>
+            <dt className="inline text-neutral-500">status: </dt>
+            <dd className="inline">{vehicleState}</dd>
+          </div>
+          <div>
+            <dt className="inline text-neutral-500">signal: </dt>
+            <dd className="inline">{spec.label}</dd>
+          </div>
         </dl>
       </>
     );

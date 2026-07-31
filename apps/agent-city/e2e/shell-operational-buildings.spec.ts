@@ -45,7 +45,7 @@ test.describe("Operational buildings (FBL-017)", () => {
     await page.goto("/");
     await waitForMarkersReady(page);
     const buildingItems = page.getByTestId("building-list-item");
-    await expect(buildingItems).toHaveCount(9); // Lighthouse + 3 residences + 5 operational buildings
+    await expect(buildingItems).toHaveCount(10); // Lighthouse + 3 residences + 5 operational buildings + vehicle (FBL-019)
   });
 
   test("pointer click on the Construction Office selects it (hit target) and syncs navigator + detail panel", async ({

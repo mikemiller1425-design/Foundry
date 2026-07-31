@@ -32,7 +32,7 @@ test.describe("2D operational controls — stage/requirement detail (no 3D world
   }) => {
     await page.goto("/");
     await expect(
-      page.getByText("Lighthouse, residences, operational buildings, and roads"),
+      page.getByText("Lighthouse, residences, operational buildings, roads, and the utility vehicle"),
     ).toBeVisible();
 
     await expect(page.getByTestId("stage-list-item").first()).toBeVisible({ timeout: 15000 });

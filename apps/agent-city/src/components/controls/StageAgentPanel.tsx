@@ -9,7 +9,9 @@ import {
   CONSTRUCTION_SITE_VISUALS,
 } from "@/lib/world/constructionSitePhase";
 import { OPERATIONAL_BUILDING_VISUALS } from "@/lib/world/operationalBuildingVisuals";
-import { SELECTABLE_WORLD_OBJECTS } from "@/lib/world/selectableObjects";
+import { computeVehicleState } from "@/lib/world/vehicleState";
+import { VEHICLE_VISUALS } from "@/lib/world/vehicleVisuals";
+import { SELECTABLE_WORLD_OBJECTS, type SelectableWorldObject } from "@/lib/world/selectableObjects";
 import type { WorldState } from "@foundry/contracts";
 import { useMemo } from "react";
 import type { Selection } from "./selection";
@@ -19,16 +21,19 @@ import type { Selection } from "./selection";
 // status label reads from that object's own state derivation rather than a
 // single hardcoded value.
 function worldObjectStatusLabel(
-  objectId: string,
+  object: SelectableWorldObject,
   worldState: WorldState,
   stages: readonly StageSummary[],
 ): string {
-  if (objectId === "lighthouse") {
+  if (object.kind === "vehicle") {
+    return VEHICLE_VISUALS[computeVehicleState(worldState)].label;
+  }
+  if (object.id === "lighthouse") {
     return LIGHTHOUSE_STATE_SHORT_LABEL[computeLighthouseState(worldState)];
   }
-  const building = worldState.buildings.find((b) => b.id === objectId);
+  const building = worldState.buildings.find((b) => b.id === object.id);
   if (building?.buildingType === "home") {
-    const agent = worldState.agents.find((a) => a.homeBuildingId === objectId);
+    const agent = worldState.agents.find((a) => a.homeBuildingId === object.id);
     return RESIDENCE_STATE_SHORT_LABEL[computeResidenceState(building, agent)];
   }
   if (building?.buildingType === "construction_site") {
@@ -78,26 +83,27 @@ export function StageAgentPanel({
       <section aria-label="World objects">
         <h3 className="font-medium">World objects</h3>
         <ul className="mt-1 space-y-0.5">
-          {SELECTABLE_WORLD_OBJECTS.map((object) => (
-            <li key={object.id}>
-              <button
-                type="button"
-                onClick={() => onSelect({ kind: "building", id: object.id })}
-                aria-pressed={selection?.kind === "building" && selection.id === object.id}
-                data-testid="building-list-item"
-                className={`flex w-full items-center justify-between rounded px-1 py-0.5 text-left hover:bg-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
-                  selection?.kind === "building" && selection.id === object.id
-                    ? "bg-neutral-800"
-                    : ""
-                }`}
-              >
-                <span className="truncate">{object.label}</span>
-                <span className="text-neutral-400">
-                  {worldObjectStatusLabel(object.id, worldState, stages)}
-                </span>
-              </button>
-            </li>
-          ))}
+          {SELECTABLE_WORLD_OBJECTS.map((object) => {
+            const isSelected = selection?.kind === object.kind && selection.id === object.id;
+            return (
+              <li key={object.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect({ kind: object.kind, id: object.id } as Selection)}
+                  aria-pressed={isSelected}
+                  data-testid="building-list-item"
+                  className={`flex w-full items-center justify-between rounded px-1 py-0.5 text-left hover:bg-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
+                    isSelected ? "bg-neutral-800" : ""
+                  }`}
+                >
+                  <span className="truncate">{object.label}</span>
+                  <span className="text-neutral-400">
+                    {worldObjectStatusLabel(object, worldState, stages)}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </section>
 

@@ -10,6 +10,7 @@ import { Environment } from "./Environment";
 import type { LighthouseMarkerState } from "./lighthouseMarkerState";
 import { LighthouseSceneObject } from "./LighthouseSceneObject";
 import { RoadNetwork } from "./RoadNetwork";
+import { VehicleSceneObject } from "./VehicleSceneObject";
 import { WorldBuildings } from "./WorldBuildings";
 import { WorldSelectionController } from "./WorldSelectionController";
 
@@ -59,6 +60,12 @@ export function WorldCanvas({
         onSelect={onSelect}
       />
       <WorldBuildings
+        markerMapRef={worldObjectMarkerMapRef}
+        selection={selection}
+        onSelect={onSelect}
+        hoveredIdRef={hoveredIdRef}
+      />
+      <VehicleSceneObject
         markerMapRef={worldObjectMarkerMapRef}
         selection={selection}
         onSelect={onSelect}

@@ -81,10 +81,10 @@ describe("StageAgentPanel", () => {
     }
   });
 
-  it("renders the Lighthouse, the three residences, and the five operational buildings as selectable world objects showing their current state (FBL-016/FBL-017)", () => {
+  it("renders the Lighthouse, the three residences, the five operational buildings, and the utility vehicle as selectable world objects showing their current state (FBL-016/FBL-017/FBL-019)", () => {
     renderPanel();
     const buildingItems = screen.getAllByTestId("building-list-item");
-    expect(buildingItems).toHaveLength(9);
+    expect(buildingItems).toHaveLength(10);
     expect(screen.getByText("Lighthouse")).toBeInTheDocument();
     expect(screen.getByText("Architect Residence")).toBeInTheDocument();
     expect(screen.getByText("Builder Residence")).toBeInTheDocument();
@@ -94,6 +94,7 @@ describe("StageAgentPanel", () => {
     expect(screen.getByText("QA Building")).toBeInTheDocument();
     expect(screen.getByText("Deployment Dock")).toBeInTheDocument();
     expect(screen.getByText("Construction Site")).toBeInTheDocument();
+    expect(screen.getByText("Utility Vehicle")).toBeInTheDocument();
   });
 
   it("clicking the Lighthouse calls onSelect with { kind: 'building', id: 'lighthouse' }", () => {
@@ -112,5 +113,12 @@ describe("StageAgentPanel", () => {
     const { onSelect } = renderPanel();
     fireEvent.click(screen.getAllByTestId("building-list-item")[4]!); // 0: lighthouse, 1-3: residences, 4: construction office
     expect(onSelect).toHaveBeenCalledWith({ kind: "building", id: "construction-office" });
+  });
+
+  it("clicking the utility vehicle calls onSelect with { kind: 'vehicle', id: <vehicle id> } (FBL-019)", () => {
+    const { onSelect } = renderPanel();
+    const items = screen.getAllByTestId("building-list-item");
+    fireEvent.click(items[items.length - 1]!); // vehicle is registered last
+    expect(onSelect).toHaveBeenCalledWith({ kind: "vehicle", id: "vehicle-utility-1" });
   });
 });

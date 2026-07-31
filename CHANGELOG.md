@@ -218,7 +218,7 @@ Added the Construction Office, Warehouse, QA Building, Deployment Dock, and Cons
 
 ### Added — FBL-018 Roads
 
-Added the small permitted-route road network — homes↔office, office↔warehouse, warehouse↔QA, QA↔dock — per `docs/02-specification/world-model.md` ("Road network") and the operator-authorized bounded sequence FBL-016–FBL-020. Static geometry only: roads visualize available routes and never authorize transfers; dynamic available/highlighted/inactive states wire to `transfer.*` events at FBL-021, not here. No traffic simulation, no selection (world-model.md: "Interactions: Informational; selection optional" — this rung keeps roads non-interactive). 200 unit tests total across the repo (up from 197, 3 new) and 243 Playwright tests (up from 231, 12 new — `shell-roads.spec.ts`'s 4 tests × 3 viewports, plus one pre-existing `shell-controls.spec.ts` placeholder-text assertion updated in place) — all passing at all three target viewports.
+Added the small permitted-route road network — homes↔office, office↔warehouse, warehouse↔QA, QA↔dock — per `docs/02-specification/world-model.md` ("Road network") and the operator-authorized bounded sequence FBL-016–FBL-020. Static geometry only: roads visualize available routes and never authorize transfers; dynamic available/highlighted/inactive states wire to `transfer.*` events at FBL-021, not here. No traffic simulation, no selection (world-model.md: "Interactions: Informational; selection optional" — this rung keeps roads non-interactive). 197 unit tests total across the repo (up from 194, 3 new) and 243 Playwright tests (up from 231, 12 new — `shell-roads.spec.ts`'s 4 tests × 3 viewports, plus one pre-existing `shell-controls.spec.ts` placeholder-text assertion updated in place) — all passing at all three target viewports.
 
 - `apps/agent-city/src/lib/world/roadNetwork.ts` (+ `.test.ts`): pure `resolveRoadEndpoints()` resolving `@foundry/world-model`'s existing `ROAD_SEGMENTS` (built at FBL-007) to real building positions; throws if a segment names a building that doesn't exist rather than silently rendering a route to nowhere — this rung's own explicit failure condition
 - `apps/agent-city/src/components/world/Road.tsx`: a single flat static rectangle between two positions, all six segments rendering identically (no per-segment state) until FBL-021
@@ -226,9 +226,24 @@ Added the small permitted-route road network — homes↔office, office↔wareho
 - `apps/agent-city/src/components/world/WorldCanvas.tsx`: mounts `RoadNetwork` alongside the existing world objects
 - `apps/agent-city/e2e/shell-roads.spec.ts`: FBL-018's required browser-level test (render/geometry smoke test, confirmed via real rendered pixels) plus resize and existing-functionality regression checks
 
+### Added — FBL-019 Utility vehicle
+
+Added the single utility vehicle grounded in the `Vehicle` entity (domain-model.md, resolves audit finding B-04), per `docs/02-specification/world-model.md` ("Utility vehicle") and the operator-authorized bounded sequence FBL-016–FBL-020. `WorldState` carries no standalone Vehicle record — only `activeTransfers` — so the vehicle's status is derived entirely from whichever active Transfer currently names it (mirroring that Transfer's own backend-authoritative status), defaulting to `parked` with no active transfer. `in_transit` can therefore only ever be reported when a real Transfer record already carries that exact status, which only happens after a genuine `transfer.started` event — never a local animation or timer; position itself is fixed at the vehicle's home building this rung (motion stubbed inert; actually moving it is FBL-021's job). Also generalized the shared selection funnel (`AppShell.tsx`) to move the camera on selection for any registered object regardless of kind, not only buildings, now that the vehicle is the first non-Building 3D-selectable object — and added a `"vehicle"` kind to `Selection` alongside a small `CHANGELOG.md` correction (FBL-018's entry misstated 200 unit tests total; corrected to 197, the number `194 + 3 new` actually produces). 208 unit tests total across the repo (up from 197, 11 new) and 264 Playwright tests (up from 243, 21 new — `shell-vehicle.spec.ts`'s 7 tests × 3 viewports, plus two pre-existing count/placeholder-text assertions in `shell-residences.spec.ts`/`shell-operational-buildings.spec.ts`/`shell-controls.spec.ts` updated in place) — all passing at all three target viewports.
+
+- `apps/agent-city/src/lib/world/vehicleState.ts` (+ `.test.ts`): pure `computeVehicleState(worldState)` — reads the one active Transfer naming the vehicle (if any) and maps its status onto the vehicle's own vocabulary; defaults to `parked`
+- `apps/agent-city/src/lib/world/vehicleVisuals.ts` (+ `.test.ts`): declarative `VehicleStatus` (all 7 domain-model.md values) → color + indicator-shape table, checked pairwise for no two statuses sharing a non-color signature
+- `apps/agent-city/src/components/world/Vehicle.tsx`: simple low-poly chassis + cabin, no interior; only the indicator shape/color varies with state
+- `apps/agent-city/src/components/world/VehicleSceneObject.tsx`: the scene-object bridge (same its-fine-backed pattern as every prior world object), parked beside its home building (Warehouse)
+- `apps/agent-city/src/components/controls/selection.ts`: `Selection` gains a `"vehicle"` kind — a Vehicle is its own domain entity, not a Building
+- `apps/agent-city/src/lib/world/selectableObjects.ts`: the vehicle appended to the registry
+- `apps/agent-city/src/components/shell/AppShell.tsx`: `handleSelect` now moves the camera for any selected object registered in `SELECTABLE_WORLD_OBJECTS` regardless of kind (previously gated behind `kind === "building"`); the 3D canvas's `onSelect(id)` callback now looks up the object's own registered kind rather than assuming `"building"`
+- `apps/agent-city/src/components/controls/StageAgentPanel.tsx`, `SelectedObjectDetail.tsx`: the "World objects" navigator row now emits the object's own kind (`object.kind`) instead of a hardcoded `"building"`; the detail panel gained a `"vehicle"` branch
+- `apps/agent-city/e2e/shell-vehicle.spec.ts`: FBL-019's required browser-level tests — parked-by-default, pointer/navigator selection, Escape, and a full-run test proving the vehicle never reports `in_transit` without a real backing Transfer state
+- `apps/agent-city/e2e/shell-residences.spec.ts`, `shell-operational-buildings.spec.ts`, `shell-controls.spec.ts`: updated navigator building-count and placeholder-text assertions for the now ten-entry "World objects" list
+
 ### Planned
 
-- Build ladder rung `FBL-019` (utility vehicle) — the next rung within the operator-authorized bounded sequence FBL-016–FBL-020
+- Build ladder rung `FBL-020` (agent representations) — the final rung within the operator-authorized bounded sequence FBL-016–FBL-020
 
 ## [1.0.0] — 2026-07-30
 
