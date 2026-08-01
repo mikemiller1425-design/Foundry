@@ -137,7 +137,14 @@ importers:
         specifier: workspace:*
         version: link:../world-model
 
-  packages/runtime-adapters: {}
+  packages/runtime-adapters:
+    dependencies:
+      '@foundry/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   packages/ui:
     devDependencies:
