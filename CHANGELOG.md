@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — FBL-023 Persistence foundation
+
+Built a thin, backend-authoritative store for the full V1 domain (ADR-002), per the operator-authorized bounded sequence FBL-023–FBL-026. No HTTP is exposed yet — that is FBL-024. Storage is Node's built-in `node:sqlite` (`DatabaseSync`), chosen because it gives real transactional writes with zero new dependencies; this requires bumping the root `engines.node` floor from `>=20` to `>=22.13.0` (the version `node:sqlite` no longer needs `--experimental-sqlite`; this repo develops on Node 26, where it is fully stable).
+
+- `packages/persistence` (new workspace package): `PersistenceService`, the one public repository/service interface — transactional idempotent event append, per-entity get/list, `WorldState` snapshot construction, and snapshot-plus-later-events reconciliation (`reconcileFromSnapshot`)
+- `packages/persistence/src/reducer.ts`: a backend-authoritative entity projection (`reduceEntities`) folding `@foundry/event-types` events into full per-entity records for every `domain-model.md` entity (Project, Build, BuildStage, Requirement, Task, AgentRun, Artifact, Transfer, Approval, Revision, Upgrade, Agent, Building, Vehicle) — deliberately a separate implementation from the frontend-only `worldStateReducer.ts` (different shape, different package, both documented as required to agree on event semantics, not share code), cross-validated by test rather than by sharing code
+- `packages/persistence/src/schema.ts`: two-table SQLite schema — an append-only `events` log (unique event id, monotonic `sequence`) and a generic `entities` table (`entity_type`, `entity_id`, JSON `data`) so no per-entity SQL columns need to track `packages/contracts` changes
+- `packages/persistence/src/canonicalRun.test.ts`: replays all 124 events from the FBL-022 canonical recorded run fixture and asserts the resulting `WorldState` and full entity set (7 stages, 7 artifacts, 3 transfers, 1 approval, 1 completed Warehouse upgrade to Level 2) match the recorded run
+- `packages/persistence/src/persistenceService.test.ts`: idempotent duplicate-event handling (F-09), event ordering, restart reconstruction via close-then-reopen of the same database file (F-08), transactional event+entity writes, and snapshot/reconciliation equivalence to continuous replay
+- `.gitignore`: excludes local `*.sqlite`/`*.db` runtime files
+- Verification: typecheck and lint clean repo-wide; full unit suite green (402 tests: 393 pre-existing + 9 new); production build passes
+
 ### Added — FBL-022 Complete simulated V1 workflow
 
 Completed the entire Agent City V1 primary journey against the deterministic mock runtime, from objective submission through planning, implementation, the intentional mandatory-requirement failure, repair, independent Inspector validation, human approval, transfer, build completion, and the Warehouse Level 1→2 capability upgrade. The mock engine remains the temporary stand-in authority only; no backend, database, persistence service, network runtime, or Claude Code adapter was introduced. The recorded canonical run is now the comparison baseline for later backend-authoritative work.

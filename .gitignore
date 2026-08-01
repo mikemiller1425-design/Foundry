@@ -52,5 +52,13 @@ tmp/
 temp/
 *.local
 
+# Local persistence (FBL-023) — database files are runtime state, never checked in
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db
+
 # Claude / agent local artifacts
 .claude/settings.local.json

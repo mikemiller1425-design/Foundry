@@ -4,7 +4,7 @@
   "private": true,
   "description": "Foundry monorepo — spatial operating platform for autonomous organizations.",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13.0"
   },
   "packageManager": "pnpm@11.15.1",
   "scripts": {
