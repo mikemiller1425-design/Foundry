@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — FBL-032 Restart and recovery
+
+Proved that every state the workflow can reach is reconstructed from the persisted log alone. **Operator observation is pending**, so this rung's stop condition is not yet met and FBL-033 has not been started.
+
+ADR-002's closing argument is that **truth which cannot survive a restart is not truth**. This rung adds no capability — its ladder entry explicitly prohibits feature work — and instead closes that loop.
+
+- `packages/persistence/src/recovery.test.ts`: 23 tests organised by **reachable state** rather than by mechanism. The risk here is not "does replay work" (FBL-023 established that) but "is there a state whose recovery nobody checked", so each block drives the system into one such state through real commands, restarts, and asserts the reconstruction.
+- States covered: WorldState byte-identical across a restart and from an empty log; mid-build; blocked; pending approval (still a live gate afterwards, not merely a stored row); resolved approval (keeps its resolver *and* still refuses a conflicting reversal); failed validation (evidence and authoritative validator role intact); in-progress `AgentRun` (still running, and still able to reach a terminal state); and timed-out `AgentRun` retaining its logs and evidence per FBL-028.
+- All four upgrade states recover at the correct level and capacity — including **`upgrading` recovering at Level 1 / capacity 25, so V-07 survives a restart** — and a failed upgrade retains prior capability.
+- Replay idempotency: re-appending the entire log after a restart changes nothing, and a duplicate event id creates no duplicate entity. Snapshot/cursor reconciliation is verified for a mid-log cursor, an unknown cursor (full resync), and a null cursor.
+- Stale commands are rejected after recovery: a client reconnecting with pre-restart state and resubmitting a conflicting decision is refused, and **authorization is not in-memory state either** — an unauthorized command is still refused after a restart.
+- Subscriber durability: a subscriber is never notified before the event is committed, and never for a duplicate.
+- **No earlier-rung defect was revealed, so no earlier rung was reopened.** Had one been, the ladder requires fixing it in the responsible rung rather than patching it here.
+- Verification: typecheck (8/8) and lint clean; unit + integration green (767 tests: 744 pre-existing + 23 new); production build passes; browser **342 passed / 3 skipped / 0 failed** — the first fully clean browser run of this sequence, with neither the timeline flake nor the 5120×1440 `approval-card` timeout appearing. Those remain real intermittent defects for FBL-034; one clean run does not retire them.
+
 ### Observed — FBL-031 operator observation of the Warehouse upgrade
 
 Recorded the operator's observation of FBL-031's three visual checks. **Documentation only — no code, test, or behaviour changed.** Append-only record: `docs/evidence/fbl-031/operator-observation.md`.
