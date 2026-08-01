@@ -34,6 +34,19 @@ export interface RuntimeContextValue {
   selectBuilding: (buildingId: string) => void;
   clearSelection: () => void;
   lastRejection: CommandRejection | null;
+  /**
+   * FBL-030: true when resolving an approval requires an operator
+   * credential this client does not yet hold.
+   *
+   * The mock runtime is its own authority (ADR-001) and never requires
+   * one, so this is false there and demo/test mode is unchanged. Against
+   * the real backend it is true until the operator supplies a
+   * credential — surfaced so the approval controls can say *why* they
+   * are unavailable instead of failing silently when pressed.
+   */
+  operatorCredentialRequired?: boolean;
+  /** Stores the operator credential for this client. Backend mode only. */
+  setOperatorCredential?: (value: string) => void;
 }
 
 // Exported so tests can supply a fixed, hand-crafted event fixture via

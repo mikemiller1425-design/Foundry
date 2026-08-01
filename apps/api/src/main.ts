@@ -32,14 +32,28 @@ const agentCredentials = WORLD_AGENTS.map((agent) => ({
   token: principals.issueAgentCredential(agent.id),
 }));
 
+/**
+ * FBL-030: the human operator's credential.
+ *
+ * Resolving an approval is the governance act (principle 14), so it
+ * requires an authenticated operator — an agent credential will not do,
+ * however genuine. Like the agent tokens this is per-process, in-memory,
+ * and never persisted; unlike them it is meant to reach a browser, which
+ * is why it is printed for the operator to paste in rather than baked
+ * into the client bundle at build time.
+ */
+const operatorId = process.env.FOUNDRY_OPERATOR_ID ?? "operator-1";
+const operatorToken = principals.issueOperatorCredential(operatorId);
+
 const server = createApp(persistence, principals);
 
 server.listen(port, () => {
   console.log(`@foundry/api listening on :${port} (db: ${dbPath})`);
-  console.log("agent credentials (this process only; not persisted):");
+  console.log("credentials (this process only; not persisted):");
   for (const credential of agentCredentials) {
     console.log(`  ${credential.role.padEnd(10)} ${credential.id.padEnd(18)} ${credential.token}`);
   }
+  console.log(`  ${"operator".padEnd(10)} ${operatorId.padEnd(18)} ${operatorToken}`);
 });
 
 function shutdown(): void {

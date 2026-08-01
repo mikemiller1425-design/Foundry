@@ -6,6 +6,11 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { RuntimeContext, type RuntimeContextValue } from "@/lib/mock-runtime/RuntimeProvider";
 import { BackendClient } from "./backendClient";
 import { applyConnectionStatus, areMutationsAllowed } from "./connectionState";
+import {
+  commandHeaders,
+  readOperatorCredential,
+  writeOperatorCredential,
+} from "./operatorCredential";
 import { createInitialWorldState } from "@/lib/mock-runtime/worldStateReducer";
 
 /**
@@ -63,13 +68,17 @@ export function BackendRuntimeProvider({
       try {
         const res = await fetch(`${baseUrl.replace(/\/$/, "")}/commands`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          // FBL-029/030: identity travels in the credential, not the body.
+          headers: commandHeaders(readOperatorCredential()),
           body: JSON.stringify(body),
         });
         const outcome = await res.json();
         setLastRejection(
           outcome?.accepted === false
-            ? { commandType: String(outcome.commandType ?? "unknown"), reason: String(outcome.reason ?? "Rejected") }
+            ? {
+                commandType: String(outcome.commandType ?? "unknown"),
+                reason: String(outcome.reason ?? "Rejected"),
+              }
             : null,
         );
       } catch (err) {
@@ -103,11 +112,15 @@ export function BackendRuntimeProvider({
           : decision === "rejected"
             ? "Approval.Reject"
             : "Approval.RequestRevision";
+      // No `actor` and no `resolvedBy`: both are now derived server-side
+      // from the authenticated credential (FBL-029/030). Sending either
+      // would be asserting an authority the payload is not allowed to
+      // carry, and the backend refuses a payload that contradicts the
+      // credential rather than silently overriding it.
       void postCommand({
         commandType,
         entityId: pending.id,
-        params: { resolvedBy, resolutionNote },
-        actor: { actorType: "operator", actorId: resolvedBy },
+        params: resolutionNote ? { resolutionNote } : {},
       });
     },
     [postCommand, worldState.approvals],
@@ -118,6 +131,19 @@ export function BackendRuntimeProvider({
   // available while disconnected.
   const selectBuilding = useCallback(() => {}, []);
   const clearSelection = useCallback(() => {}, []);
+
+  const [hasCredential, setHasCredential] = useState(false);
+  useEffect(() => {
+    // Read after mount only: localStorage does not exist during SSR, and
+    // reading it during render would make the first paint differ between
+    // server and client.
+    setHasCredential(readOperatorCredential() !== null);
+  }, []);
+
+  const setOperatorCredential = useCallback((value: string) => {
+    writeOperatorCredential(value);
+    setHasCredential(readOperatorCredential() !== null);
+  }, []);
 
   return (
     <RuntimeContext.Provider
@@ -133,6 +159,8 @@ export function BackendRuntimeProvider({
         selectBuilding,
         clearSelection,
         lastRejection,
+        operatorCredentialRequired: !hasCredential,
+        setOperatorCredential,
       }}
     >
       {children}

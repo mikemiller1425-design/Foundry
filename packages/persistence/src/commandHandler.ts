@@ -37,6 +37,20 @@ export interface CommandOutcome {
 
 const INSPECTOR_AGENT_ID = WORLD_AGENTS.find((a) => a.role === "inspector")?.id;
 
+/** The commands that resolve a human decision gate (FBL-030). */
+const APPROVAL_RESOLUTION_COMMANDS = new Set<CommandType>([
+  "Approval.Approve",
+  "Approval.Reject",
+  "Approval.RequestRevision",
+]);
+
+/** The Approval status each resolution command produces. */
+const APPROVAL_RESOLUTION_STATUS: Record<string, string> = {
+  "Approval.Approve": "approved",
+  "Approval.Reject": "rejected",
+  "Approval.RequestRevision": "revision_requested",
+};
+
 /**
  * FBL-025: backend-authoritative transition validation. Sits in front of
  * `PersistenceService` — every accepted command is translated into the
@@ -84,6 +98,15 @@ export class CommandHandler {
       if (authorization) return authorization;
     }
 
+    // FBL-030: resolving an approval is the human governance act
+    // (principle 14). Same ordering rationale as validation above — the
+    // authorization answer must not depend on whether the approval
+    // exists, or the refusal becomes an enumeration oracle.
+    if (APPROVAL_RESOLUTION_COMMANDS.has(commandType)) {
+      const authorization = this.requireAuthorizedOperator(commandType, entityId, actor);
+      if (authorization) return authorization;
+    }
+
     const existing = this.persistence.getEntity<Record<string, unknown>>(def.entityType, entityId);
 
     if (def.isCreate) {
@@ -104,6 +127,11 @@ export class CommandHandler {
 
     let eventType = def.eventType;
     let toStatus = def.toStatus;
+
+    if (APPROVAL_RESOLUTION_COMMANDS.has(commandType)) {
+      const resolution = this.prepareApprovalResolution(commandType, entityId, params, actor);
+      if (resolution) return resolution;
+    }
 
     if (commandType === "BuildStage.Validate") {
       const outcome = params.outcome;
@@ -269,6 +297,97 @@ export class CommandHandler {
     if (this.producedEvidenceUnderValidation(actor.actorId, params)) return refuse();
 
     return undefined;
+  }
+
+  /**
+   * FBL-030 — principle 14, "Humans govern".
+   *
+   * An approval is resolved by a *person*, so the actor must be an
+   * authenticated operator. Agents are refused even when genuinely
+   * authenticated: an agent resolving the gate that exists to constrain
+   * agents would make the gate ceremonial. The frontend is refused for
+   * the same reason it is refused at validation — it holds no credential,
+   * so it has no authority to exercise.
+   *
+   * Like the validation guard, every refusal returns the same message.
+   */
+  private requireAuthorizedOperator(
+    commandType: CommandType,
+    approvalId: string,
+    actor: CommandActor,
+  ): CommandOutcome | undefined {
+    if (actor.authenticated && actor.actorType === "operator") return undefined;
+
+    return this.deny(
+      commandType,
+      approvalId,
+      "Resolving an approval requires an authenticated operator (principle 14: humans govern). Agent, frontend, backend, and unauthenticated or authority-asserting callers are rejected.",
+      "Resolve the approval from the operator's own authenticated credential.",
+    );
+  }
+
+  /**
+   * Duplicate, conflicting, and stale approval resolutions, plus the
+   * derivation of `resolvedBy`.
+   *
+   * `resolvedBy` is written from the **authenticated principal**, never
+   * from the payload. `event-model.md` pins it as a payload field, so it
+   * must exist there — but a caller filling it in would be asserting who
+   * made a governance decision, which is exactly the authority this rung
+   * takes away from the payload. A caller that supplies a *different*
+   * value is refused rather than silently overwritten: quietly rewriting
+   * it would make the audit trail disagree with what was submitted.
+   *
+   * Returns an outcome when the command is settled here (idempotent
+   * no-op, or a refusal); returns `undefined` to continue, having
+   * normalised `params` in place.
+   */
+  private prepareApprovalResolution(
+    commandType: CommandType,
+    approvalId: string,
+    params: Record<string, unknown>,
+    actor: CommandActor,
+  ): CommandOutcome | undefined {
+    const claimed = params.resolvedBy;
+    if (typeof claimed === "string" && claimed !== actor.actorId) {
+      return this.deny(
+        commandType,
+        approvalId,
+        `params.resolvedBy (${claimed}) does not match the authenticated operator (${actor.actorId}). Authority is established by the credential; the payload may not assert a different resolver.`,
+        "Omit params.resolvedBy, or send it matching the authenticated operator.",
+      );
+    }
+    params.resolvedBy = actor.actorId;
+
+    const approval = this.persistence.getEntity<{
+      status: string;
+      resolvedBy?: string;
+      resolvedAt?: string;
+    }>("approvals", approvalId);
+    if (!approval) return undefined; // the generic existence check reports this
+
+    const target = APPROVAL_RESOLUTION_STATUS[commandType];
+
+    if (approval.status === "pending") return undefined;
+
+    if (approval.status === target) {
+      // A retried resolution is not a second decision. Accepted, but
+      // nothing new is recorded — the original decision stands, with its
+      // original resolver and timestamp.
+      return {
+        accepted: true,
+        commandType,
+        entityId: approvalId,
+        reason: `Approval ${approvalId} was already resolved as ${target} by ${approval.resolvedBy ?? "unknown"} at ${approval.resolvedAt ?? "unknown"} — idempotent no-op, no second decision recorded.`,
+      };
+    }
+
+    return this.deny(
+      commandType,
+      approvalId,
+      `Approval ${approvalId} is already resolved as ${approval.status}; a conflicting ${target} resolution is rejected.`,
+      "A resolved approval is an immutable decision. Request a new approval rather than re-resolving this one.",
+    );
   }
 
   /**

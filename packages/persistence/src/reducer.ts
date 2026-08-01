@@ -1026,14 +1026,52 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
         resolutionNote: event.payload.resolutionNote,
       });
       return;
-    case "approval.revision_requested":
+    case "approval.revision_requested": {
       upsertApproval(state, touched, event.entityId, {
         status: "revision_requested",
         resolvedAt: event.occurredAt,
         resolvedBy: event.payload.resolvedBy,
         resolutionNote: event.payload.resolutionNote,
       });
+
+      // event-model.md → `approval.revision_requested`: "Backend: creates
+      // a `Revision` record ... linking back to the stage via
+      // `sourceApprovalId`; the stage moves to `revision_required` until
+      // `revision.completed`; work returns to the Builder."
+      //
+      // Derived here rather than emitted as a second event, so one
+      // command still produces exactly one event. The Revision id is
+      // derived deterministically from the approval id, which is what
+      // keeps a full replay reconstructing the identical record.
+      const approval = state.approvals[event.entityId];
+      const stageId = approval?.stageId;
+      if (!stageId) return;
+
+      // Invariant: at most one open Revision per stage.
+      const alreadyOpen = Object.values(state.revisions).some(
+        (revision) =>
+          revision.stageId === stageId &&
+          (revision.status === "requested" || revision.status === "in_progress"),
+      );
+      if (alreadyOpen) return;
+
+      const revisionId = `revision-for-${event.entityId}`;
+      state.revisions[revisionId] = {
+        id: revisionId,
+        buildId: approval?.buildId ?? state.currentBuildId ?? "",
+        stageId,
+        reason:
+          event.payload.resolutionNote ?? "Operator requested a revision at the approval gate.",
+        requestedBy: "approval",
+        status: "requested",
+        createdAt: event.occurredAt,
+        updatedAt: event.occurredAt,
+        sourceApprovalId: event.entityId,
+      };
+      touch(touched, "revisions", revisionId);
+      updateStage(state, touched, stageId, { status: "revision_required" });
       return;
+    }
 
     case "building.state_changed": {
       const building = state.buildings[event.payload.buildingId];
