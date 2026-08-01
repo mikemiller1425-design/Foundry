@@ -1,0 +1,64 @@
+diff --git a/src/taskStore.js b/src/taskStore.js
+index 6acdc3f..05a4f1b 100644
+--- a/src/taskStore.js
++++ b/src/taskStore.js
+@@ -1,8 +1,54 @@
+-// Implement this module against ../SPEC.md.
+-//
+-// Foundry runs test/taskStore.test.js independently after this stage
+-// finishes. Do not modify the tests.
++let idCounter = 0;
++
++function generateId() {
++  idCounter += 1;
++  return Date.now().toString(36) + "-" + idCounter.toString(36) + "-" + Math.random().toString(36).slice(2);
++}
+ 
+ export function createTaskStore(initialTasks = []) {
+-  throw new Error("not implemented");
++  const tasks = initialTasks.map((task) => ({ ...task }));
++
++  function addTask(title) {
++    if (typeof title !== "string" || title.trim().length === 0) {
++      throw new Error("title is required");
++    }
++
++    const task = {
++      id: generateId(),
++      title: title.trim(),
++      completed: false,
++      createdAt: new Date().toISOString(),
++    };
++
++    tasks.push(task);
++    return task;
++  }
++
++  function completeTask(id) {
++    const task = tasks.find((t) => t.id === id);
++    if (!task) {
++      throw new Error("task not found: " + id);
++    }
++    task.completed = true;
++    return task;
++  }
++
++  function deleteTask(id) {
++    const index = tasks.findIndex((t) => t.id === id);
++    if (index === -1) {
++      throw new Error("task not found: " + id);
++    }
++    tasks.splice(index, 1);
++    return true;
++  }
++
++  function listTasks() {
++    return tasks.map((task) => ({ ...task }));
++  }
++
++  function toJSON() {
++    return tasks.map((task) => ({ ...task }));
++  }
++
++  return { addTask, completeTask, deleteTask, listTasks, toJSON };
+ }

@@ -21,7 +21,6 @@ import { WorldCanvas } from "@/components/world/WorldCanvas";
 import { WorldObjectMarkers } from "@/components/world/WorldObjectMarkers";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LEFT_NAV_PANEL, RIGHT_INTEL_PANEL, TIMELINE_PANEL } from "./panelConfig";
-import { REGION_PLACEHOLDER } from "./regionPlaceholder";
 
 // Ultrawide application shell (FBL-005 layout, FBL-006 interaction,
 // FBL-009 event timeline, FBL-010 2D operational controls, FBL-011 empty
@@ -160,7 +159,6 @@ export function AppShell() {
         className="col-span-full flex items-center gap-4 border-b border-neutral-800 px-4 text-sm"
       >
         <span className="font-medium">Agent City — top system bar</span>
-        <span className="text-neutral-400">{REGION_PLACEHOLDER}</span>
         <ConnectionBanner />
         <button
           type="button"
@@ -228,8 +226,8 @@ export function AppShell() {
         <h2 className="pointer-events-none relative font-medium">Central operational world</h2>
         <p className="pointer-events-none relative mt-2 text-neutral-400">
           Full V1 operational neighborhood: Lighthouse, residences, operational buildings, roads,
-          the utility vehicle, and the Architect, Builder, and Inspector agents — all placeholder
-          geometry, event-to-world mapping is build ladder rung FBL-021+.
+          the utility vehicle, and the Architect, Builder, and Inspector agents — placeholder
+          geometry, driven by real event-to-world mapping.
         </p>
 
         {/* Approval interaction (interface-model.md): stands in for

@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Verified — FBL-035 real-Safari observation, F-12 re-execution, and two blocking findings
+
+**FBL-035 remains OPEN. V1 is not complete.** Records: `docs/evidence/fbl-035/real-safari-observation.md`, `docs/evidence/fbl-035/f12-verification/`, and the updated `v1-acceptance-report.md`.
+
+- **Safari coverage gap closed as a non-defect.** Rather than reopening rungs on Playwright-WebKit evidence, the operator observed the production build in **real macOS Safari** at 5120×1440 and reported keyboard, Lighthouse selection, rendering, and the primary journey all **PASS**. The three WebKit issues are classified as configuration/automation-dependent (3a), automation-only moving-target race (3b), and test-instrumentation behaviour (3c). **FBL-006, FBL-014, and FBL-015 are not reopened.**
+- **F-12 re-executed live and verified**, under a one-run operator authorization: R2 policy through the FBL-027 adapter boundary, disposable temp fixture repository (never Foundry), **write confinement clean** (`unauthorizedPaths: []`), independent validation 12/12 with the verdict recorded as *"determined by Foundry's own validation, not by the runtime's self-report"*, full evidence captured to a separate directory so the FBL-028 evidence is untouched. **That authorization is now spent.**
+- **Two stale operator-facing strings corrected narrowly** — the top system bar's "Placeholder — populated at a later build ladder rung." (that region is populated) and the world region's claim that "event-to-world mapping is build ladder rung FBL-021+" (FBL-021 is complete). Neither was asserted by any test.
+- **Finding 4 (BLOCKING) — `jump to world object` was never implemented.** Investigating the stale copy surfaced a missing mandatory capability, not a wording problem. `interface-model.md` § "Bottom event timeline" specifies it and FBL-009's objective names it, but no source implements it: FBL-009 hard-stopped before the 3D mapping, FBL-021 — the only rung at which it becomes implementable — never claimed it, and it is named exactly once in the entire ladder. Two tests actively pin its absence as expected, which is why every gate passed. It breaks the Definition-of-done condition "documentation matches implementation". **Not corrected:** rewriting the wording would conceal the gap, and implementing it is feature work requiring authorization.
+- **Finding 5 (BLOCKING) — the acceptance rerun is not clean.** `shell-selection.spec.ts:23` failed intermittently at 3840×1080 on a camera-settling moving-target race (marker position moving between reads). Its appearance in **Chromium** independently corroborates the operator's classification of 3b as engine-independent and test-side. Field 12 requires a full clean run, so the rung cannot close. **Not repaired**, pending authorization.
+- Rerun after the copy correction: typecheck / lint / build / 791 unit+integration / 16 performance all green; browser suite **362 passed, 1 failed**.
+
 ### Added — FBL-035 V1 acceptance verification (executed; rung remains OPEN)
 
 Executed the complete `v1-acceptance.md` suite against `1b1689a` and produced the acceptance report: `docs/evidence/fbl-035/v1-acceptance-report.md`. **V1 is not declared complete.** Three items are outstanding against Safari and the operator's personal end-to-end journey has not been performed, so this rung's stop condition is not met.
