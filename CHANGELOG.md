@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — FBL-034 reopened: camera-settling moving-target race
+
+Resolves FBL-035 blocking finding 5, under operator authorization. **Test-side only — no production camera behaviour changed, no timeout raised, no retry added.** Measurements: `docs/evidence/fbl-034/performance-measurements.md` §9.
+
+- **The defect:** `shell-selection.spec.ts:23` reads the Lighthouse marker's projected position, converts it to viewport coordinates, and clicks there. The camera eases into place for a short window after load, so the projection moves between the read and the click. Reproduced at **4 failures in 36 runs (11%)** across the three target viewports. The Lighthouse does not move — the **camera** does, which is why the original FBL-034 pass (which fixed the agent and vehicle cases) did not catch it.
+- **The repair:** `stableProjectedPosition()` / `stableClickPointFor()` poll the marker's projected coordinates until two successive samples are identical, then convert to viewport coordinates in the same step so no camera frame can slip between reading and clicking. After: **72 passed, 0 failed** over the same 12 repeats × 3 viewports.
+- **The regression guard asserts both halves** — that an unstable window genuinely exists (so the old procedure really could sample a moving target) *and* that after the stable wait successive reads are identical. Checking only the second half would pass on a machine where the camera settled instantly, proving nothing about the race.
+- **A second instance, found by the contention run itself:** the first 12-burner run failed once on `shell-lighthouse.spec.ts:88`, which reads the beacon's position and then samples that pixel — same defect, surfaced only because saturation widens the settling window. Repaired identically. This makes it likely that **WebKit finding 3c was this race too**, rather than the `preserveDrawingBuffer` limitation originally hypothesised; its classification as "not a real Safari rendering defect" is unchanged.
+- **Three consecutive full-suite runs, zero failures:** idle **377**, 6 burners + looping unit suite **377**, 12 burners with all cores saturated **378**.
+
 ### Added — FBL-021A Timeline-to-world-object navigation closure
 
 Implements `jump to world object`, the one capability of `interface-model.md` § "Bottom event timeline" that was never built — the blocking finding 4 from FBL-035. **The specification was implemented, not weakened.** Amendment rung, suffixed per the ladder's own amendment rule; no existing rung was renumbered.

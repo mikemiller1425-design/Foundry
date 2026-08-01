@@ -181,3 +181,73 @@ One incidental repair: `vitest.config.ts` excluded `**/e2e/**` but not the new `
 - Realtime latency is measured as the render half, composed with FBL-026's separately measured transport half; no single end-to-end number is claimed (§3).
 - Frame-rate figures establish that budgets are met, not the maximum the hardware could sustain (§3).
 - The GPU flag reduces contention rather than making the application tolerate unbounded contention. The application was never the bottleneck — it holds 76–91 FPS average GPU-backed — but a machine starved badly enough will still slow scripted playback down.
+
+
+---
+
+## 9. FBL-034 reopened — camera-settling moving-target race (2026-08-01)
+
+Reopened by FBL-035 finding 5, under operator authorization.
+
+### The defect
+
+`shell-selection.spec.ts:23` ("pointer click on the Lighthouse selects it") reads the Lighthouse marker's projected screen position, converts it to viewport coordinates, and clicks there. The camera eases into its resting position for a short window after load, so the projection moves between the read and the click and the click lands on empty ground.
+
+This is the same moving-target class repaired here originally for agents and the vehicle. Those were the instances failing at the time; the Lighthouse case was not, and was left untouched. **The Lighthouse does not move — the camera does**, which is why it was not caught by the earlier pass.
+
+### Before
+
+`shell-selection.spec.ts:23`, 12 repeats × 3 target viewports:
+
+```
+32 passed, 4 failed  (36 runs, 11% failure rate)
+```
+
+Failure signature, identical every time: the marker's reported position differs between successive reads (e.g. `38.40 / 72.46` → `55.08 / 31.75`), and `data-selected` never becomes `true`.
+
+The same race had already been observed in WebKit (FBL-035 finding 3b). Its reproduction in Chromium confirmed the operator's classification: **engine-independent, and in the test rather than the product**.
+
+### The repair
+
+`stableProjectedPosition()` / `stableClickPointFor()` in `e2e/stable-state.ts`: poll the marker's `data-x-percent` / `data-y-percent` until two successive samples are identical, then convert to viewport coordinates in the same step so no camera frame can slip between reading and clicking.
+
+Explicitly **not**: no timeout was raised, no retry was added, and **no production camera behaviour was changed**. A longer timeout makes the race rarer without removing it and misreports the application as slow; a retry hides it. The wait is on observed stability, so it costs exactly as long as settling actually takes.
+
+### After
+
+Same test, same 12 repeats × 3 viewports, plus the new regression guard:
+
+```
+72 passed, 0 failed
+```
+
+### Regression guard
+
+`shell-selection.spec.ts` — "projected coordinates move before the camera settles, and the stable wait outlasts that window" asserts **both halves**: that an unstable window genuinely exists (so the old read-then-click procedure really could sample a moving target), and that after the stable wait successive reads are identical and equal to the returned value. Checking only the second half would pass on a machine where the camera settled instantly, proving nothing about the race.
+
+Where the camera has already settled before sampling begins, that is logged rather than failed — failing there would report the machine's speed, not the code.
+
+### Full-suite repeatability after the repair
+
+| Run | Conditions | Result |
+| --- | --- | --- |
+| 1 | Idle machine | **377 passed, 0 failed** (3.7 min) |
+| 2 | 6 CPU burners + repo-wide unit suite looping | **377 passed, 0 failed** (5.3 min) |
+| 3 | 12 CPU burners (all cores saturated) | **378 passed, 0 failed** (3.8 min) |
+
+(377/378 rather than 363: FBL-021A added the jump-to-world-object browser tests, and this reopening added the regression guard.)
+
+### A second instance of the same race, found by the contention run
+
+The first attempt at run 3 — 12 burners, all cores saturated — failed once, on `shell-lighthouse.spec.ts:88` ("the Lighthouse specifically is mounted and rendered at its own reported screen position").
+
+It is **the same defect**: that test reads the beacon's projected position once and then samples that pixel across frames. If the camera is still easing, it samples empty sky. It had not surfaced before because settling is fastest on an idle machine — the contention run is precisely what made the window wide enough to lose.
+
+Repaired identically, with `stableProjectedPosition`. Run 3 then passed 378/0 under the same saturation.
+
+Worth recording for FBL-035: this makes it likely that **WebKit finding 3c was this race too**, not a `preserveDrawingBuffer` limitation as originally hypothesised — the failing test is the same one, and the operator's real-Safari observation already confirmed the world renders correctly at 5120×1440. The classification of 3c as "not a real Safari rendering defect" is unchanged; only the probable mechanism is now better understood.
+
+### What was deliberately not done
+
+- **No production camera behaviour was changed.** The easing is correct; the tests were sampling it wrong.
+- **No timeout was raised** and **no Playwright retry was added.** Both would have converted a reproducible 11% failure into a rarer one, which is worse than leaving it visible.

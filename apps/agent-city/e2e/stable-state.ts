@@ -115,3 +115,66 @@ export async function stableFirstRow(page: Page): Promise<Locator> {
   await expect(row).toBeVisible();
   return row;
 }
+
+/**
+ * FBL-034 (reopened) — resolves a world object's projected screen position
+ * only once that position has stopped moving.
+ *
+ * The race this removes: a test reads a marker's `data-x-percent` /
+ * `data-y-percent`, converts them to viewport coordinates, and clicks
+ * there. If the camera is still easing toward its resting position — which
+ * it is for a short window after load, and after any focus/pan/zoom — the
+ * object has moved by the time the click lands, and the click hits empty
+ * ground. Observed at 11% (4 failures in 36 runs) before this wait
+ * existed.
+ *
+ * The object itself does not need to be stationary for this to be correct:
+ * what is required is that the *projection* is stable at the moment the
+ * coordinates are read, which is exactly what is polled here.
+ *
+ * Deliberately **not** fixed by a longer timeout or a retry. A timeout
+ * makes the race rarer without removing it and reports the app as slow
+ * rather than the test as wrong; a retry hides it entirely. The wait is on
+ * observed stability — successive identical samples — so it takes as long
+ * as settling actually takes and no longer.
+ */
+export async function stableProjectedPosition(
+  marker: Locator,
+): Promise<{ xPercent: number; yPercent: number }> {
+  let previous = "";
+  await expect
+    .poll(
+      async () => {
+        const x = await marker.getAttribute("data-x-percent");
+        const y = await marker.getAttribute("data-y-percent");
+        if (x === null || y === null) return false;
+        const current = `${x},${y}`;
+        const settled = current === previous;
+        previous = current;
+        return settled;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true);
+
+  const [x, y] = previous.split(",");
+  return { xPercent: Number(x), yPercent: Number(y) };
+}
+
+/**
+ * Converts a settled projected position into viewport coordinates for a
+ * pointer click. Reading and converting happen together so no camera frame
+ * can slip between them.
+ */
+export async function stableClickPointFor(
+  page: Page,
+  marker: Locator,
+): Promise<{ x: number; y: number }> {
+  const { xPercent, yPercent } = await stableProjectedPosition(marker);
+  const worldBox = await page.getByTestId("shell-world").boundingBox();
+  if (!worldBox) throw new Error("world region has no bounding box");
+  return {
+    x: worldBox.x + (xPercent / 100) * worldBox.width,
+    y: worldBox.y + (yPercent / 100) * worldBox.height,
+  };
+}

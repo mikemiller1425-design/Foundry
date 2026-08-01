@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { stableProjectedPosition } from "./stable-state";
 
 // FBL-014 required automated tests: every state maps correctly and is
 // visually/textually distinguishable (not color-only — verified at the
@@ -102,8 +103,12 @@ test.describe("Lighthouse", () => {
     const state = await marker.getAttribute("data-state");
     expect(state).toBe("healthy");
 
-    const xPercent = Number(await marker.getAttribute("data-x-percent"));
-    const yPercent = Number(await marker.getAttribute("data-y-percent"));
+    // FBL-034 (reopened) — the same camera-settling moving-target race
+    // repaired in shell-selection.spec.ts. This test reads the beacon's
+    // projected position once and then samples that pixel; if the camera
+    // is still easing, it samples empty sky. It surfaced under the 12-core
+    // contention run, where settling takes longest.
+    const { xPercent, yPercent } = await stableProjectedPosition(marker);
     expect(Number.isFinite(xPercent)).toBe(true);
     expect(Number.isFinite(yPercent)).toBe(true);
 
