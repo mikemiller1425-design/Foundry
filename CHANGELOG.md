@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — FBL-035 V1 acceptance verification (executed; rung remains OPEN)
+
+Executed the complete `v1-acceptance.md` suite against `1b1689a` and produced the acceptance report: `docs/evidence/fbl-035/v1-acceptance-report.md`. **V1 is not declared complete.** Three items are outstanding against Safari and the operator's personal end-to-end journey has not been performed, so this rung's stop condition is not met.
+
+- **All six gates ran together as one suite**, as field 9 requires: typecheck 8/8, lint clean, production build, **791** unit/integration tests, **363** browser tests across the three target viewports, **16** performance tests across four viewport configurations — **0 failures**.
+- **Every F-01–F-12 and V-01–V-08 requirement is mapped to the tests that actually prove it**, verified by reading those tests rather than trusting acceptance-ID annotations (nine of the twenty requirements carry no ID annotation in the code at all).
+- **Excluded features confirmed unimplemented**, by searching source rather than trusting the absence of a feature: `V1RiskClassSchema` is `z.enum(["R0","R1","R2"])`, so R3–R5 are *unrepresentable* rather than merely rejected; the command bar is a closed six-command discriminated union with no text input; the only "weather"/"interior"/"citizen" hits in source are negative assertions in comments; `apps/api` depends on workspace packages only.
+- **Finding 1 — a mandatory requirement's browser test had never run.** `shell-realtime-connection.spec.ts` is the browser-level proof of **F-10** and is gated behind a backend-mode build, so it had been skipped on every run since FBL-026; its screenshot baselines had never been created, which is what gave it away. Executed in backend mode for this report: **passes at all three viewports**, with every functional assertion (stale banner, `data-connection-status="disconnected"`, all five mutation controls disabled, restore clears) passing *before* any baseline existed. No application defect, so no rung was reopened.
+- **Finding 2 — F-12's real Claude Code run was not re-executed.** The FBL-028 authorization was explicitly narrow and recorded as exhausted; re-running live requires fresh authorization. The retained FBL-028 evidence stands, and the adapter is covered by 128 automated tests.
+- **Finding 3 — Safari/WebKit had never been exercised by automation**, although `v1-acceptance.md` names it a target browser. Running the full suite against WebKit at all three viewports: **356 passed, 7 failed**, across three issues — `<button>` elements unreachable by Tab (possibly a Playwright-WebKit default rather than current Safari behaviour, **not yet checked against real Safari**), a camera-settling moving-target race in Lighthouse pointer selection, and canvas pixel readback at 5120×1440. **No fix was attempted**: each would reopen its owning rung (FBL-006, FBL-015, FBL-014), which is a scope decision for the operator. `playwright.webkit.config.ts` is committed so the gap is reproducible rather than a claim, and kept separate from the default suite so it is neither silenced nor allowed to turn the default red.
+- Screenshot baselines created this run guard future runs but prove nothing on this one, since they were generated from the same build.
+
 ### Observed — FBL-034 operator acceptance of the ultrawide performance pass
 
 Recorded the operator's acceptance of FBL-034. **Documentation only — no code, test, or behaviour changed.** Append-only record: `docs/evidence/fbl-034/operator-observation.md`.
