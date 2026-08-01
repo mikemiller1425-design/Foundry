@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Approved — Agent City V1 COMPLETE (FBL-035 terminal rung closed)
+
+**Agent City V1 is complete.** Approved 2026-08-01 by mikemiller1425-design with the required wording `I APPROVE AGENT CITY V1 FOR COMPLETION`, against commit `c659d0e`. Append-only record: `docs/evidence/fbl-035/operator-final-approval.md`. **Documentation only — no code, test, or behaviour changed.**
+
+- **The terminal stop of the Build Ladder has been reached.** FBL-001 through FBL-035, including the FBL-021A amendment rung, are closed. Per FBL-035 field 14, any further work requires a new mission baseline (Future Registry promotion) and is out of this ladder's scope.
+- **Verified at `c659d0e`:** typecheck 8/8, lint clean, production build, **813** unit/integration tests, **378** Chromium browser tests across three target viewports with zero failures, **16/16** performance budgets at three target viewports plus a supplementary HiDPI configuration. Every F-01–F-12 and V-01–V-08 requirement mapped to the tests that prove it; exclusions verified against source; documentation verified against implementation; F-12 evidence unchanged.
+- Recorded as an operator **decision**, not a narrated walkthrough, following the FBL-033/034 precedent. The gate was properly presented — production build running, nine-step unassisted journey checklist — but the assistant did not witness the journey and was not told its results, so the record states what actually occurred.
+- **Finding 6 was open at the time of approval and was accepted rather than resolved.** Three Playwright-WebKit failures (`shell-selection.spec.ts:150` ×2, `shell-event-to-world-mapping.spec.ts:119`) remained undiagnosed and unclassified. The operator was told this and explicitly offered the chance to have them investigated first. They are recorded as **open and uninvestigated — not accepted non-defects**. `v1-acceptance.md` requires Safari to work, and real macOS Safari was separately observed to PASS; it does not require Playwright's WebKit build to be green.
+- `FOUNDATION_VERSION.md` still records `Implementation: Ready` and was **deliberately left untouched** — amending a Foundation 1.0 baseline document was not covered by this approval.
+
 ### Verified — FBL-035 acceptance rerun after both remediations (rung still OPEN)
 
 Full acceptance rerun at `7dc7a23` following FBL-021A and the FBL-034 reopening. **V1 is not complete:** one finding is open and operator sign-off has not been given. Report: `docs/evidence/fbl-035/v1-acceptance-report.md`.
