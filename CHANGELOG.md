@@ -6,6 +6,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — FBL-021A Timeline-to-world-object navigation closure
+
+Implements `jump to world object`, the one capability of `interface-model.md` § "Bottom event timeline" that was never built — the blocking finding 4 from FBL-035. **The specification was implemented, not weakened.** Amendment rung, suffixed per the ladder's own amendment rule; no existing rung was renumbered.
+
+- **Why it existed at all:** FBL-009 named the capability in its objective but hard-stopped before the 3D world existed; FBL-021, the only rung at which it becomes implementable, never claimed it; no other rung mentions it. Two tests pinned its absence as expected behaviour, which is precisely why every gate had passed for twenty-six rungs.
+- **Resolution is by declared identifier only** (`src/lib/world/worldTargetForEvent.ts`): `entityId` where the entity *is* a world object (agents), or a named `IdSchema` payload field where the event contract declares the relationship — `buildingId`, `sourceBuildingId`, `vehicleId`. Nothing matches on display names or substrings, and a test asserts that passing the display name `"Architect"` instead of the declared id resolves to **nothing**. A jump that guesses is worse than one that is unavailable: it moves the operator somewhere confidently wrong and they have no way to tell.
+- **Deliberately unresolvable, with a stated reason:** `transfer.completed` (carries only a receipt artifact id), `upgrade.completed` (its contract has no `buildingId`, so it is **not** assumed to be the Warehouse), and every project-level event. `approval.requested` → Lighthouse *is* resolved, because `EVENT_PROJECTION_MAP` already declares that mapping explicitly.
+- **The disabled explanation is text with `aria-describedby`, not a `title` tooltip** — a tooltip is invisible to keyboard and screen-reader users, and the explanation is the whole reason the control stays visible.
+- **Agents gained camera focus, which they never had.** They are absent from the static `SELECTABLE_WORLD_OBJECTS` registry because they move, so focus now resolves their live position through `computeAgentPosition` rather than a frozen coordinate that would point at the wrong building the moment the agent walked away.
+- **Navigation is not work:** jumping emits no operational event and mutates no backend truth; the existing declared `building.selected` UI event behaviour is unchanged.
+- The two tests pinning "not yet available" were **replaced with tests of the real capability**, and the stale implementation-stage copy was removed.
+- Verification: typecheck 8/8, lint clean, **432** unit/integration in agent-city (22 new: 17 resolver + 5 control), production build passing, timeline browser suite **30/30 across all three target viewports** — covering click and keyboard activation, world/navigator/detail synchronization, reduced motion, WebGL-unavailable, duplicate activation, and no-operational-mutation.
+
 ### Verified — FBL-035 real-Safari observation, F-12 re-execution, and two blocking findings
 
 **FBL-035 remains OPEN. V1 is not complete.** Records: `docs/evidence/fbl-035/real-safari-observation.md`, `docs/evidence/fbl-035/f12-verification/`, and the updated `v1-acceptance-report.md`.

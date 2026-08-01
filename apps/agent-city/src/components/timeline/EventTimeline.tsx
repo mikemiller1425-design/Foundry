@@ -4,6 +4,7 @@ import type { FoundryEvent } from "@foundry/event-types";
 import { useRuntime } from "@/lib/mock-runtime";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { describeEvent } from "./describeEvent";
+import { resolveWorldTargetForEvent } from "@/lib/world/worldTargetForEvent";
 
 const ROW_HEIGHT_PX = 28;
 const OVERSCAN_ROWS = 6;
@@ -25,7 +26,20 @@ function dedupeById(events: readonly FoundryEvent[]): FoundryEvent[] {
   return [...seen.values()];
 }
 
-export function EventTimeline() {
+/**
+ * FBL-021A — `onJumpToWorldObject` is the shell's existing selection
+ * funnel (AppShell.handleSelectWorldObjectId): the same path the 3D
+ * canvas and the left navigator already use, so a jump produces exactly
+ * the selection, navigator sync, detail sync, and camera focus that
+ * clicking the object produces. It is optional so the component still
+ * renders in isolation (unit fixtures), where the control is simply
+ * unavailable.
+ */
+export function EventTimeline({
+  onJumpToWorldObject,
+}: {
+  onJumpToWorldObject?: (worldObjectId: string) => void;
+} = {}) {
   const { events: rawEvents } = useRuntime();
   const events = useMemo(() => dedupeById(rawEvents), [rawEvents]);
 
@@ -225,15 +239,7 @@ export function EventTimeline() {
                   </dd>
                 </div>
               </dl>
-              <button
-                type="button"
-                disabled
-                aria-disabled="true"
-                title="Not available — no 3D world object exists yet (build ladder rung FBL-016+)"
-                className="mt-2 w-full cursor-not-allowed rounded border border-neutral-800 px-2 py-1 text-neutral-500"
-              >
-                Jump to world object — not yet available
-              </button>
+              <JumpToWorldObject event={selectedEvent} onJump={onJumpToWorldObject} />
               <p className="mt-2 text-neutral-500">Payload</p>
               <pre className="mt-1 overflow-x-auto rounded bg-neutral-900 p-2 text-[10px] text-neutral-300">
                 {JSON.stringify(selectedEvent.payload, null, 2)}
@@ -245,6 +251,62 @@ export function EventTimeline() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * The "jump to world object" control (interface-model.md § "Bottom event
+ * timeline"). Enabled only when the selected event declares a world
+ * object; otherwise disabled and *explaining itself*, because a control
+ * that is merely greyed out tells the operator nothing about why.
+ *
+ * The reason is rendered as text, not only as a `title` tooltip — a
+ * tooltip is unavailable to keyboard and screen-reader users, and the
+ * explanation is the whole point of leaving the control visible.
+ */
+function JumpToWorldObject({
+  event,
+  onJump,
+}: {
+  event: FoundryEvent;
+  onJump?: (worldObjectId: string) => void;
+}) {
+  const resolution = resolveWorldTargetForEvent(event);
+  const available = resolution.resolved && !!onJump;
+
+  if (!available) {
+    const reason = resolution.resolved
+      ? "Jumping is unavailable in this view."
+      : resolution.reason;
+    return (
+      <div className="mt-2">
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          aria-describedby="jump-to-world-object-reason"
+          className="w-full cursor-not-allowed rounded border border-neutral-800 px-2 py-1 text-neutral-500"
+        >
+          Jump to world object
+        </button>
+        <p id="jump-to-world-object-reason" className="mt-1 text-[10px] text-neutral-500">
+          {reason}
+        </p>
+      </div>
+    );
+  }
+
+  const target = resolution.target;
+  return (
+    <button
+      type="button"
+      data-testid="jump-to-world-object"
+      data-world-target={target.id}
+      onClick={() => onJump?.(target.id)}
+      className="mt-2 w-full rounded border border-neutral-700 px-2 py-1 text-left hover:bg-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+    >
+      Jump to world object: {target.label}
+    </button>
   );
 }
 

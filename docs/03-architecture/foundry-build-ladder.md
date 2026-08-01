@@ -40,6 +40,7 @@
 | FBL-019 | Utility vehicle | FBL-011, FBL-015, FBL-007 | D | Single transfer-visualization vehicle |
 | FBL-020 | Agent representations | FBL-011, FBL-015, FBL-007 | D | Three agent objects with allowed-state visuals |
 | FBL-021 | Event-to-world mapping | FBL-008, FBL-009, FBL-010, FBL-014, FBL-016, FBL-017, FBL-018, FBL-019, FBL-020 | — | Reducers binding mock events to visuals without false progress |
+| FBL-021A | Timeline-to-world-object navigation closure | FBL-009, FBL-021 | — | `jump to world object`; amendment rung, no renumbering |
 | FBL-022 | Complete simulated V1 workflow | FBL-021 | — | Full acceptance journey, including upgrade eligibility/approval/completion, runs end-to-end on mock runtime only |
 | FBL-023 | Persistence foundation | FBL-007, FBL-022 | — | Thin authoritative store for entities/events |
 | FBL-024 | Backend API | FBL-023 | — | Query/snapshot/health surface; command endpoints deny-by-default until FBL-025 |
@@ -473,6 +474,28 @@ Parallel groups are defined precisely in §4.
 | 12. Failure and rollback conditions | Any observed false-progress animation (motion/completion without a backing event) is a failure and blocks FBL-022. |
 | 13. Stop condition | All mock-driven visuals pass their event-traceability tests. Hard stop before attempting the full workflow run. |
 | 14. Dependency on next rung | FBL-022 depends on this rung. |
+
+#### FBL-021A — Timeline-to-world-object navigation closure — ✅ Complete
+
+*Amendment rung. Inserted under the Build Ladder amendment rule and suffixed rather than renumbered, so every existing rung identifier keeps its meaning. It carries the `A` suffix because the capability spans two closed rungs — FBL-009's timeline and FBL-021's event-aware world — and belongs cleanly to neither.*
+
+| Field | Content |
+| --- | --- |
+| 1. Rung | FBL-021A — Timeline-to-world-object navigation closure |
+| 2. Objective | Implement `jump to world object`, the one capability of `interface-model.md` § "Bottom event timeline" that was never built. |
+| 3. Why this rung exists | FBL-035 found it missing. FBL-009 named it in its objective but hard-stopped before the 3D mapping existed; FBL-021 — the only point at which it becomes implementable — never claimed it; no other rung mentions it. It fell between the two, and two tests pinned its absence as expected behaviour, which is why every gate had passed. |
+| 4. Prerequisites | FBL-009, FBL-021 complete. |
+| 5. Authoritative source documents | `docs/02-specification/interface-model.md` ("Bottom event timeline"); `docs/02-specification/event-model.md` (declared payload relationships); `docs/02-specification/world-model.md` |
+| 6. Allowed work | Event→world-object resolution, the timeline control, and camera focus for objects that lacked it. No new operational behaviour. |
+| 7. Explicitly prohibited work | Resolving targets by display name or guesswork; emitting operational events for navigation; weakening the specification instead of implementing it. |
+| 8. Expected files and deliverables | `src/lib/world/worldTargetForEvent.ts` + tests; timeline control; shell wiring; replacement of the two tests that pinned "not yet available". |
+| 9. Required automated tests | Resolvable/unresolvable resolution across every V1 object category; correct target per declared relationship; click and keyboard activation; world/navigator/detail synchronization; reduced motion; WebGL-unavailable; no operational mutation; duplicate activation; all three viewports. |
+| 10. Required visual or operator validation | Covered by FBL-035's final operator journey; no separate gate. |
+| 11. Acceptance criteria | The capability works for every declared relationship, stays unavailable with a stated reason otherwise, and mutates no operational truth. |
+| 12. Failure and rollback conditions | Any jump to an object the event did not declare is a failure. |
+| 13. Stop condition | Capability implemented and tested; FBL-035 re-runs. |
+| 14. Dependency on next rung | FBL-035 depends on this rung. |
+| **Implementation record** | `worldTargetForEvent.ts` resolves **by declared identifier only** — `entityId` where the entity *is* a world object (agents), or a named `IdSchema` payload field where the contract declares the relationship (`buildingId`, `sourceBuildingId`, `vehicleId`). Nothing matches on display names or substrings, and a test asserts that passing the display name `"Architect"` instead of the declared id resolves to **nothing**: a jump that guesses is worse than one that is unavailable, because it moves the operator somewhere confidently wrong. Deliberately unresolvable: `transfer.completed` (carries only a receipt artifact id), `upgrade.completed` (its contract has no `buildingId` — it is **not** assumed to be the Warehouse), and every project-level event. `approval.requested` → Lighthouse is included because `EVENT_PROJECTION_MAP` already declares that mapping explicitly. Disabled state renders its reason as **text with `aria-describedby`**, not a `title` tooltip, which keyboard and screen-reader users cannot read. Agents gained camera focus, which they never had: they are absent from the static `SELECTABLE_WORLD_OBJECTS` registry because they move, so focus resolves their live position through `computeAgentPosition` rather than a frozen coordinate that would point at the wrong building the moment the agent walked away. Navigation emits no operational event. The two tests that pinned "not yet available" were replaced with tests of the real capability; 22 new tests (17 resolver + 5 control), 432 unit total. |
 
 #### FBL-022 — Complete simulated V1 workflow — ✅ Complete
 

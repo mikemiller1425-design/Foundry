@@ -11,6 +11,7 @@ import { StageAgentPanel } from "@/components/controls/StageAgentPanel";
 import { EventTimeline } from "@/components/timeline/EventTimeline";
 import { useRuntime } from "@/lib/mock-runtime";
 import { SELECTABLE_WORLD_OBJECTS } from "@/lib/world/selectableObjects";
+import { computeAgentPosition } from "@/lib/world/agentPosition";
 import type { WorldObjectMarkerMap } from "@/lib/world/objectMarkerState";
 import { WORLD_AGENTS } from "@foundry/world-model";
 import type { CameraControllerHandle } from "@/components/world/cameraController";
@@ -29,12 +30,14 @@ import { LEFT_NAV_PANEL, RIGHT_INTEL_PANEL, TIMELINE_PANEL } from "./panelConfig
 // layout with generic collapse/resize/keyboard behavior (@foundry/ui)
 // and real controls driven by the FBL-008 mock runtime — see
 // docs/02-specification/interface-model.md.
+const AGENT_FOCUS_HEIGHT = 1.05;
+
 export function AppShell() {
   const [selection, setSelection] = useState<Selection | null>(null);
   const lighthouseMarkerRef = useRef<LighthouseMarkerState | null>(null);
   const worldObjectMarkerMapRef = useRef<WorldObjectMarkerMap>(new Map());
   const cameraRef = useRef<CameraControllerHandle>(null);
-  const { selectBuilding, clearSelection } = useRuntime();
+  const { selectBuilding, clearSelection, worldState } = useRuntime();
 
   // The single funnel for every selection source (3D pointer click, 3D
   // keyboard Enter/Space, and the left navigator): updates the shared 2D
@@ -56,9 +59,29 @@ export function AppShell() {
       if (target) {
         const [x, y, z] = target.focusPosition;
         cameraRef.current?.focus({ x, y, z });
+        return;
+      }
+      // FBL-021A — agents are not in the static registry because they
+      // move: their position is derived from the live `currentBuildingId`
+      // (computeAgentPosition, the same function that places the 3D
+      // object). Focusing them needs that live value rather than a fixed
+      // one, which is why they are resolved here instead of being given a
+      // frozen `focusPosition` that would point at the wrong building the
+      // moment the agent walked away.
+      if (next.kind === "agent") {
+        const index = WORLD_AGENTS.findIndex((a) => a.id === next.id);
+        const agent = worldState.agents.find((a) => a.id === next.id);
+        const position = agent ? computeAgentPosition(agent.currentBuildingId, index) : null;
+        if (position) {
+          cameraRef.current?.focus({
+            x: position.x,
+            y: position.y + AGENT_FOCUS_HEIGHT,
+            z: position.z,
+          });
+        }
       }
     },
-    [selectBuilding],
+    [selectBuilding, worldState],
   );
 
   // The 3D canvas reports only an id; the object's own registered kind
@@ -319,7 +342,7 @@ export function AppShell() {
         </div>
         {!timelineCollapsible.collapsed && (
           <div className="min-h-0 flex-1">
-            <EventTimeline />
+            <EventTimeline onJumpToWorldObject={handleSelectWorldObjectId} />
           </div>
         )}
       </section>

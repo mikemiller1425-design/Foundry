@@ -5,7 +5,11 @@ import { createInitialWorldState } from "@/lib/mock-runtime/worldStateReducer";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { WORLD_AGENTS } from "@foundry/world-model";
 import { EventTimeline } from "./EventTimeline";
+
+// FBL-021A — a declared agent id, so the jump control has a real target.
+const AGENT_EVENT_TARGET = WORLD_AGENTS[0]!.id;
 
 // A small, fixed event fixture — deterministic, hand-authored, independent
 // of the live runtime's timers (FBL-009 "fixed event fixture rendering").
@@ -56,9 +60,25 @@ const FIXTURE: FoundryEvent[] = [
   }),
 ];
 
+// FBL-021A — a dedicated fixture for the jump control, kept separate from
+// FIXTURE so the existing count assertions ("3 / 3 events") keep testing
+// what they were written to test.
+const JUMPABLE_FIXTURE: FoundryEvent[] = [
+  ...FIXTURE,
+  fixedEvent({
+    id: "evt-4",
+    type: "agent.arrived",
+    entityType: "Agent",
+    entityId: AGENT_EVENT_TARGET,
+    occurredAt: "2026-07-30T00:00:03.000Z",
+    payload: { destinationBuildingId: "construction-office" },
+  }),
+];
+
 function renderWithFixture(
   events: FoundryEvent[],
   worldState: WorldState = createInitialWorldState(),
+  onJumpToWorldObject?: (id: string) => void,
 ) {
   function Wrapper({ children }: { children: ReactNode }) {
     return (
@@ -81,7 +101,7 @@ function renderWithFixture(
       </RuntimeContext.Provider>
     );
   }
-  return render(<EventTimeline />, { wrapper: Wrapper });
+  return render(<EventTimeline onJumpToWorldObject={onJumpToWorldObject} />, { wrapper: Wrapper });
 }
 
 describe("EventTimeline — fixed fixture rendering", () => {
@@ -179,12 +199,76 @@ describe("EventTimeline — payload inspection", () => {
     expect(within(detail).getByText(/"buildId": "build-1"/)).toBeInTheDocument();
   });
 
-  it("shows an explicit, non-deceptive unavailable state for jump-to-world-object", () => {
-    renderWithFixture(FIXTURE);
-    fireEvent.click(screen.getAllByTestId("timeline-row")[0]!);
+  // FBL-021A — these replace the tests that used to pin "not yet
+  // available". The capability exists now; what still needs pinning is
+  // that it stays *honest* — available only where a relationship is
+  // declared, and explaining itself where it is not.
+  it("offers a working jump for an event that declares a world object", () => {
+    const onJump = vi.fn();
+    renderWithFixture(JUMPABLE_FIXTURE, undefined, onJump);
+    // index 3 is an agent event, whose entityId is a declared agent id.
+    fireEvent.click(screen.getAllByTestId("timeline-row")[3]!);
+    const jumpButton = screen.getByTestId("jump-to-world-object");
+    expect(jumpButton).toBeEnabled();
+    fireEvent.click(jumpButton);
+    expect(onJump).toHaveBeenCalledTimes(1);
+    expect(onJump).toHaveBeenCalledWith(AGENT_EVENT_TARGET);
+  });
+
+  it("keeps the control disabled, with a stated reason, for an event that declares none", () => {
+    renderWithFixture(JUMPABLE_FIXTURE, undefined, vi.fn());
+    fireEvent.click(screen.getAllByTestId("timeline-row")[0]!); // system.started
     const jumpButton = screen.getByRole("button", { name: /Jump to world object/ });
     expect(jumpButton).toBeDisabled();
-    expect(jumpButton).toHaveTextContent("not yet available");
+    // The reason is readable text, not a tooltip: a title attribute is
+    // invisible to keyboard and screen-reader users.
+    const reasonId = jumpButton.getAttribute("aria-describedby");
+    expect(reasonId).toBeTruthy();
+    expect(document.getElementById(reasonId!)?.textContent ?? "").not.toHaveLength(0);
+  });
+
+  it("never announces a jump target when the shell provides no handler", () => {
+    renderWithFixture(JUMPABLE_FIXTURE);
+    fireEvent.click(screen.getAllByTestId("timeline-row")[3]!);
+    expect(screen.queryByTestId("jump-to-world-object")).toBeNull();
+  });
+
+  it("duplicate activation is safe — each click is one navigation request", () => {
+    const onJump = vi.fn();
+    renderWithFixture(JUMPABLE_FIXTURE, undefined, onJump);
+    fireEvent.click(screen.getAllByTestId("timeline-row")[3]!);
+    const jumpButton = screen.getByTestId("jump-to-world-object");
+    fireEvent.click(jumpButton);
+    fireEvent.click(jumpButton);
+    expect(onJump).toHaveBeenCalledTimes(2);
+    expect(new Set(onJump.mock.calls.map((c) => c[0])).size).toBe(1);
+  });
+
+  it("remains usable with no WebGL: these tests run in jsdom, where the 3D canvas cannot exist", () => {
+    // v1-acceptance "canvas objects have navigator equivalents" and ADR-005's
+    // "the 2D interface is an authoritative control surface" both require the
+    // operator to keep working when the world cannot render. jsdom has no
+    // WebGL context at all, so this whole file *is* the WebGL-unavailable
+    // case — asserted explicitly here rather than left implicit.
+    const onJump = vi.fn();
+    renderWithFixture(JUMPABLE_FIXTURE, undefined, onJump);
+    fireEvent.click(screen.getAllByTestId("timeline-row")[3]!);
+    const jumpButton = screen.getByTestId("jump-to-world-object");
+    expect(jumpButton).toBeEnabled();
+    fireEvent.click(jumpButton);
+    // Navigation still resolves and still reports its target; the detail
+    // panel still explains what was selected.
+    expect(onJump).toHaveBeenCalledWith(AGENT_EVENT_TARGET);
+    expect(screen.getByTestId("timeline-detail")).not.toBeEmptyDOMElement();
+  });
+
+  it("jumping preserves the event selection and its payload inspection", () => {
+    renderWithFixture(JUMPABLE_FIXTURE, undefined, vi.fn());
+    const row = screen.getAllByTestId("timeline-row")[3]!;
+    fireEvent.click(row);
+    fireEvent.click(screen.getByTestId("jump-to-world-object"));
+    expect(row).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("timeline-detail").querySelector("pre")).not.toBeNull();
   });
 
   it("shows an empty state before any row is selected", () => {

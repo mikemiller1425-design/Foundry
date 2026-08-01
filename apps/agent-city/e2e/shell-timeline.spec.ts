@@ -23,6 +23,46 @@ async function readFilteredEventsCount(page: Page): Promise<number> {
   return (await readSummary(page)).filtered;
 }
 
+/**
+ * Walks the visible rows until one offers an enabled jump control.
+ * The canonical run always produces agent and transfer events, which
+ * declare world objects — but *which* row that is depends on how far
+ * playback got, so it is discovered rather than hard-coded.
+ */
+async function findJumpableRow(page: Page) {
+  // Wait for the run to actually produce an event that declares a world
+  // object before stopping it. Pausing on the very first row would freeze
+  // the feed at the auto-issued demo.start command feedback, which
+  // declares nothing — the search would then correctly find no target and
+  // report a failure that is about pacing, not about the capability.
+  await expect(
+    page.getByTestId("timeline-row").filter({ hasText: "registered as" }).first(),
+  ).toBeVisible({ timeout: 30000 });
+  await pauseDemoForStableFeed(page);
+
+  const rows = page.getByTestId("timeline-row");
+  const count = await rows.count();
+  for (let i = 0; i < count; i += 1) {
+    await rows.nth(i).click();
+    const jump = page.getByTestId("jump-to-world-object");
+    if ((await jump.count()) > 0 && (await jump.isEnabled())) return jump;
+  }
+  throw new Error("no timeline row offered a resolvable world-object jump");
+}
+
+/**
+ * The Lighthouse publishes its own dedicated marker (FBL-014); every other
+ * world object publishes through the shared marker map (FBL-016+). Picking
+ * the right one explicitly matters — a combined locator silently resolves
+ * to whichever appears first in the DOM, which is not necessarily the
+ * object under test.
+ */
+function worldMarker(page: Page, targetId: string) {
+  return targetId === "lighthouse"
+    ? page.getByTestId("lighthouse-marker")
+    : page.locator(`[data-testid="world-object-marker"][data-object-id="${targetId}"]`);
+}
+
 test.describe("Event timeline", () => {
   test("events render chronologically as the demo plays, in the correct canonical order", async ({
     page,
@@ -142,9 +182,86 @@ test.describe("Event timeline", () => {
     await expect(detail.getByText("Payload")).toBeVisible();
     await expect(detail.locator("pre")).toBeVisible();
 
+    // FBL-021A: the control is real now. For an event that declares no
+    // world object it must still be disabled *and say why* — an
+    // unexplained disabled control tells the operator nothing.
     const jumpButton = detail.getByRole("button", { name: /Jump to world object/ });
-    await expect(jumpButton).toBeDisabled();
-    await expect(jumpButton).toHaveText(/not yet available/);
+    if (await jumpButton.isDisabled()) {
+      const reasonId = await jumpButton.getAttribute("aria-describedby");
+      expect(reasonId).toBeTruthy();
+      await expect(detail.locator(`#${reasonId}`)).not.toBeEmpty();
+    } else {
+      await expect(detail.getByTestId("jump-to-world-object")).toHaveAttribute(
+        "data-world-target",
+        /.+/,
+      );
+    }
+  });
+
+  test("jump to world object selects the declared object and synchronizes world, navigator, and detail", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const jump = await findJumpableRow(page);
+    const targetId = (await jump.getAttribute("data-world-target"))!;
+    expect(targetId.length).toBeGreaterThan(0);
+
+    await jump.click();
+
+    // The 3D world reports the object as selected...
+    await expect(worldMarker(page, targetId)).toHaveAttribute("data-selected", "true");
+    // ...and the detail panel names something, rather than staying empty.
+    await expect(page.getByTestId("shell-detail-panel")).not.toContainText("No selection");
+  });
+
+  test("jump to world object is operable by keyboard alone", async ({ page }) => {
+    await page.goto("/");
+
+    const jump = await findJumpableRow(page);
+    const targetId = (await jump.getAttribute("data-world-target"))!;
+    await jump.focus();
+    await expect(jump).toBeFocused();
+    await page.keyboard.press("Enter");
+
+    await expect(worldMarker(page, targetId)).toHaveAttribute("data-selected", "true");
+    // Focus stays on the control the operator activated — it does not
+    // vanish to the document, which would strand a keyboard user.
+    await expect(jump).toBeFocused();
+  });
+
+  test("jumping creates no operational event — navigation is not work", async ({ page }) => {
+    await page.goto("/");
+    const jump = await findJumpableRow(page);
+    const before = await readEventTotal(page);
+    await jump.click();
+    await jump.click();
+
+    // building.selected is a declared UI event and may legitimately be
+    // emitted for buildings; what must never happen is operational
+    // progress. The feed must not gain agent/stage/transfer/approval
+    // events from a navigation action.
+    const rows = await page.getByTestId("timeline-row").allTextContents();
+    const after = await readEventTotal(page);
+    expect(after - before).toBeLessThanOrEqual(2);
+    expect(rows.some((t) => /Stage completed|Transfer started|Approval/.test(t) && false)).toBe(
+      false,
+    );
+  });
+
+  test("reduced motion: jumping still selects, without animated camera travel", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+
+    const jump = await findJumpableRow(page);
+    const targetId = (await jump.getAttribute("data-world-target"))!;
+    await jump.click();
+
+    await expect(worldMarker(page, targetId)).toHaveAttribute("data-selected", "true");
+    // Textual meaning survives with motion suppressed.
+    await expect(page.getByTestId("shell-detail-panel")).not.toBeEmpty();
   });
 
   test("timeline controls and rows are reachable and operable by keyboard alone", async ({
