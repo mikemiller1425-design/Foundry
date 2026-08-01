@@ -17,6 +17,9 @@ server.listen(port, () => {
 });
 
 function shutdown(): void {
+  // Long-lived SSE streams never end on their own, so `close()` alone
+  // would wait forever for them — drop them explicitly first.
+  server.closeAllConnections();
   server.close(() => {
     persistence.close();
     process.exit(0);

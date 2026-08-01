@@ -9,8 +9,10 @@ function renderCommandBar(overrides: {
   isRunning?: boolean;
   isComplete?: boolean;
   lastRejection?: { commandType: string; reason: string } | null;
+  mutationsEnabled?: boolean;
 }) {
   const submitCommand = vi.fn<(raw: unknown) => void>();
+  const mutationsEnabled = overrides.mutationsEnabled ?? true;
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <RuntimeContext.Provider
@@ -19,6 +21,8 @@ function renderCommandBar(overrides: {
           worldState: createInitialWorldState(),
           isRunning: overrides.isRunning ?? false,
           isComplete: overrides.isComplete ?? false,
+          connectionStatus: mutationsEnabled ? "connected" : "disconnected",
+          mutationsEnabled,
           submitCommand,
           resolveApproval: vi.fn(),
           selectBuilding: vi.fn(),
@@ -120,5 +124,27 @@ describe("CommandBar — keyboard accessibility", () => {
       expect(button.tabIndex).toBe(0);
     }
     expect(screen.getByLabelText("Playback speed").tagName).toBe("SELECT");
+  });
+});
+
+describe("CommandBar — mutation controls disabled while disconnected (F-10)", () => {
+  it("disables every command control when mutations are not allowed", () => {
+    renderCommandBar({ mutationsEnabled: false, isRunning: true });
+    for (const name of ["Start", "Pause", "Resume", "Reset", "Replay"]) {
+      expect(screen.getByRole("button", { name })).toBeDisabled();
+    }
+    expect(screen.getByLabelText("Playback speed")).toBeDisabled();
+  });
+
+  it("a disabled control cannot emit a command", () => {
+    const { submitCommand } = renderCommandBar({ mutationsEnabled: false, isRunning: true });
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(submitCommand).not.toHaveBeenCalled();
+  });
+
+  it("re-enables controls once the connection is restored", () => {
+    renderCommandBar({ mutationsEnabled: true, isRunning: true });
+    expect(screen.getByRole("button", { name: "Pause" })).toBeEnabled();
   });
 });

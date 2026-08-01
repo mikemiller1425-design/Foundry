@@ -11,7 +11,7 @@ const OPERATOR_ID = "operator-1";
 // mock engine itself enforces the pause (runtime.ts), this card is what
 // lets the operator resolve it.
 export function ApprovalCard() {
-  const { worldState, resolveApproval } = useRuntime();
+  const { worldState, resolveApproval, mutationsEnabled } = useRuntime();
   const [note, setNote] = useState("");
   const pending = worldState.approvals.find((a) => a.status === "pending");
 
@@ -56,25 +56,36 @@ export function ApprovalCard() {
         className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 p-1 text-neutral-200"
       />
 
+      {/* F-10: resolving an approval is a mutation, so it must be
+          unavailable whenever the projection is not live backend truth. */}
+      {!mutationsEnabled && (
+        <p role="status" className="mt-3 rounded border border-amber-700 bg-amber-950 p-2 text-amber-200">
+          Disconnected — approval actions are unavailable until the connection is restored.
+        </p>
+      )}
+
       <div className="mt-3 flex gap-2">
         <button
           type="button"
+          disabled={!mutationsEnabled}
           onClick={() => resolveApproval("approved", OPERATOR_ID, note || undefined)}
-          className="flex-1 rounded bg-emerald-700 px-2 py-1 font-medium text-white hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+          className="flex-1 rounded bg-emerald-700 px-2 py-1 font-medium text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
         >
           Approve
         </button>
         <button
           type="button"
+          disabled={!mutationsEnabled}
           onClick={() => resolveApproval("rejected", OPERATOR_ID, note || undefined)}
-          className="flex-1 rounded bg-red-800 px-2 py-1 font-medium text-white hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+          className="flex-1 rounded bg-red-800 px-2 py-1 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
         >
           Reject
         </button>
         <button
           type="button"
+          disabled={!mutationsEnabled}
           onClick={() => resolveApproval("revision_requested", OPERATOR_ID, note || undefined)}
-          className="flex-1 rounded border border-neutral-600 px-2 py-1 font-medium hover:bg-neutral-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+          className="flex-1 rounded border border-neutral-600 px-2 py-1 font-medium hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
         >
           Request revision
         </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import type { WorldState } from "@foundry/contracts";
+import type { ConnectionStatus, WorldState } from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -17,6 +17,14 @@ export interface RuntimeContextValue {
   worldState: WorldState;
   isRunning: boolean;
   isComplete: boolean;
+  /**
+   * FBL-026 (F-10): false whenever the projection is not a live view of
+   * backend truth, which disables every mutation control. The mock
+   * runtime is always "connected" — it *is* its own authority (ADR-001),
+   * so demo/test mode behaves exactly as it did before this rung.
+   */
+  connectionStatus: ConnectionStatus;
+  mutationsEnabled: boolean;
   submitCommand: (raw: unknown) => void;
   resolveApproval: (
     decision: "approved" | "rejected" | "revision_requested",
@@ -165,6 +173,11 @@ export function RuntimeProvider({
         worldState,
         isRunning,
         isComplete,
+        // The mock runtime is its own operational authority (ADR-001), so
+        // it is never "disconnected" — FBL-026's stale/disabled behavior
+        // applies to the backend-backed provider, not to demo/test mode.
+        connectionStatus: "connected",
+        mutationsEnabled: true,
         submitCommand,
         resolveApproval,
         selectBuilding,

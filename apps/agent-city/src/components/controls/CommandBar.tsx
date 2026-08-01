@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 const SPEED_OPTIONS = [1, 2, 4] as const;
 
 export function CommandBar() {
-  const { submitCommand, isRunning, isComplete, lastRejection } = useRuntime();
+  const { submitCommand, isRunning, isComplete, lastRejection, mutationsEnabled } = useRuntime();
   const [speed, setSpeed] = useState<(typeof SPEED_OPTIONS)[number]>(1);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -32,7 +32,7 @@ export function CommandBar() {
         <button
           type="button"
           onClick={() => send("demo.start")}
-          disabled={isRunning || isComplete}
+          disabled={!mutationsEnabled || isRunning || isComplete}
           className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
         >
           Start
@@ -40,7 +40,7 @@ export function CommandBar() {
         <button
           type="button"
           onClick={() => send("demo.pause")}
-          disabled={!isRunning}
+          disabled={!mutationsEnabled || !isRunning}
           className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
         >
           Pause
@@ -48,7 +48,7 @@ export function CommandBar() {
         <button
           type="button"
           onClick={() => send("demo.resume")}
-          disabled={isRunning || isComplete}
+          disabled={!mutationsEnabled || isRunning || isComplete}
           className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
         >
           Resume
@@ -59,6 +59,7 @@ export function CommandBar() {
         <select
           id="demo-speed"
           value={speed}
+          disabled={!mutationsEnabled}
           onChange={(e) => {
             const multiplier = Number(e.target.value) as (typeof SPEED_OPTIONS)[number];
             setSpeed(multiplier);
@@ -75,14 +76,16 @@ export function CommandBar() {
         <button
           type="button"
           onClick={() => send("demo.reset")}
-          className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+          disabled={!mutationsEnabled}
+          className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
         >
           Reset
         </button>
         <button
           type="button"
           onClick={() => send("demo.replay")}
-          className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+          disabled={!mutationsEnabled}
+          className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
         >
           Replay
         </button>

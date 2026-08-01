@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — FBL-026 Realtime event delivery
+
+Streamed backend events to the frontend over SSE with reconnect, snapshot reconciliation, and stale/disconnected handling, completing the operator-authorized bounded sequence FBL-023–FBL-026. **SSE was chosen over WebSockets** because delivery is strictly one-directional — commands already travel over `POST /commands` (FBL-024/025), so no bidirectional channel is required — and SSE provides browser reconnect and `Last-Event-ID` replay natively. The deterministic mock runtime remains the default and fully selectable (ADR-001); backend mode is opt-in via `NEXT_PUBLIC_FOUNDRY_API_URL`.
+
+- `apps/api/src/eventStream.ts`: `GET /events/stream`, honoring `Last-Event-ID`/`?lastEventId=` to replay exactly the events missed during a disconnect before resuming live delivery; plus `GET /events[?since=]` for explicit reconciliation
+- `packages/persistence`: `PersistenceService.subscribe()` — notifies only *after* the transaction commits, so a subscriber can never observe an event that isn't durable, and never fires for an idempotent duplicate append
+- `apps/agent-city/src/lib/backend/`: `BackendClient` (SSE subscription, bounded exponential backoff capped at 15s, snapshot-plus-missed-events reconciliation on reconnect), `reconcile.ts` (duplicate-safe, order-preserving event merge), `connectionState.ts` (backoff policy, stale labeling, mutation gating), and `BackendRuntimeProvider` supplying the same `RuntimeContext` shape the mock runtime does so every existing panel and world object works against either
+- F-10 wiring: `ConnectionBanner` in the system bar (placed there rather than as a new shell row, so FBL-005's asserted region proportions are untouched); `ApprovalCard` and `CommandBar` controls disabled while disconnected; the Lighthouse resolves to `disconnected` through the existing `computeLighthouseState` path rather than a parallel signal
+- Two real bugs found and fixed while testing: long-lived SSE connections made `server.close()` hang forever (now `closeAllConnections()` first, in both the service's SIGTERM path and tests), and a stream with no backlog appeared to hang until its first event (now flushes an opening SSE comment)
+- Tests: 25 `apps/api` (connect/receive, backlog replay, missed-event recovery by `Last-Event-ID`, unknown-cursor full resync, duplicate-delivery safety, unsubscribe-on-disconnect, plus a `<500 ms` update-latency budget suite); 23 client-side (backoff bounds, stale labeling, mutation gating, reconnect reconciliation, out-of-order protection, duplicate safety); 10 UI (banner, disabled controls, Lighthouse disconnected precedence)
+- Verification: typecheck and lint clean repo-wide; full unit suite green (485 tests: 441 pre-existing + 44 new); production build passes; manually verified the full path end-to-end over HTTP — command → FBL-025 enforcement → durable persistence → live SSE frame
+
 ### Added — FBL-025 State machines and prerequisite enforcement
 
 Implemented backend-authoritative transition validation for every V1 entity and command, per the operator-authorized bounded sequence FBL-023–FBL-026. `apps/api`'s command endpoint no longer denies unconditionally: a command is now applied when — and only when — it passes shape validation, its entity's transition graph, and every named invariant guard. A rejected command still leaves persisted state byte-for-byte unchanged, because `CommandHandler` never reaches `appendEvent` on the rejection path.

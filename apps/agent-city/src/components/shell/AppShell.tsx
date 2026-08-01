@@ -3,6 +3,7 @@
 import { CollapseToggleButton, ResizeHandle, useCollapsible, useResizable } from "@foundry/ui";
 import { ApprovalCard } from "@/components/controls/ApprovalCard";
 import { CommandBar } from "@/components/controls/CommandBar";
+import { ConnectionBanner } from "@/components/controls/ConnectionBanner";
 import { LiveIntelligence } from "@/components/controls/LiveIntelligence";
 import { SelectedObjectDetail } from "@/components/controls/SelectedObjectDetail";
 import type { Selection } from "@/components/controls/selection";
@@ -160,6 +161,7 @@ export function AppShell() {
       >
         <span className="font-medium">Agent City — top system bar</span>
         <span className="text-neutral-400">{REGION_PLACEHOLDER}</span>
+        <ConnectionBanner />
         <button
           type="button"
           onClick={resetLayout}

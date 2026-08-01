@@ -7,6 +7,7 @@ import {
   type EntityType,
   type PersistenceService,
 } from "@foundry/persistence";
+import { handleEventStream } from "./eventStream";
 
 const ENTITY_TYPE_SET = new Set<string>(ENTITY_TYPES);
 const MAX_BODY_BYTES = 1_000_000;
@@ -46,6 +47,21 @@ async function handleRequest(
   const method = req.method ?? "GET";
   const segments = url.pathname.split("/").filter(Boolean);
 
+  // The Next.js frontend runs on its own port, so browser requests to this
+  // service are cross-origin. V1 is a single-operator, local/trusted-network
+  // deployment with no authentication and no cookie-based session to
+  // protect (see README security caveat), so a permissive origin is
+  // acceptable here; it must be revisited before any networked deployment.
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Last-Event-ID");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+
+  if (method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (method === "GET" && segments.length === 1 && segments[0] === "health") {
     sendJson(res, 200, {
       status: "ok",
@@ -65,6 +81,16 @@ async function handleRequest(
 
   if (method === "GET" && segments.length >= 1 && segments[0] === "entities") {
     handleEntitiesGet(persistence, segments.slice(1), res);
+    return;
+  }
+
+  if (method === "GET" && segments.length === 2 && segments[0] === "events" && segments[1] === "stream") {
+    handleEventStream(persistence, req, res);
+    return;
+  }
+
+  if (method === "GET" && segments.length === 1 && segments[0] === "events") {
+    sendJson(res, 200, persistence.getEventsSince(url.searchParams.get("since")));
     return;
   }
 

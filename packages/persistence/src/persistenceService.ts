@@ -31,6 +31,7 @@ export class PersistenceService {
   private readonly db: DatabaseSync;
   private state: EntityState;
   private closed = false;
+  private readonly subscribers = new Set<(event: FoundryEvent) => void>();
 
   constructor(path: string) {
     this.db = new DatabaseSync(path);
@@ -102,7 +103,32 @@ export class PersistenceService {
     }
 
     this.state = result.state;
+
+    // Notify only after the transaction has committed, so a subscriber can
+    // never observe an event that isn't durably persisted. A throwing
+    // subscriber must not roll back or block the others.
+    for (const subscriber of this.subscribers) {
+      try {
+        subscriber(event);
+      } catch {
+        // Subscriber failures are their own concern, never persistence's.
+      }
+    }
+
     return { applied: true };
+  }
+
+  /**
+   * Subscribes to durably-committed events (FBL-026 realtime delivery).
+   * Only fires for events that were actually applied — a duplicate append
+   * is a no-op here too, so a subscriber can never be told about the same
+   * event twice by this path.
+   */
+  subscribe(listener: (event: FoundryEvent) => void): () => void {
+    this.subscribers.add(listener);
+    return () => {
+      this.subscribers.delete(listener);
+    };
   }
 
   getEntity<T = unknown>(entityType: EntityType, entityId: string): T | undefined {

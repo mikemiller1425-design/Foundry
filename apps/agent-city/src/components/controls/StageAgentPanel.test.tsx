@@ -21,6 +21,8 @@ function renderPanel(onSelect = vi.fn()) {
           resolveApproval: vi.fn(),
           selectBuilding: vi.fn(),
           clearSelection: vi.fn(),
+          connectionStatus: "connected" as const,
+          mutationsEnabled: true,
           lastRejection: null,
         }}
       >

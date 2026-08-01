@@ -10,9 +10,17 @@ Foundry Platform
 
 ## Status
 
-Foundation is **1.0**. `FBL-001` through `FBL-022` are complete: the full V1 placeholder neighborhood (Lighthouse, residences, operational buildings, roads, the utility vehicle, and the three agents) is wired to a deterministic mock runtime whose events drive every 2D panel and 3D world object, and the complete primary user journey — objective through build completion and the Warehouse Level 1→2 upgrade — runs end-to-end on that mock runtime. `FBL-023` (persistence) and `FBL-024` (backend API, `apps/api`) are also complete, under a new operator-authorized bounded sequence covering `FBL-023`–`FBL-026`. See `docs/03-architecture/foundry-build-ladder.md`; each further rung still requires its own separate, explicit operator authorization.
+Foundation is **1.0**. `FBL-001` through `FBL-022` are complete: the full V1 placeholder neighborhood (Lighthouse, residences, operational buildings, roads, the utility vehicle, and the three agents) is wired to a deterministic mock runtime whose events drive every 2D panel and 3D world object, and the complete primary user journey — objective through build completion and the Warehouse Level 1→2 upgrade — runs end-to-end on that mock runtime. `FBL-023` (persistence), `FBL-024` (backend API, `apps/api`), `FBL-025` (state-machine enforcement), and `FBL-026` (realtime event delivery) are also complete, under a since-exhausted operator-authorized bounded sequence covering `FBL-023`–`FBL-026`. See `docs/03-architecture/foundry-build-ladder.md`; each further rung still requires its own separate, explicit operator authorization.
 
-This app (`apps/agent-city`) is still not wired to the backend — everything it renders is still produced by the frontend-local, deterministic mock runtime (`src/lib/mock-runtime/`) per ADR-001 and Principle 3a, which remains the temporary stand-in operational authority for this app. A real backend now exists (`apps/api`, backed by `packages/persistence`), but connecting this app to it is not yet authorized.
+This app can now run as a live projection of backend truth over SSE.
+
+**The runtime is selectable.** The deterministic mock runtime (`src/lib/mock-runtime/`, ADR-001 / Principle 3a) remains the **default** — it is what every test and the demo mode run against, with no backend required. Set `NEXT_PUBLIC_FOUNDRY_API_URL` to point the app at a real `apps/api` instance instead:
+
+```sh
+NEXT_PUBLIC_FOUNDRY_API_URL=http://localhost:4000 pnpm --filter @foundry/agent-city dev
+```
+
+In backend mode the app subscribes to `/events/stream`, reconciles from `/world-state` on connect and reconnect, and submits commands to `/commands` (where FBL-025 enforces them). On disconnect it labels the projection stale, shows the Lighthouse as `disconnected`, and disables every mutation control until the stream is restored — it never invents authoritative events while offline.
 
 ## Run locally
 
@@ -53,6 +61,12 @@ A complete, checked-in recording of one full canonical run (every event plus the
 ```sh
 pnpm --filter @foundry/agent-city test        # unit tests (Vitest + Testing Library)
 pnpm --filter @foundry/agent-city test:e2e    # browser tests (Playwright, all 3 target viewports)
+```
+
+**Run the browser suite at `--workers=3`.** Several specs drive the demo at 4× speed and assert on real elapsed progress (approval appearing, the canonical run completing), so they are sensitive to machine load. Playwright's default worker count on a larger machine over-subscribes the CPU and starves those timers, producing failures that are contention artifacts rather than real regressions:
+
+```sh
+pnpm --filter @foundry/agent-city exec playwright test --workers=3
 ```
 
 The single most relevant test for the complete journey is `src/lib/mock-runtime/v1PrimaryJourney.test.ts` (every numbered step of `docs/02-specification/v1-acceptance.md`'s "Primary user journey," asserted in order against the real mock runtime) and `e2e/shell-v1-primary-journey.spec.ts` (the same journey, live in a real browser, including reduced-motion and 2D-only-comprehension variants).
