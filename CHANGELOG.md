@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — FBL-029 operator observation of the Inspector validation path
+
+Recorded the operator's observation of FBL-029's three visual checks. **Documentation only — no code, test, or behaviour changed.** Append-only record: `docs/evidence/fbl-029/operator-observation.md`.
+
+- **Confirmed 2026-08-01** by mikemiller1425-design against the real backend and frontend: an Inspector failure rendered QA the declared **red** (not the orange "blocked" state); the Builder credential could not produce a pass, with the unauthenticated and spoofed-body variants refused identically (`403 actor_mismatch` for the body claim); and an Inspector pass cleared the red state, with the persisted record showing `validatorRole: inspector` resolved from `Agent` state rather than from the command.
+- FBL-029's stop condition ("F-05 real-backend test green **and operator-observed**") is therefore met and the rung is **closed**.
+- The record notes the standing security posture this rung establishes — identity from a backend-issued credential rather than the request body, role always re-read from persisted state, agent credentials never reaching the browser — and states explicitly that this is **not** a general authentication system and must not be treated as one. It does not re-open or alter the FBL-028 approval.
+
 ### Added — FBL-029 Independent Inspector validation
 
 Wired the Inspector validation path end-to-end on the real backend, per the operator-authorized sequence FBL-029–FBL-033. **Operator observation of the visual checks is pending**, so this rung's stop condition ("F-05 real-backend test green **and operator-observed**") is not yet fully met and FBL-030 has not been started.
