@@ -107,12 +107,18 @@ export type CommandType = z.infer<typeof CommandTypeSchema>;
 // not written anywhere would be undocumented policy, not contract-first
 // implementation. Per-command parameter validation is FBL-025's job, once
 // there is real enforcement logic to consume those parameters.
-// `actor` is optional and, in the absence of a V1 authentication system
-// (out of scope per v1-scope.md exclusions), is a caller-asserted claim,
-// not a cryptographically verified identity — every mutation still
-// "records actor" (domain-model.md global conventions) once appended, but
-// FBL-025's actor-sensitive guards (e.g. F-05's Inspector-only check) are
-// only as trustworthy as this claim. `actorType` is intentionally a loose
+// `actor` is optional and is **not** how identity is determined.
+//
+// Through FBL-025 it was: the field was a caller-asserted claim, and the
+// actor-sensitive guards (notably F-05's Inspector-only check) were only
+// as trustworthy as whatever the caller typed. FBL-029 replaced that —
+// identity is now established by a backend-issued bearer credential
+// resolved server-side (`@foundry/persistence` → `PrincipalRegistry`),
+// and the transport refuses (403 `actor_mismatch`) any request whose
+// `actor` disagrees with the authenticated principal rather than
+// silently overriding it. The field therefore remains useful as an
+// explicit, checkable assertion of intent, but it can no longer confer
+// authority. `actorType` is intentionally a loose
 // string here (not the closed `ActorType` enum, to avoid a circular
 // dependency on `@foundry/event-types`, which already depends on this
 // package) — an invalid value is still caught downstream when the

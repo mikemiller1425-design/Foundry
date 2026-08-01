@@ -2,14 +2,28 @@ import { randomUUID } from "node:crypto";
 import type { CommandRequest, CommandType } from "@foundry/contracts";
 import { FoundryEventSchema, type ActorType, type FoundryEvent } from "@foundry/event-types";
 import { WORLD_AGENTS } from "@foundry/world-model";
-import { COMMAND_DEFINITIONS, ENTITY_TYPE_LABELS, type CommandDefinition } from "./commandDefinitions";
+import {
+  COMMAND_DEFINITIONS,
+  ENTITY_TYPE_LABELS,
+  type CommandDefinition,
+} from "./commandDefinitions";
 import type { PersistenceService } from "./persistenceService";
-import type { EntityType } from "./reducer";
+import type { EntityType, StageValidationHistory } from "./reducer";
 import { isLegalTransition } from "./transitionGraphs";
 
 export interface CommandActor {
   actorType: ActorType;
   actorId: string;
+  /**
+   * True only when this identity was established by a backend-issued
+   * credential (FBL-029, `principals.ts`) rather than asserted in a
+   * request payload.
+   *
+   * Required rather than optional: an authorization guard that forgets
+   * to check it silently reverts to trusting the caller, and a default
+   * would make that omission invisible at every call site.
+   */
+  authenticated: boolean;
 }
 
 export interface CommandOutcome {
@@ -45,21 +59,47 @@ export class CommandHandler {
     const def = COMMAND_DEFINITIONS[commandType];
 
     if (!def.eventType) {
-      return this.deny(commandType, entityId, def.denyReason ?? "No enforcement path exists for this command.");
+      return this.deny(
+        commandType,
+        entityId,
+        def.denyReason ?? "No enforcement path exists for this command.",
+      );
     }
 
     if (!entityId) {
       return this.deny(commandType, entityId, "entityId is required for this command.");
     }
 
+    // Authorization runs *before* the entity is looked up. Otherwise the
+    // "no such BuildStage" reply becomes an existence oracle: an
+    // unauthenticated caller could enumerate stage ids by watching which
+    // error it gets back, without ever being allowed to act on one.
+    //
+    // Both outcomes are the Inspector's to decide, not just `passed`.
+    // The spec's invariant names only `validation_passed`, but a Builder
+    // able to declare its own work *failed* would still control the
+    // retry/revision path — the spec sets a floor here, not a ceiling.
+    if (commandType === "BuildStage.Validate") {
+      const authorization = this.requireIndependentInspector(commandType, entityId, actor, params);
+      if (authorization) return authorization;
+    }
+
     const existing = this.persistence.getEntity<Record<string, unknown>>(def.entityType, entityId);
 
     if (def.isCreate) {
       if (existing) {
-        return this.deny(commandType, entityId, `${ENTITY_TYPE_LABELS[def.entityType]} ${entityId} already exists.`);
+        return this.deny(
+          commandType,
+          entityId,
+          `${ENTITY_TYPE_LABELS[def.entityType]} ${entityId} already exists.`,
+        );
       }
     } else if (!existing && !this.isLazilyCreatable(commandType, def)) {
-      return this.deny(commandType, entityId, `No ${ENTITY_TYPE_LABELS[def.entityType]} with id ${entityId}.`);
+      return this.deny(
+        commandType,
+        entityId,
+        `No ${ENTITY_TYPE_LABELS[def.entityType]} with id ${entityId}.`,
+      );
     }
 
     let eventType = def.eventType;
@@ -67,16 +107,20 @@ export class CommandHandler {
 
     if (commandType === "BuildStage.Validate") {
       const outcome = params.outcome;
-      if (outcome === "passed") {
-        eventType = "stage.validation_passed";
-        const guardFailure = this.requireInspector(commandType, entityId, actor);
-        if (guardFailure) return guardFailure;
-      } else if (outcome === "failed") {
-        eventType = "stage.validation_failed";
-        toStatus = undefined; // reducer's own retryEligible branch decides the resulting status
-      } else {
+      if (outcome !== "passed" && outcome !== "failed") {
         return this.deny(commandType, entityId, 'params.outcome must be "passed" or "failed".');
       }
+
+      // Authorization already ran above, before the entity lookup.
+      const coherence = this.requireValidationCoherence(commandType, entityId, params);
+      if (coherence) return coherence;
+
+      const prior = this.checkPriorValidation(commandType, entityId, outcome);
+      if (prior) return prior;
+
+      eventType = outcome === "passed" ? "stage.validation_passed" : "stage.validation_failed";
+      // The reducer's own retryEligible branch decides the resulting status.
+      if (outcome === "failed") toStatus = undefined;
     }
 
     const fromStatus = existing ? String(existing.status) : "pending";
@@ -92,7 +136,14 @@ export class CommandHandler {
       }
     }
 
-    const guardFailure = this.runNamedGuards(commandType, def.entityType, entityId, existing, params, actor);
+    const guardFailure = this.runNamedGuards(
+      commandType,
+      def.entityType,
+      entityId,
+      existing,
+      params,
+      actor,
+    );
     if (guardFailure) return guardFailure;
 
     const event = this.buildEvent(eventType, def.entityType, entityId, params, actor);
@@ -107,7 +158,11 @@ export class CommandHandler {
 
     const result = this.persistence.appendEvent(parsed.data);
     if (!result.applied) {
-      return this.deny(commandType, entityId, "This command's event id was already applied (idempotent no-op).");
+      return this.deny(
+        commandType,
+        entityId,
+        "This command's event id was already applied (idempotent no-op).",
+      );
     }
 
     return { accepted: true, commandType, entityId, event: parsed.data };
@@ -161,28 +216,177 @@ export class CommandHandler {
     }
   }
 
-  // F-05: "Builder cannot produce stage.validation_passed; Inspector path required."
-  private requireInspector(
+  /**
+   * F-05 / Agent invariant "Inspector cannot be Builder for same validation".
+   *
+   * Four checks, in order, and the order matters: each one is meaningless
+   * without the one before it.
+   *
+   * 1. **Authenticated.** Before FBL-029 the actor was whatever the
+   *    request body claimed, so "is this the Inspector?" was answered by
+   *    the caller. An unauthenticated actor is refused outright — this is
+   *    what turns role spoofing from a naming coincidence into a denial.
+   * 2. **Is an agent.** Operators, the frontend, and backend automation
+   *    are not validators, whatever they assert.
+   * 3. **Holds the Inspector role in persisted state.** The role is read
+   *    from the authoritative `Agent` record, never from the credential
+   *    or the payload, so a token can never carry more authority than its
+   *    agent actually has.
+   * 4. **Did not produce the evidence.** An agent cannot validate its own
+   *    output, whatever its role.
+   *
+   * Note what check 4 deliberately does *not* do: it does not reject an
+   * Inspector for being assigned to the stage under validation. In V1 the
+   * `qa_validation` stage *is* the Inspector's own stage (`v1-scope.md`
+   * stage 6), so assignment there is the job, not a conflict. The
+   * conflict the invariant actually names is validating work you
+   * produced, which is what evidence provenance tests.
+   *
+   * Every failure returns the *same* message. A caller that could tell
+   * "wrong role" from "unknown agent" from "you produced this" has a
+   * probing oracle for backend state it is not authorized to read.
+   */
+  private requireIndependentInspector(
     commandType: CommandType,
-    entityId: string,
+    stageId: string,
     actor: CommandActor,
+    params: Record<string, unknown>,
   ): CommandOutcome | undefined {
-    const agent =
-      actor.actorType === "agent" ? this.persistence.getEntity<{ role: string }>("agents", actor.actorId) : undefined;
-    if (actor.actorType !== "agent" || !agent || agent.role !== "inspector") {
-      return this.deny(
+    const refuse = () =>
+      this.deny(
         commandType,
-        entityId,
-        "Builder cannot self-certify (F-05): stage.validation_passed requires an independent Inspector actor.",
+        stageId,
+        "Validation requires an authenticated, independent Inspector-role agent (F-05): the actor must be an agent whose persisted role is `inspector` and who did not perform this stage's work. Builder self-certification, frontend commands, and unauthenticated or role-asserting callers are rejected.",
+        "Submit the validation from the Inspector agent's own authenticated credential.",
       );
-    }
+
+    if (!actor.authenticated) return refuse();
+    if (actor.actorType !== "agent") return refuse();
+
+    const agent = this.persistence.getEntity<{ role: string }>("agents", actor.actorId);
+    if (!agent || agent.role !== "inspector") return refuse();
+
+    if (this.producedEvidenceUnderValidation(actor.actorId, params)) return refuse();
+
     return undefined;
   }
 
+  /**
+   * True when the validator is the agent that created any artifact it is
+   * now offering as evidence — self-certification by provenance.
+   *
+   * `Artifact.createdByAgentId` is the authoritative record of who
+   * produced a thing (domain-model.md → Artifact), so this reads the
+   * fact rather than inferring it from stage assignment.
+   */
+  private producedEvidenceUnderValidation(
+    agentId: string,
+    params: Record<string, unknown>,
+  ): boolean {
+    const evidenceIds = Array.isArray(params.evidenceIds) ? (params.evidenceIds as unknown[]) : [];
+    return evidenceIds.some((evidenceId) => {
+      if (typeof evidenceId !== "string") return false;
+      const artifact = this.persistence.getEntity<{ createdByAgentId?: string }>(
+        "artifacts",
+        evidenceId,
+      );
+      return artifact?.createdByAgentId === agentId;
+    });
+  }
+
+  /**
+   * Rejects a decision aimed at the wrong stage or citing evidence that
+   * belongs to a different one.
+   *
+   * Without this, a well-formed decision could be applied to a stage the
+   * Inspector never examined — the identity check would pass and the
+   * result would still be meaningless.
+   */
+  private requireValidationCoherence(
+    commandType: CommandType,
+    stageId: string,
+    params: Record<string, unknown>,
+  ): CommandOutcome | undefined {
+    const stage = this.persistence.getEntity<{ status: string }>("buildStages", stageId);
+    if (!stage) {
+      return this.deny(commandType, stageId, `No BuildStage with id ${stageId}.`);
+    }
+
+    // A decision is only meaningful while the stage is actually under
+    // validation. Anything else is stale or out of order — a decision
+    // about a state the stage has already left.
+    if (stage.status !== "validating" && stage.status !== "running") {
+      return this.deny(
+        commandType,
+        stageId,
+        `Stage ${stageId} is ${stage.status}, not under validation — this decision is stale or out of order.`,
+        "Re-read the current stage state and resubmit only if it is still awaiting validation.",
+      );
+    }
+
+    const evidenceIds = Array.isArray(params.evidenceIds) ? (params.evidenceIds as unknown[]) : [];
+    for (const evidenceId of evidenceIds) {
+      if (typeof evidenceId !== "string") continue;
+      const artifact = this.persistence.getEntity<{ stageId?: string }>("artifacts", evidenceId);
+      // Unknown ids are permitted (evidence may live outside the Artifact
+      // table), but an artifact that demonstrably belongs to another stage
+      // is a mismatch, not a technicality.
+      if (artifact && artifact.stageId && artifact.stageId !== stageId) {
+        return this.deny(
+          commandType,
+          stageId,
+          `Evidence ${evidenceId} belongs to stage ${artifact.stageId}, not ${stageId}.`,
+        );
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Duplicate and conflicting decisions.
+   *
+   * A resubmission of the *same* decision is idempotent — accepted as a
+   * no-op that appends nothing, because a retried command should not
+   * become a second recorded judgement. A *different* decision is
+   * refused: the first one is already an immutable fact, and reversing it
+   * is a revision (invariant 8), not a re-validation.
+   */
+  private checkPriorValidation(
+    commandType: CommandType,
+    stageId: string,
+    outcome: "passed" | "failed",
+  ): CommandOutcome | undefined {
+    const history = this.persistence.getEntity<StageValidationHistory>("stageValidations", stageId);
+    const latest = history?.decisions.at(-1);
+    if (!latest) return undefined;
+
+    if (latest.decision === outcome) {
+      return {
+        accepted: true,
+        commandType,
+        entityId: stageId,
+        reason: `Stage ${stageId} was already validated as ${outcome} by ${latest.validatorAgentId} at ${latest.decidedAt} — idempotent no-op, no new decision recorded.`,
+      };
+    }
+
+    return this.deny(
+      commandType,
+      stageId,
+      `Stage ${stageId} already has a recorded ${latest.decision} decision; a conflicting ${outcome} decision is rejected.`,
+      "Reversing a recorded validation requires the Revision path (invariant 8), not a second validation command.",
+    );
+  }
+
   // F-04 / invariant 2: mandatory requirements must pass before stage completion.
-  private requireMandatoryRequirementsPassed(commandType: CommandType, stageId: string): CommandOutcome | undefined {
+  private requireMandatoryRequirementsPassed(
+    commandType: CommandType,
+    stageId: string,
+  ): CommandOutcome | undefined {
     const outstanding = this.persistence
-      .listEntities<{ stageId: string; required: boolean; status: string; name: string }>("requirements")
+      .listEntities<{ stageId: string; required: boolean; status: string; name: string }>(
+        "requirements",
+      )
       .filter((r) => r.stageId === stageId && r.required && r.status !== "passed");
     if (outstanding.length > 0) {
       return this.deny(
@@ -195,12 +399,21 @@ export class CommandHandler {
   }
 
   // domain-model.md → Revision V1 limits: at most one open Revision per stage.
-  private requireNoOpenRevision(commandType: CommandType, stageId: string): CommandOutcome | undefined {
+  private requireNoOpenRevision(
+    commandType: CommandType,
+    stageId: string,
+  ): CommandOutcome | undefined {
     const open = this.persistence
       .listEntities<{ stageId: string; status: string }>("revisions")
-      .some((r) => r.stageId === stageId && (r.status === "requested" || r.status === "in_progress"));
+      .some(
+        (r) => r.stageId === stageId && (r.status === "requested" || r.status === "in_progress"),
+      );
     if (open) {
-      return this.deny(commandType, stageId, "This stage already has an open Revision (at most one at a time).");
+      return this.deny(
+        commandType,
+        stageId,
+        "This stage already has an open Revision (at most one at a time).",
+      );
     }
     return undefined;
   }
@@ -304,7 +517,8 @@ export class CommandHandler {
       return this.deny(
         "Building.StartUpgrade",
         buildingId,
-        COMMAND_DEFINITIONS["Building.StartUpgrade"].denyReason ?? "No eligible Upgrade found for this building.",
+        COMMAND_DEFINITIONS["Building.StartUpgrade"].denyReason ??
+          "No eligible Upgrade found for this building.",
       );
     }
     return this.submit(
@@ -341,14 +555,13 @@ export class CommandHandler {
     };
   }
 
-  private deny(commandType: CommandType, entityId: string | undefined, reason: string): CommandOutcome {
-    return {
-      accepted: false,
-      commandType,
-      entityId,
-      reason,
-      correctiveAction: "Resolve the stated condition and resubmit.",
-    };
+  private deny(
+    commandType: CommandType,
+    entityId: string | undefined,
+    reason: string,
+    correctiveAction = "Resolve the stated condition and resubmit.",
+  ): CommandOutcome {
+    return { accepted: false, commandType, entityId, reason, correctiveAction };
   }
 }
 

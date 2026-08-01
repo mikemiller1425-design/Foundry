@@ -72,6 +72,12 @@ async function main(): Promise<void> {
   const persistence = new PersistenceService(DB_PATH);
   const handler = new CommandHandler(persistence);
 
+  // This script is the operator's own process: it opens the database
+  // directly rather than going over HTTP, so its identity is established
+  // by having been run, not by a bearer token. `authenticated: true` is
+  // the accurate statement of that — there is no untrusted caller here
+  // whose claim could be wrong.
+
   try {
     // Duplicate protection comes from the persisted log, so a rerun of
     // this script against the same database refuses rather than
@@ -94,7 +100,7 @@ async function main(): Promise<void> {
               riskClass: "R2",
             },
           },
-          { actorType: "operator", actorId: "operator-1" },
+          { actorType: "operator", actorId: "operator-1", authenticated: true },
         );
 
     if (!started.accepted) {
@@ -136,7 +142,7 @@ async function main(): Promise<void> {
                 evidenceIds: [evidence.runEvidence?.evidenceId ?? "unknown"],
               },
             },
-            { actorType: "operator", actorId: "operator-1" },
+            { actorType: "operator", actorId: "operator-1", authenticated: true },
           )
         : evidence.outcome === "timed_out"
           ? handler.submit(
@@ -148,7 +154,7 @@ async function main(): Promise<void> {
                   logRef: path.join(EVIDENCE_DIR, "evidence.json"),
                 },
               },
-              { actorType: "operator", actorId: "operator-1" },
+              { actorType: "operator", actorId: "operator-1", authenticated: true },
             )
           : handler.submit(
               {
@@ -160,7 +166,7 @@ async function main(): Promise<void> {
                   evidenceIds: [evidence.runEvidence?.evidenceId ?? "unknown"],
                 },
               },
-              { actorType: "operator", actorId: "operator-1" },
+              { actorType: "operator", actorId: "operator-1", authenticated: true },
             );
 
     const packageRecord = {

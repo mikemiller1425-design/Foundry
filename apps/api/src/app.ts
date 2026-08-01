@@ -1,9 +1,10 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { CommandRequestSchema, WorldStateSchema } from "@foundry/contracts";
-import type { ActorType } from "@foundry/event-types";
 import {
   CommandHandler,
   ENTITY_TYPES,
+  PrincipalRegistry,
+  bearerToken,
   type EntityType,
   type PersistenceService,
 } from "@foundry/persistence";
@@ -11,7 +12,6 @@ import { handleEventStream } from "./eventStream";
 
 const ENTITY_TYPE_SET = new Set<string>(ENTITY_TYPES);
 const MAX_BODY_BYTES = 1_000_000;
-const DEFAULT_ACTOR = { actorType: "operator" as ActorType, actorId: "operator" };
 
 /**
  * FBL-024 built the query/snapshot/health surface and a deny-by-default
@@ -22,11 +22,21 @@ const DEFAULT_ACTOR = { actorType: "operator" as ActorType, actorId: "operator" 
  * invalid or unauthorized command still leaves persisted state
  * byte-for-byte unchanged, exactly as it did at FBL-024, because
  * `CommandHandler` never calls `appendEvent` for a rejected command.
+ *
+ * FBL-029 adds authenticated identity: the actor is established by an
+ * `Authorization: Bearer` credential resolved through `PrincipalRegistry`,
+ * not by the request body. A caller with no credential is anonymous and
+ * unauthenticated, which is what makes the Inspector-only validation
+ * guard (F-05) a real authorization decision rather than a check against
+ * a name the caller chose for itself.
  */
-export function createApp(persistence: PersistenceService): Server {
+export function createApp(
+  persistence: PersistenceService,
+  principals: PrincipalRegistry = new PrincipalRegistry(),
+): Server {
   const commandHandler = new CommandHandler(persistence);
   return createServer((req, res) => {
-    void handleRequest(persistence, commandHandler, req, res).catch((err: unknown) => {
+    void handleRequest(persistence, commandHandler, principals, req, res).catch((err: unknown) => {
       if (!res.headersSent) {
         sendJson(res, 500, {
           error: "internal_error",
@@ -40,6 +50,7 @@ export function createApp(persistence: PersistenceService): Server {
 async function handleRequest(
   persistence: PersistenceService,
   commandHandler: CommandHandler,
+  principals: PrincipalRegistry,
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
@@ -49,11 +60,13 @@ async function handleRequest(
 
   // The Next.js frontend runs on its own port, so browser requests to this
   // service are cross-origin. V1 is a single-operator, local/trusted-network
-  // deployment with no authentication and no cookie-based session to
-  // protect (see README security caveat), so a permissive origin is
-  // acceptable here; it must be revisited before any networked deployment.
+  // deployment with no cookie-based session to protect, so a permissive
+  // origin is acceptable here; it must be revisited before any networked
+  // deployment. Note this is safe *specifically* because agent credentials
+  // (FBL-029) are bearer tokens the browser never holds — a permissive
+  // origin cannot be leveraged to replay an authority it does not possess.
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Last-Event-ID");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Last-Event-ID, Authorization");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
 
   if (method === "OPTIONS") {
@@ -84,7 +97,12 @@ async function handleRequest(
     return;
   }
 
-  if (method === "GET" && segments.length === 2 && segments[0] === "events" && segments[1] === "stream") {
+  if (
+    method === "GET" &&
+    segments.length === 2 &&
+    segments[0] === "events" &&
+    segments[1] === "stream"
+  ) {
     handleEventStream(persistence, req, res);
     return;
   }
@@ -95,7 +113,7 @@ async function handleRequest(
   }
 
   if (method === "POST" && segments.length === 1 && segments[0] === "commands") {
-    await handleCommandPost(commandHandler, req, res);
+    await handleCommandPost(commandHandler, principals, req, res);
     return;
   }
 
@@ -132,6 +150,7 @@ function handleEntitiesGet(
 
 async function handleCommandPost(
   commandHandler: CommandHandler,
+  principals: PrincipalRegistry,
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
@@ -156,16 +175,38 @@ async function handleCommandPost(
     return;
   }
 
-  // No V1 authentication system exists (out of scope, v1-scope.md
-  // exclusions) — `actor` is a caller-asserted claim, defaulted to a
-  // generic operator when omitted. See CommandActorSchema's doc comment
-  // in @foundry/contracts for the security caveat this implies for
-  // actor-sensitive guards (e.g. F-05's Inspector-only check).
-  const actor = parsed.data.actor
-    ? { actorType: parsed.data.actor.actorType as ActorType, actorId: parsed.data.actor.actorId }
-    : DEFAULT_ACTOR;
+  // FBL-029: identity comes from the credential, never from the body.
+  //
+  // Until this rung, `actor` in the payload *was* the identity, so the
+  // F-05 Inspector check could be satisfied by typing a name. Now the
+  // bearer token decides who the caller is; a request with no credential
+  // is anonymous and unauthenticated, which is what makes a frontend
+  // attempt to self-certify a denial rather than a naming coincidence.
+  const principal = principals.resolve(bearerToken(req.headers.authorization));
 
-  const outcome = commandHandler.submit(parsed.data, actor);
+  // A body `actor` that contradicts the credential is refused outright
+  // rather than silently overridden. Silently ignoring it would let a
+  // caller believe it had acted as someone else — and would make the
+  // resulting audit trail a quiet lie about what was attempted.
+  const claimed = parsed.data.actor;
+  if (
+    claimed &&
+    (claimed.actorId !== principal.actorId || claimed.actorType !== principal.actorType)
+  ) {
+    sendJson(res, 403, {
+      accepted: false,
+      commandType: parsed.data.commandType,
+      entityId: parsed.data.entityId,
+      error: "actor_mismatch",
+      reason:
+        "The `actor` in the request body does not match the authenticated credential. Identity is established by the credential; the body may not assert a different one.",
+      correctiveAction:
+        "Omit `actor`, or send it matching the authenticated principal, or present the correct credential.",
+    });
+    return;
+  }
+
+  const outcome = commandHandler.submit(parsed.data, principal);
   sendJson(res, 200, outcome);
 }
 

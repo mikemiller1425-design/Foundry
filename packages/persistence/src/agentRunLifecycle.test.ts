@@ -19,7 +19,11 @@ import { PersistenceService } from "./persistenceService";
  * asserted here against real storage rather than against the adapter.
  */
 
-const OPERATOR: CommandActor = { actorType: "operator", actorId: "operator-1" };
+const OPERATOR: CommandActor = {
+  actorType: "operator",
+  actorId: "operator-1",
+  authenticated: true,
+};
 
 const START_PARAMS = {
   agentId: "agent-builder",

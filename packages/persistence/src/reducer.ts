@@ -92,6 +92,47 @@ const STAGE_DESTINATION_BUILDING: Record<BuildStageName, string> = {
 const WAREHOUSE_UPGRADE_FROM_LEVEL = 1;
 const WAREHOUSE_UPGRADE_TO_LEVEL = 2;
 
+/**
+ * One recorded Inspector decision (FBL-029).
+ *
+ * A derived projection, not a new domain entity — `domain-model.md` is
+ * frozen at Foundation 1.0, and `event-model.md` pins the
+ * `stage.validation_*` payloads exactly, so nothing here changes the
+ * specification. Every field is read from facts the event log already
+ * carries: the envelope supplies the validator and the timestamp, the
+ * payload supplies the evidence and requirement references, and the role
+ * is resolved from persisted `Agent` state (immutable in V1 — no command
+ * changes an Agent's role, so the resolution is deterministic on replay).
+ *
+ * Kept as an append-only list per stage. A failure is not overwritten by
+ * a later pass: principle 17 requires failures to stay inspectable, and a
+ * record that the newest decision can erase is not an audit trail.
+ */
+export interface StageValidationRecord {
+  stageId: string;
+  decision: "passed" | "failed";
+  /** Authenticated validator, taken from the event envelope. */
+  validatorAgentId: string;
+  validatorActorType: string;
+  /** Authoritative role at decision time, resolved from persisted Agent state. */
+  validatorRole: string;
+  evidenceIds: readonly string[];
+  passedRequirementIds: readonly string[];
+  failedRequirementIds: readonly string[];
+  retryEligible: boolean | null;
+  decidedAt: string;
+  /** The BuildStage status this decision produced. */
+  resultingStageStatus: string;
+  /** The event that recorded this decision — the immutable source of truth. */
+  eventId: string;
+}
+
+/** Per-stage validation history, newest last. */
+export interface StageValidationHistory {
+  stageId: string;
+  decisions: StageValidationRecord[];
+}
+
 export interface EntityState {
   projects: Record<string, Project>;
   builds: Record<string, Build>;
@@ -107,6 +148,8 @@ export interface EntityState {
   agents: Record<string, Agent>;
   buildings: Record<string, Building>;
   vehicles: Record<string, Vehicle>;
+  /** FBL-029 Inspector decision history, keyed by stage id. */
+  stageValidations: Record<string, StageValidationHistory>;
   inventoryCounts: Record<string, number>;
   health: HealthSummary;
   lastProcessedEventId: string | null;
@@ -119,7 +162,13 @@ export interface EntityState {
 
 export type EntityType = keyof Omit<
   EntityState,
-  "inventoryCounts" | "health" | "lastProcessedEventId" | "currentBuildId" | "currentStageId" | "stageSequenceByBuild" | "seenEventIds"
+  | "inventoryCounts"
+  | "health"
+  | "lastProcessedEventId"
+  | "currentBuildId"
+  | "currentStageId"
+  | "stageSequenceByBuild"
+  | "seenEventIds"
 >;
 
 /** Runtime list of every addressable entity-type key, for route/param validation by callers (e.g. `packages/persistence` has no HTTP concerns, but `apps/api` needs this to validate a path segment without duplicating the list). */
@@ -138,6 +187,7 @@ export const ENTITY_TYPES: readonly EntityType[] = [
   "agents",
   "buildings",
   "vehicles",
+  "stageValidations",
 ];
 
 export interface EntityRef {
@@ -165,6 +215,7 @@ export function createInitialEntityState(): EntityState {
     approvals: {},
     revisions: {},
     upgrades: {},
+    stageValidations: {},
     agents: Object.fromEntries(
       WORLD_AGENTS.map((a) => [
         a.id,
@@ -276,7 +327,12 @@ export function reduceEntities(prev: EntityState, event: FoundryEvent): ReduceRe
   return { state, touched, applied: true };
 }
 
-function updateAgent(state: EntityState, touched: EntityRef[], id: string, patch: Partial<Agent>): void {
+function updateAgent(
+  state: EntityState,
+  touched: EntityRef[],
+  id: string,
+  patch: Partial<Agent>,
+): void {
   const existing = state.agents[id];
   if (!existing) return;
   state.agents[id] = { ...existing, ...patch, updatedAt: NOW };
@@ -292,11 +348,63 @@ function updateBuild(state: EntityState, touched: EntityRef[], patch: Partial<Bu
   touch(touched, "builds", id);
 }
 
-function updateStage(state: EntityState, touched: EntityRef[], id: string, patch: Partial<BuildStage>): void {
+function updateStage(
+  state: EntityState,
+  touched: EntityRef[],
+  id: string,
+  patch: Partial<BuildStage>,
+): void {
   const existing = state.buildStages[id];
   if (!existing) return;
   state.buildStages[id] = { ...existing, ...patch, updatedAt: NOW };
   touch(touched, "buildStages", id);
+}
+
+/**
+ * Appends one Inspector decision to a stage's validation history (FBL-029).
+ *
+ * Append-only on purpose: a later pass never overwrites an earlier
+ * failure. Principle 17 requires failures to remain inspectable, and a
+ * record the newest decision can erase is not an audit trail.
+ *
+ * The validator's role is resolved from persisted `Agent` state rather
+ * than taken from the event payload, so the recorded role is the
+ * authoritative one. V1 Agent roles are immutable (no command changes
+ * them), which is what makes this deterministic under full replay.
+ */
+function recordValidation(
+  state: EntityState,
+  touched: EntityRef[],
+  event: { entityId: string; id: string; occurredAt: string; actorId: string; actorType: string },
+  decision: {
+    decision: "passed" | "failed";
+    evidenceIds: readonly string[];
+    passedRequirementIds: readonly string[];
+    failedRequirementIds: readonly string[];
+    retryEligible: boolean | null;
+    resultingStageStatus: string;
+  },
+): void {
+  const stageId = event.entityId;
+  const history = state.stageValidations[stageId] ?? { stageId, decisions: [] };
+
+  const record: StageValidationRecord = {
+    stageId,
+    decision: decision.decision,
+    validatorAgentId: event.actorId,
+    validatorActorType: event.actorType,
+    validatorRole: state.agents[event.actorId]?.role ?? "unknown",
+    evidenceIds: [...decision.evidenceIds],
+    passedRequirementIds: [...decision.passedRequirementIds],
+    failedRequirementIds: [...decision.failedRequirementIds],
+    retryEligible: decision.retryEligible,
+    decidedAt: event.occurredAt,
+    resultingStageStatus: decision.resultingStageStatus,
+    eventId: event.id,
+  };
+
+  state.stageValidations[stageId] = { stageId, decisions: [...history.decisions, record] };
+  touch(touched, "stageValidations", stageId);
 }
 
 function ensureRequirement(state: EntityState, id: string, occurredAt: string): Requirement {
@@ -363,14 +471,24 @@ function updateTask(
   touch(touched, "tasks", taskId);
 }
 
-function upsertTransfer(state: EntityState, touched: EntityRef[], id: string, patch: Partial<Transfer>): void {
+function upsertTransfer(
+  state: EntityState,
+  touched: EntityRef[],
+  id: string,
+  patch: Partial<Transfer>,
+): void {
   const existing = state.transfers[id];
   if (!existing) return;
   state.transfers[id] = { ...existing, ...patch, updatedAt: NOW };
   touch(touched, "transfers", id);
 }
 
-function upsertApproval(state: EntityState, touched: EntityRef[], id: string, patch: Partial<Approval>): void {
+function upsertApproval(
+  state: EntityState,
+  touched: EntityRef[],
+  id: string,
+  patch: Partial<Approval>,
+): void {
   const existing = state.approvals[id];
   if (!existing) return;
   state.approvals[id] = { ...existing, ...patch };
@@ -520,7 +638,10 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
         event.payload.taskId,
         task?.stageId ?? state.currentStageId ?? "",
         event.occurredAt,
-        { riskClass: event.payload.riskClass, status: task?.status === "queued" ? "running" : task?.status },
+        {
+          riskClass: event.payload.riskClass,
+          status: task?.status === "queued" ? "running" : task?.status,
+        },
       );
       return;
     }
@@ -657,13 +778,30 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
       updateStage(state, touched, event.entityId, { status: "validating" });
       return;
     case "stage.validation_passed":
+      recordValidation(state, touched, event, {
+        decision: "passed",
+        evidenceIds: event.payload.evidenceIds,
+        passedRequirementIds: event.payload.passedRequirementIds,
+        failedRequirementIds: [],
+        retryEligible: null,
+        resultingStageStatus: state.buildStages[event.entityId]?.status ?? "validating",
+      });
       return;
-    case "stage.validation_failed":
+    case "stage.validation_failed": {
       updateStage(state, touched, event.entityId, {
         status: event.payload.retryEligible ? "validating" : "failed",
         failedAt: event.payload.retryEligible ? undefined : event.occurredAt,
       });
+      recordValidation(state, touched, event, {
+        decision: "failed",
+        evidenceIds: event.payload.evidenceIds,
+        passedRequirementIds: [],
+        failedRequirementIds: event.payload.failedRequirementIds,
+        retryEligible: event.payload.retryEligible,
+        resultingStageStatus: state.buildStages[event.entityId]?.status ?? "failed",
+      });
       return;
+    }
     case "stage.completed":
       updateStage(state, touched, event.entityId, {
         status: "completed",
@@ -778,7 +916,11 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
     case "artifact.ready": {
       const artifact = state.artifacts[event.entityId];
       if (!artifact) return;
-      state.artifacts[event.entityId] = { ...artifact, status: "ready", updatedAt: event.occurredAt };
+      state.artifacts[event.entityId] = {
+        ...artifact,
+        status: "ready",
+        updatedAt: event.occurredAt,
+      };
       touch(touched, "artifacts", event.entityId);
       return;
     }
@@ -812,7 +954,10 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
       upsertTransfer(state, touched, event.entityId, { status: "ready" });
       return;
     case "transfer.started": {
-      const leg = legForBuildings(event.payload.sourceBuildingId, event.payload.destinationBuildingId);
+      const leg = legForBuildings(
+        event.payload.sourceBuildingId,
+        event.payload.destinationBuildingId,
+      );
       upsertTransfer(state, touched, event.entityId, {
         status: "in_transit",
         leg,
@@ -957,7 +1102,9 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
         state.buildings[buildingId] = {
           ...building,
           level: event.payload.toLevel,
-          capabilities: [...new Set([...building.capabilities, ...event.payload.capabilitiesAdded])],
+          capabilities: [
+            ...new Set([...building.capabilities, ...event.payload.capabilitiesAdded]),
+          ],
           updatedAt: event.occurredAt,
         };
         touch(touched, "buildings", buildingId);

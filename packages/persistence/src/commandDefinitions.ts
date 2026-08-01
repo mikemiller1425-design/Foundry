@@ -17,6 +17,7 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
   agents: "Agent",
   buildings: "Building",
   vehicles: "Vehicle",
+  stageValidations: "StageValidation",
 };
 
 export interface CommandDefinition {
@@ -58,12 +59,18 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
   "Agent.Pause": { entityType: "agents", eventType: "agent.paused", toStatus: "paused" },
   "Agent.Resume": { entityType: "agents", eventType: "agent.resumed", toStatus: "working" },
   "Agent.Fail": { entityType: "agents", eventType: "agent.failed", toStatus: "failed" },
-  "Agent.CompleteWork": { entityType: "agents", eventType: "agent.completed_work", toStatus: "waiting" },
+  "Agent.CompleteWork": {
+    entityType: "agents",
+    eventType: "agent.completed_work",
+    toStatus: "waiting",
+  },
   "Agent.ReturnHome": { entityType: "agents", eventType: "agent.returned_home", toStatus: "idle" },
 
   "Building.ChangeState": {
     entityType: "buildings",
-    ...NO_EVENT("Building.ChangeState is system-only (domain-model.md → Building Commands: \"(system)\") and is never operator-submittable."),
+    ...NO_EVENT(
+      'Building.ChangeState is system-only (domain-model.md → Building Commands: "(system)") and is never operator-submittable.',
+    ),
   },
   "Building.Select": { entityType: "buildings", eventType: "building.selected" },
   // Handled as a named alias in commandHandler.ts (routes to the target
@@ -74,10 +81,16 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
   // bypassed.
   "Building.StartUpgrade": {
     entityType: "buildings",
-    ...NO_EVENT("Building.StartUpgrade routes to the target building's Upgrade record; no eligible Upgrade was found."),
+    ...NO_EVENT(
+      "Building.StartUpgrade routes to the target building's Upgrade record; no eligible Upgrade was found.",
+    ),
   },
 
-  "Project.Create": { entityType: "projects", eventType: "operator.objective_submitted", isCreate: true },
+  "Project.Create": {
+    entityType: "projects",
+    eventType: "operator.objective_submitted",
+    isCreate: true,
+  },
   "Project.Activate": {
     entityType: "projects",
     ...NO_EVENT(
@@ -86,11 +99,15 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
   },
   "Project.Archive": {
     entityType: "projects",
-    ...NO_EVENT("No V1 event backs Project.Archive — no operator.* or project.* event for archival exists in event-model.md."),
+    ...NO_EVENT(
+      "No V1 event backs Project.Archive — no operator.* or project.* event for archival exists in event-model.md.",
+    ),
   },
   "Project.Cancel": {
     entityType: "projects",
-    ...NO_EVENT("No V1 event backs Project.Cancel — no operator.* or project.* event for cancellation exists in event-model.md."),
+    ...NO_EVENT(
+      "No V1 event backs Project.Cancel — no operator.* or project.* event for cancellation exists in event-model.md.",
+    ),
   },
 
   "Build.Create": { entityType: "builds", eventType: "build.created", isCreate: true },
@@ -103,17 +120,31 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
   "Build.Complete": { entityType: "builds", eventType: "build.completed", toStatus: "completed" },
 
   "BuildStage.Create": { entityType: "buildStages", eventType: "stage.created", isCreate: true },
-  "BuildStage.Start": { entityType: "buildStages", eventType: "stage.started", toStatus: "running" },
-  "BuildStage.Block": { entityType: "buildStages", eventType: "stage.blocked", toStatus: "blocked" },
+  "BuildStage.Start": {
+    entityType: "buildStages",
+    eventType: "stage.started",
+    toStatus: "running",
+  },
+  "BuildStage.Block": {
+    entityType: "buildStages",
+    eventType: "stage.blocked",
+    toStatus: "blocked",
+  },
   // "Validate" is dispatched to stage.validation_passed or
   // stage.validation_failed by commandHandler.ts based on params.outcome;
   // toStatus is resolved there too (completed vs. unchanged/failed).
   "BuildStage.Validate": { entityType: "buildStages", eventType: "stage.validation_passed" },
-  "BuildStage.Complete": { entityType: "buildStages", eventType: "stage.completed", toStatus: "completed" },
+  "BuildStage.Complete": {
+    entityType: "buildStages",
+    eventType: "stage.completed",
+    toStatus: "completed",
+  },
   "BuildStage.Fail": { entityType: "buildStages", eventType: "stage.failed", toStatus: "failed" },
   "BuildStage.Cancel": {
     entityType: "buildStages",
-    ...NO_EVENT("No V1 event backs BuildStage.Cancel — \"cancelled\" is not in STAGE_EVENTS (event-model.md)."),
+    ...NO_EVENT(
+      'No V1 event backs BuildStage.Cancel — "cancelled" is not in STAGE_EVENTS (event-model.md).',
+    ),
   },
   "BuildStage.RequestRevision": {
     entityType: "revisions",
@@ -122,17 +153,43 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
   },
 
   "Revision.Request": { entityType: "revisions", eventType: "revision.requested", isCreate: true },
-  "Revision.Start": { entityType: "revisions", eventType: "revision.started", toStatus: "in_progress" },
-  "Revision.Complete": { entityType: "revisions", eventType: "revision.completed", toStatus: "completed" },
+  "Revision.Start": {
+    entityType: "revisions",
+    eventType: "revision.started",
+    toStatus: "in_progress",
+  },
+  "Revision.Complete": {
+    entityType: "revisions",
+    eventType: "revision.completed",
+    toStatus: "completed",
+  },
   "Revision.Cancel": {
     entityType: "revisions",
-    ...NO_EVENT("No V1 event backs Revision.Cancel — only requested/started/completed events exist (event-model.md)."),
+    ...NO_EVENT(
+      "No V1 event backs Revision.Cancel — only requested/started/completed events exist (event-model.md).",
+    ),
   },
 
-  "Requirement.Start": { entityType: "requirements", eventType: "requirement.started", toStatus: "running" },
-  "Requirement.Pass": { entityType: "requirements", eventType: "requirement.passed", toStatus: "passed" },
-  "Requirement.Fail": { entityType: "requirements", eventType: "requirement.failed", toStatus: "failed" },
-  "Requirement.Retry": { entityType: "requirements", eventType: "requirement.retried", toStatus: "pending" },
+  "Requirement.Start": {
+    entityType: "requirements",
+    eventType: "requirement.started",
+    toStatus: "running",
+  },
+  "Requirement.Pass": {
+    entityType: "requirements",
+    eventType: "requirement.passed",
+    toStatus: "passed",
+  },
+  "Requirement.Fail": {
+    entityType: "requirements",
+    eventType: "requirement.failed",
+    toStatus: "failed",
+  },
+  "Requirement.Retry": {
+    entityType: "requirements",
+    eventType: "requirement.retried",
+    toStatus: "pending",
+  },
 
   "Task.Queue": { entityType: "tasks", ...TASK_DENY },
   "Task.Assign": { entityType: "tasks", ...TASK_DENY },
@@ -144,31 +201,61 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
   "Task.Cancel": { entityType: "tasks", ...TASK_DENY },
 
   "AgentRun.Start": { entityType: "agentRuns", eventType: "agentrun.started", isCreate: true },
-  "AgentRun.Complete": { entityType: "agentRuns", eventType: "agentrun.completed", toStatus: "completed" },
+  "AgentRun.Complete": {
+    entityType: "agentRuns",
+    eventType: "agentrun.completed",
+    toStatus: "completed",
+  },
   "AgentRun.Fail": { entityType: "agentRuns", eventType: "agentrun.failed", toStatus: "failed" },
-  "AgentRun.Timeout": { entityType: "agentRuns", eventType: "agentrun.timed_out", toStatus: "timed_out" },
+  "AgentRun.Timeout": {
+    entityType: "agentRuns",
+    eventType: "agentrun.timed_out",
+    toStatus: "timed_out",
+  },
 
   "Artifact.Create": { entityType: "artifacts", eventType: "artifact.created", isCreate: true },
-  "Artifact.Validate": { entityType: "artifacts", eventType: "artifact.validated", toStatus: "validated" },
+  "Artifact.Validate": {
+    entityType: "artifacts",
+    eventType: "artifact.validated",
+    toStatus: "validated",
+  },
   "Artifact.Reject": {
     entityType: "artifacts",
-    ...NO_EVENT("No V1 event backs Artifact.Reject — only created/validated/ready events exist (event-model.md)."),
+    ...NO_EVENT(
+      "No V1 event backs Artifact.Reject — only created/validated/ready events exist (event-model.md).",
+    ),
   },
   "Artifact.MarkReady": { entityType: "artifacts", eventType: "artifact.ready", toStatus: "ready" },
   "Artifact.Archive": {
     entityType: "artifacts",
-    ...NO_EVENT("No V1 event backs Artifact.Archive — only created/validated/ready events exist (event-model.md)."),
+    ...NO_EVENT(
+      "No V1 event backs Artifact.Archive — only created/validated/ready events exist (event-model.md).",
+    ),
   },
 
   "Transfer.Create": { entityType: "transfers", eventType: "transfer.created", isCreate: true },
   "Transfer.MarkReady": { entityType: "transfers", eventType: "transfer.ready", toStatus: "ready" },
-  "Transfer.Start": { entityType: "transfers", eventType: "transfer.started", toStatus: "in_transit" },
-  "Transfer.Arrive": { entityType: "transfers", eventType: "transfer.arrived", toStatus: "unloading" },
-  "Transfer.Complete": { entityType: "transfers", eventType: "transfer.completed", toStatus: "completed" },
+  "Transfer.Start": {
+    entityType: "transfers",
+    eventType: "transfer.started",
+    toStatus: "in_transit",
+  },
+  "Transfer.Arrive": {
+    entityType: "transfers",
+    eventType: "transfer.arrived",
+    toStatus: "unloading",
+  },
+  "Transfer.Complete": {
+    entityType: "transfers",
+    eventType: "transfer.completed",
+    toStatus: "completed",
+  },
   "Transfer.Fail": { entityType: "transfers", eventType: "transfer.failed", toStatus: "failed" },
   "Transfer.Cancel": {
     entityType: "transfers",
-    ...NO_EVENT("No V1 event backs Transfer.Cancel — \"cancelled\" is not in TRANSFER_EVENTS (event-model.md)."),
+    ...NO_EVENT(
+      'No V1 event backs Transfer.Cancel — "cancelled" is not in TRANSFER_EVENTS (event-model.md).',
+    ),
   },
 
   "Vehicle.Assign": { entityType: "vehicles", ...VEHICLE_DENY },
@@ -180,8 +267,16 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
   "Vehicle.Fail": { entityType: "vehicles", ...VEHICLE_DENY },
 
   "Approval.Request": { entityType: "approvals", eventType: "approval.requested", isCreate: true },
-  "Approval.Approve": { entityType: "approvals", eventType: "approval.approved", toStatus: "approved" },
-  "Approval.Reject": { entityType: "approvals", eventType: "approval.rejected", toStatus: "rejected" },
+  "Approval.Approve": {
+    entityType: "approvals",
+    eventType: "approval.approved",
+    toStatus: "approved",
+  },
+  "Approval.Reject": {
+    entityType: "approvals",
+    eventType: "approval.rejected",
+    toStatus: "rejected",
+  },
   "Approval.RequestRevision": {
     entityType: "approvals",
     eventType: "approval.revision_requested",
@@ -189,13 +284,31 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
   },
   "Approval.Cancel": {
     entityType: "approvals",
-    ...NO_EVENT("No V1 event backs Approval.Cancel — only requested/approved/rejected/revision_requested events exist (event-model.md)."),
+    ...NO_EVENT(
+      "No V1 event backs Approval.Cancel — only requested/approved/rejected/revision_requested events exist (event-model.md).",
+    ),
   },
 
-  "Upgrade.EvaluateEligibility": { entityType: "upgrades", eventType: "upgrade.eligible", isCreate: true },
-  "Upgrade.Request": { entityType: "upgrades", eventType: "upgrade.requested", toStatus: "awaiting_approval" },
-  "Upgrade.Approve": { entityType: "upgrades", eventType: "upgrade.approved", toStatus: "awaiting_approval" },
+  "Upgrade.EvaluateEligibility": {
+    entityType: "upgrades",
+    eventType: "upgrade.eligible",
+    isCreate: true,
+  },
+  "Upgrade.Request": {
+    entityType: "upgrades",
+    eventType: "upgrade.requested",
+    toStatus: "awaiting_approval",
+  },
+  "Upgrade.Approve": {
+    entityType: "upgrades",
+    eventType: "upgrade.approved",
+    toStatus: "awaiting_approval",
+  },
   "Upgrade.Start": { entityType: "upgrades", eventType: "upgrade.started", toStatus: "upgrading" },
-  "Upgrade.Complete": { entityType: "upgrades", eventType: "upgrade.completed", toStatus: "completed" },
+  "Upgrade.Complete": {
+    entityType: "upgrades",
+    eventType: "upgrade.completed",
+    toStatus: "completed",
+  },
   "Upgrade.Fail": { entityType: "upgrades", eventType: "upgrade.failed", toStatus: "failed" },
 };

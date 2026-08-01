@@ -6,9 +6,17 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CommandHandler, type CommandActor } from "./commandHandler";
 import { PersistenceService } from "./persistenceService";
 
-const OPERATOR: CommandActor = { actorType: "operator", actorId: "operator-1" };
-const INSPECTOR: CommandActor = { actorType: "agent", actorId: "agent-inspector" };
-const BUILDER: CommandActor = { actorType: "agent", actorId: "agent-builder" };
+const OPERATOR: CommandActor = {
+  actorType: "operator",
+  actorId: "operator-1",
+  authenticated: true,
+};
+const INSPECTOR: CommandActor = {
+  actorType: "agent",
+  actorId: "agent-inspector",
+  authenticated: true,
+};
+const BUILDER: CommandActor = { actorType: "agent", actorId: "agent-builder", authenticated: true };
 
 let dir: string;
 let persistence: PersistenceService;
@@ -85,7 +93,15 @@ describe("CommandHandler — generic deny-by-default fallback", () => {
 describe("CommandHandler — Agent", () => {
   it("allows Agent.Assign from idle and rejects a second Assign before the agent returns to idle", () => {
     const first = handler.submit(
-      { commandType: "Agent.Assign", entityId: "agent-architect", params: { taskId: "task-1", stageId: "stage-1", destinationBuildingId: "construction-office" } },
+      {
+        commandType: "Agent.Assign",
+        entityId: "agent-architect",
+        params: {
+          taskId: "task-1",
+          stageId: "stage-1",
+          destinationBuildingId: "construction-office",
+        },
+      },
       OPERATOR,
     );
     expect(first.accepted).toBe(true);
@@ -93,7 +109,15 @@ describe("CommandHandler — Agent", () => {
 
     const before = fullSnapshot();
     const second = handler.submit(
-      { commandType: "Agent.Assign", entityId: "agent-architect", params: { taskId: "task-2", stageId: "stage-1", destinationBuildingId: "construction-office" } },
+      {
+        commandType: "Agent.Assign",
+        entityId: "agent-architect",
+        params: {
+          taskId: "task-2",
+          stageId: "stage-1",
+          destinationBuildingId: "construction-office",
+        },
+      },
       OPERATOR,
     );
     expect(second.accepted).toBe(false);
@@ -103,7 +127,11 @@ describe("CommandHandler — Agent", () => {
   it("rejects Agent.Depart on an agent that was never assigned, with zero mutation", () => {
     const before = fullSnapshot();
     const outcome = handler.submit(
-      { commandType: "Agent.Depart", entityId: "agent-builder", params: { sourceBuildingId: "home-builder", destinationBuildingId: "construction-office" } },
+      {
+        commandType: "Agent.Depart",
+        entityId: "agent-builder",
+        params: { sourceBuildingId: "home-builder", destinationBuildingId: "construction-office" },
+      },
       OPERATOR,
     );
     expect(outcome.accepted).toBe(false);
@@ -143,13 +171,20 @@ describe("CommandHandler — BuildStage / F-04 mandatory requirements", () => {
     );
 
     const before = fullSnapshot();
-    const blocked = handler.submit({ commandType: "BuildStage.Complete", entityId: "stage-1", params: {} }, OPERATOR);
+    const blocked = handler.submit(
+      { commandType: "BuildStage.Complete", entityId: "stage-1", params: {} },
+      OPERATOR,
+    );
     expect(blocked.accepted).toBe(false);
     expect(blocked.reason).toMatch(/F-04/);
     expect(fullSnapshot()).toEqual(before);
 
     const passed = handler.submit(
-      { commandType: "Requirement.Pass", entityId: "req-1", params: { evidenceIds: [], validatorType: "test" } },
+      {
+        commandType: "Requirement.Pass",
+        entityId: "req-1",
+        params: { evidenceIds: [], validatorType: "test" },
+      },
       OPERATOR,
     );
     expect(passed.accepted).toBe(true);
@@ -220,7 +255,13 @@ describe("CommandHandler — invariant 8: completed stage cannot silently return
   it("rejects reopening a completed stage without a Revision, and allows it once a Revision is in_progress", () => {
     seedProjectAndBuild();
     persistence.appendEvent(
-      seedEvent({ id: "evt-sc", type: "stage.created", entityType: "BuildStage", entityId: "stage-1", payload: {} }),
+      seedEvent({
+        id: "evt-sc",
+        type: "stage.created",
+        entityType: "BuildStage",
+        entityId: "stage-1",
+        payload: {},
+      }),
     );
     persistence.appendEvent(
       seedEvent({
@@ -244,7 +285,11 @@ describe("CommandHandler — invariant 8: completed stage cannot silently return
 
     const before = fullSnapshot();
     const illegalReopen = handler.submit(
-      { commandType: "BuildStage.Start", entityId: "stage-1", params: { assignedAgentIds: [], sourceBuildingId: "construction-office" } },
+      {
+        commandType: "BuildStage.Start",
+        entityId: "stage-1",
+        params: { assignedAgentIds: [], sourceBuildingId: "construction-office" },
+      },
       OPERATOR,
     );
     expect(illegalReopen.accepted).toBe(false);
@@ -254,20 +299,33 @@ describe("CommandHandler — invariant 8: completed stage cannot silently return
       {
         commandType: "BuildStage.RequestRevision",
         entityId: "revision-1",
-        params: { revisionId: "revision-1", stageId: "stage-1", reason: "Found a defect", requestedBy: "inspector" },
+        params: {
+          revisionId: "revision-1",
+          stageId: "stage-1",
+          reason: "Found a defect",
+          requestedBy: "inspector",
+        },
       },
       INSPECTOR,
     );
     expect(revisionRequest.accepted).toBe(true);
 
     const revisionStart = handler.submit(
-      { commandType: "Revision.Start", entityId: "revision-1", params: { revisionId: "revision-1" } },
+      {
+        commandType: "Revision.Start",
+        entityId: "revision-1",
+        params: { revisionId: "revision-1" },
+      },
       OPERATOR,
     );
     expect(revisionStart.accepted).toBe(true);
 
     const legalReopen = handler.submit(
-      { commandType: "BuildStage.Start", entityId: "stage-1", params: { assignedAgentIds: [], sourceBuildingId: "construction-office" } },
+      {
+        commandType: "BuildStage.Start",
+        entityId: "stage-1",
+        params: { assignedAgentIds: [], sourceBuildingId: "construction-office" },
+      },
       OPERATOR,
     );
     expect(legalReopen.accepted).toBe(true);
@@ -278,14 +336,30 @@ describe("CommandHandler — invariant 8: completed stage cannot silently return
 describe("CommandHandler — idempotency (F-09)", () => {
   it("a second identical successful command is naturally rejected by the transition graph, not silently duplicated", () => {
     const first = handler.submit(
-      { commandType: "Agent.Assign", entityId: "agent-architect", params: { taskId: "task-1", stageId: "stage-1", destinationBuildingId: "construction-office" } },
+      {
+        commandType: "Agent.Assign",
+        entityId: "agent-architect",
+        params: {
+          taskId: "task-1",
+          stageId: "stage-1",
+          destinationBuildingId: "construction-office",
+        },
+      },
       OPERATOR,
     );
     expect(first.accepted).toBe(true);
     const eventCountAfterFirst = persistence.getAllEvents().length;
 
     const second = handler.submit(
-      { commandType: "Agent.Assign", entityId: "agent-architect", params: { taskId: "task-1", stageId: "stage-1", destinationBuildingId: "construction-office" } },
+      {
+        commandType: "Agent.Assign",
+        entityId: "agent-architect",
+        params: {
+          taskId: "task-1",
+          stageId: "stage-1",
+          destinationBuildingId: "construction-office",
+        },
+      },
       OPERATOR,
     );
     expect(second.accepted).toBe(false);
@@ -296,12 +370,20 @@ describe("CommandHandler — idempotency (F-09)", () => {
 describe("CommandHandler — one allowed and one prohibited transition per remaining entity", () => {
   it("Project: Create is allowed once, prohibited again for the same id", () => {
     const first = handler.submit(
-      { commandType: "Project.Create", entityId: "project-1", params: { objective: "Build a thing", projectId: "project-1" } },
+      {
+        commandType: "Project.Create",
+        entityId: "project-1",
+        params: { objective: "Build a thing", projectId: "project-1" },
+      },
       OPERATOR,
     );
     expect(first.accepted).toBe(true);
     const second = handler.submit(
-      { commandType: "Project.Create", entityId: "project-1", params: { objective: "Build a thing again", projectId: "project-1" } },
+      {
+        commandType: "Project.Create",
+        entityId: "project-1",
+        params: { objective: "Build a thing again", projectId: "project-1" },
+      },
       OPERATOR,
     );
     expect(second.accepted).toBe(false);
@@ -309,7 +391,11 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
 
   it("Building: Select is always allowed; ChangeState is always denied (system-only)", () => {
     const select = handler.submit(
-      { commandType: "Building.Select", entityId: "warehouse", params: { buildingId: "warehouse" } },
+      {
+        commandType: "Building.Select",
+        entityId: "warehouse",
+        params: { buildingId: "warehouse" },
+      },
       OPERATOR,
     );
     expect(select.accepted).toBe(true);
@@ -322,16 +408,28 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
 
   it("Build: Start is allowed from planned, prohibited immediately after (already running)", () => {
     seedProjectAndBuild();
-    const start = handler.submit({ commandType: "Build.Start", entityId: "build-1", params: {} }, OPERATOR);
+    const start = handler.submit(
+      { commandType: "Build.Start", entityId: "build-1", params: {} },
+      OPERATOR,
+    );
     expect(start.accepted).toBe(true);
-    const startAgain = handler.submit({ commandType: "Build.Start", entityId: "build-1", params: {} }, OPERATOR);
+    const startAgain = handler.submit(
+      { commandType: "Build.Start", entityId: "build-1", params: {} },
+      OPERATOR,
+    );
     expect(startAgain.accepted).toBe(false);
   });
 
   it("Requirement: Start is allowed (lazy-created pending), prohibited immediately after (already running)", () => {
-    const start = handler.submit({ commandType: "Requirement.Start", entityId: "req-1", params: {} }, OPERATOR);
+    const start = handler.submit(
+      { commandType: "Requirement.Start", entityId: "req-1", params: {} },
+      OPERATOR,
+    );
     expect(start.accepted).toBe(true);
-    const startAgain = handler.submit({ commandType: "Requirement.Start", entityId: "req-1", params: {} }, OPERATOR);
+    const startAgain = handler.submit(
+      { commandType: "Requirement.Start", entityId: "req-1", params: {} },
+      OPERATOR,
+    );
     expect(startAgain.accepted).toBe(false);
   });
 
@@ -340,7 +438,12 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
       {
         commandType: "AgentRun.Start",
         entityId: "run-1",
-        params: { agentId: "agent-builder", taskId: "task-1", runtimeType: "mock", riskClass: "R0" },
+        params: {
+          agentId: "agent-builder",
+          taskId: "task-1",
+          runtimeType: "mock",
+          riskClass: "R0",
+        },
       },
       OPERATOR,
     );
@@ -349,7 +452,12 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
       {
         commandType: "AgentRun.Start",
         entityId: "run-1",
-        params: { agentId: "agent-builder", taskId: "task-1", runtimeType: "mock", riskClass: "R0" },
+        params: {
+          agentId: "agent-builder",
+          taskId: "task-1",
+          runtimeType: "mock",
+          riskClass: "R0",
+        },
       },
       OPERATOR,
     );
@@ -361,7 +469,12 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
       {
         commandType: "Artifact.Create",
         entityId: "artifact-1",
-        params: { artifactId: "artifact-1", artifactType: "source_code", name: "Thing", checksumStatus: "pending" },
+        params: {
+          artifactId: "artifact-1",
+          artifactType: "source_code",
+          name: "Thing",
+          checksumStatus: "pending",
+        },
       },
       OPERATOR,
     );
@@ -374,10 +487,17 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
   });
 
   it("Transfer: Create is allowed; MarkReady is prohibited without a completed producing stage", () => {
-    const create = handler.submit({ commandType: "Transfer.Create", entityId: "transfer-1", params: {} }, OPERATOR);
+    const create = handler.submit(
+      { commandType: "Transfer.Create", entityId: "transfer-1", params: {} },
+      OPERATOR,
+    );
     expect(create.accepted).toBe(true);
     const markReady = handler.submit(
-      { commandType: "Transfer.MarkReady", entityId: "transfer-1", params: { producingStageId: "stage-not-completed" } },
+      {
+        commandType: "Transfer.MarkReady",
+        entityId: "transfer-1",
+        params: { producingStageId: "stage-not-completed" },
+      },
       OPERATOR,
     );
     expect(markReady.accepted).toBe(false);
@@ -402,7 +522,11 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
     );
     expect(request.accepted).toBe(true);
     const approveUnknown = handler.submit(
-      { commandType: "Approval.Approve", entityId: "does-not-exist", params: { resolvedBy: "operator-1" } },
+      {
+        commandType: "Approval.Approve",
+        entityId: "does-not-exist",
+        params: { resolvedBy: "operator-1" },
+      },
       OPERATOR,
     );
     expect(approveUnknown.accepted).toBe(false);
@@ -447,7 +571,12 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
       {
         commandType: "Revision.Request",
         entityId: "revision-2",
-        params: { revisionId: "revision-2", stageId: "stage-x", reason: "defect", requestedBy: "inspector" },
+        params: {
+          revisionId: "revision-2",
+          stageId: "stage-x",
+          reason: "defect",
+          requestedBy: "inspector",
+        },
       },
       INSPECTOR,
     );

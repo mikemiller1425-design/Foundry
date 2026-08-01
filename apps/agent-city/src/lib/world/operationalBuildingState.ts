@@ -44,6 +44,17 @@ export function computeOperationalBuildingStatus(
     (t) => t.sourceBuildingId === buildingId || t.destinationBuildingId === buildingId,
   );
 
+  // FBL-029 / event-model.md `stage.validation_failed`: "Frontend: QA red."
+  // An independent Inspector rejection is a *failure*, not an ordinary
+  // block — and the two render differently (red vs orange). `status`
+  // alone cannot distinguish them, because `BuildStageStatus` has no
+  // value for "an Inspector rejected this", so a validation failure is
+  // carried as `blocked`. Checking the decision first is what keeps a
+  // rejection from being displayed as a mere obstruction. A stage that
+  // later completes is no longer failing, so a completed stage is never
+  // matched here (`stageHere` excludes `completed`).
+  if (stageHere?.validationDecision === "failed") return "failed";
+
   if (stageHere?.status === "blocked") return "blocked";
   if (transferHere?.status === "blocked") return "blocked";
   if (stageHere?.status === "failed") return "failed";

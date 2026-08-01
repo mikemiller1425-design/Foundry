@@ -13,6 +13,9 @@ await build({
     // because it needs the same workspace-package resolution; it is run
     // deliberately (`pnpm --filter @foundry/api fbl-028`), never on boot.
     "fbl028-run-controlled-stage": "src/fbl028/runControlledStage.ts",
+    // FBL-029 operator helper: seeds one QA stage into `validating` for
+    // the visual check. Appends declared events only; bypasses no guard.
+    "fbl029-seed-stage": "src/fbl029/seedStage.ts",
   },
   outdir: "dist",
   bundle: true,

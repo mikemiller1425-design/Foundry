@@ -108,6 +108,9 @@ importers:
       '@foundry/runtime-adapters':
         specifier: workspace:*
         version: link:../../packages/runtime-adapters
+      '@foundry/world-model':
+        specifier: workspace:*
+        version: link:../../packages/world-model
     devDependencies:
       esbuild:
         specifier: ^0.28.1

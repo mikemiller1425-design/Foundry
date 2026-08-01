@@ -9,6 +9,19 @@ export interface StageSummary {
   blockedReason?: string;
   /** From `stage.started`'s payload — which building the stage runs at (event-model.md). Undefined until the stage has started at least once. */
   sourceBuildingId?: string;
+  /**
+   * The most recent independent-validation decision for this stage
+   * (FBL-029), taken from `stage.validation_passed` / `_failed`.
+   *
+   * Kept separately from `status` because the two answer different
+   * questions. `BuildStageStatus` has no value meaning "an Inspector
+   * rejected this", so a failure has to be carried as `blocked` — but
+   * `blocked` is also what a missing prerequisite looks like, and
+   * `event-model.md` requires a validation failure to render QA *red*
+   * rather than merely obstructed. This field preserves the distinction
+   * the status enum cannot.
+   */
+  validationDecision?: "passed" | "failed";
 }
 
 export interface RequirementSummary {
@@ -72,15 +85,21 @@ export function selectStages(events: readonly FoundryEvent[]): StageSummary[] {
       case "stage.validation_started":
         byId.set(event.entityId, { ...current, status: "validating" });
         break;
+      case "stage.validation_passed":
+        byId.set(event.entityId, { ...current, validationDecision: "passed" });
+        break;
       case "stage.validation_failed":
         // No dedicated BuildStageStatus value exists for this — "blocked"
         // is the closest allowed status (event-model.md: "QA red; vehicle
         // parked"), consistent with how a failed mandatory requirement
-        // blocks the stage elsewhere in this same reducer.
+        // blocks the stage elsewhere in this same reducer. The separate
+        // `validationDecision` field is what lets the world render this
+        // as red rather than as an ordinary block.
         byId.set(event.entityId, {
           ...current,
           status: "blocked",
           blockedReason: "Independent validation failed",
+          validationDecision: "failed",
         });
         break;
       case "stage.completed":
