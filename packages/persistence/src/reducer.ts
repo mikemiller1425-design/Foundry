@@ -122,6 +122,24 @@ export type EntityType = keyof Omit<
   "inventoryCounts" | "health" | "lastProcessedEventId" | "currentBuildId" | "currentStageId" | "stageSequenceByBuild" | "seenEventIds"
 >;
 
+/** Runtime list of every addressable entity-type key, for route/param validation by callers (e.g. `packages/persistence` has no HTTP concerns, but `apps/api` needs this to validate a path segment without duplicating the list). */
+export const ENTITY_TYPES: readonly EntityType[] = [
+  "projects",
+  "builds",
+  "buildStages",
+  "requirements",
+  "tasks",
+  "agentRuns",
+  "artifacts",
+  "transfers",
+  "approvals",
+  "revisions",
+  "upgrades",
+  "agents",
+  "buildings",
+  "vehicles",
+];
+
 export interface EntityRef {
   entityType: EntityType;
   entityId: string;

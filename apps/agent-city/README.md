@@ -10,9 +10,9 @@ Foundry Platform
 
 ## Status
 
-Foundation is **1.0**. `FBL-001` through `FBL-022` are complete: the full V1 placeholder neighborhood (Lighthouse, residences, operational buildings, roads, the utility vehicle, and the three agents) is wired to a deterministic mock runtime whose events drive every 2D panel and 3D world object, and the complete primary user journey — objective through build completion and the Warehouse Level 1→2 upgrade — runs end-to-end on that mock runtime. See `docs/03-architecture/foundry-build-ladder.md`; each further rung still requires its own separate, explicit operator authorization. **Execution stops here** — `FBL-023` (backend persistence) and beyond are explicitly not authorized.
+Foundation is **1.0**. `FBL-001` through `FBL-022` are complete: the full V1 placeholder neighborhood (Lighthouse, residences, operational buildings, roads, the utility vehicle, and the three agents) is wired to a deterministic mock runtime whose events drive every 2D panel and 3D world object, and the complete primary user journey — objective through build completion and the Warehouse Level 1→2 upgrade — runs end-to-end on that mock runtime. `FBL-023` (persistence) and `FBL-024` (backend API, `apps/api`) are also complete, under a new operator-authorized bounded sequence covering `FBL-023`–`FBL-026`. See `docs/03-architecture/foundry-build-ladder.md`; each further rung still requires its own separate, explicit operator authorization.
 
-No backend, database, or network runtime exists yet. Everything observable today is produced by the frontend-local, deterministic mock runtime (`src/lib/mock-runtime/`) per ADR-001 and Principle 3a — it is the temporary stand-in operational authority, not a real backend.
+This app (`apps/agent-city`) is still not wired to the backend — everything it renders is still produced by the frontend-local, deterministic mock runtime (`src/lib/mock-runtime/`) per ADR-001 and Principle 3a, which remains the temporary stand-in operational authority for this app. A real backend now exists (`apps/api`, backed by `packages/persistence`), but connecting this app to it is not yet authorized.
 
 ## Run locally
 

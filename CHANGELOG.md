@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — FBL-024 Backend API
+
+Exposed a query/snapshot/health surface over `packages/persistence`, plus deny-by-default command endpoints, per the operator-authorized bounded sequence FBL-023–FBL-026. Every command endpoint validates its request against a newly-published shared command catalog and structurally cannot mutate persisted state — no code path in this rung calls `PersistenceService.appendEvent`.
+
+- `apps/api` (new workspace app, plain `node:http`, no framework — consistent with FBL-023's zero-new-dependency persistence choice): `GET /health`, `GET /world-state` (contract-validated `WorldState` snapshot), `GET /entities/:entityType[/:id]`, `POST /commands` (deny-by-default)
+- `packages/contracts/src/commands.ts`: the closed, authoritative V1 command vocabulary (`COMMAND_TYPES`, `CommandTypeSchema`, `CommandRequestSchema`) transcribed from every entity's "Commands" row in `domain-model.md` — published as a shared contract so FBL-025's real enforcement reuses the same catalog instead of redefining it
+- `packages/persistence`: exported `ENTITY_TYPES`, a runtime list of addressable entity-type keys, so `apps/api` can validate a route segment without duplicating the list
+- `apps/api/build.mjs`: an esbuild bundle step for the runtime entrypoint only. Node's native ESM resolver requires explicit file extensions on relative imports; every package in this repo has always omitted them (fine under Next.js/Vitest's bundler-style resolution, but this is the first rung with a directly-`node`-run service). Scoped entirely to this app's own build — no other package's import specifiers were changed.
+- `apps/api/src/app.test.ts`: query/snapshot/health contract-conformance; every documented command type accepted for shape validation and rejected with a structured, non-mutating response; unknown command types, malformed JSON, and undocumented top-level shapes all rejected with 400 and zero persisted-state change (asserted via full before/after event-log-plus-entity-table snapshots)
+- Verification: typecheck and lint clean repo-wide; full unit suite green (421 tests: 402 pre-existing + 19 new); production build passes; manually verified the real `node dist/main.js` service end-to-end (health, world-state, command deny-by-default) over HTTP
+
 ### Added — FBL-023 Persistence foundation
 
 Built a thin, backend-authoritative store for the full V1 domain (ADR-002), per the operator-authorized bounded sequence FBL-023–FBL-026. No HTTP is exposed yet — that is FBL-024. Storage is Node's built-in `node:sqlite` (`DatabaseSync`), chosen because it gives real transactional writes with zero new dependencies; this requires bumping the root `engines.node` floor from `>=20` to `>=22.13.0` (the version `node:sqlite` no longer needs `--experimental-sqlite`; this repo develops on Node 26, where it is fully stable).

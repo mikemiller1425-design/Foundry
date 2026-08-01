@@ -1,6 +1,7 @@
 export {
   createInitialEntityState,
   reduceEntities,
+  ENTITY_TYPES,
   SYSTEM_ACTOR_ID,
   type EntityRef,
   type EntityState,

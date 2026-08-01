@@ -4,5 +4,9 @@ packages:
 # sharp is Next.js's optional native image-optimization dependency. FBL-004
 # ships no images/next/image usage yet, so its native build script is
 # declined rather than run; revisit if a later rung adds image optimization.
+# esbuild's postinstall fetches its own platform-native binary (no
+# third-party script) — needed to bundle apps/api's Node entrypoint so
+# workspace-package relative imports resolve at runtime (FBL-024).
 allowBuilds:
+  esbuild: true
   sharp: false
