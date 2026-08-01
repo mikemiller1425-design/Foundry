@@ -167,4 +167,75 @@ describe("command allowlist", () => {
     expect(decision.allowed).toBe(false);
     if (!decision.allowed) expect(decision.denial.code).toBe("command_not_allowed");
   });
+
+  describe("multiple rules for one executable", () => {
+    // Each permitted argument vector gets its own rule, so granting
+    // `git status` never implicitly grants `git push`.
+    const multi = () =>
+      defineRuntimePolicy({
+        id: "multi-rule",
+        workingDirectoryRoots: [sandbox],
+        maxRiskClass: "R1",
+        limits: {
+          timeoutMs: 1_000,
+          maxStdoutBytes: 128,
+          maxStderrBytes: 128,
+          maxEvidenceBytes: 1024,
+        },
+        allowedCommands: [
+          {
+            executable: "git",
+            args: [
+              { kind: "literal", value: "status" },
+              { kind: "literal", value: "--porcelain" },
+            ],
+            maxArgs: 2,
+          },
+          {
+            executable: "git",
+            args: [
+              { kind: "literal", value: "diff" },
+              { kind: "literal", value: "HEAD" },
+            ],
+            maxArgs: 2,
+          },
+        ],
+      });
+
+    it("allows the first declared vector", () => {
+      expect(evaluateCommand(multi(), context, "git", ["status", "--porcelain"]).allowed).toBe(
+        true,
+      );
+    });
+
+    it("allows a later declared vector", () => {
+      expect(evaluateCommand(multi(), context, "git", ["diff", "HEAD"]).allowed).toBe(true);
+    });
+
+    it("denies a vector that matches no rule, even mixing two allowed ones", () => {
+      const decision = evaluateCommand(multi(), context, "git", ["status", "HEAD"]);
+      expect(decision.allowed).toBe(false);
+      if (!decision.allowed) expect(decision.denial.code).toBe("argument_not_allowed");
+    });
+
+    it("still denies a dangerous subcommand that no rule declares", () => {
+      const decision = evaluateCommand(multi(), context, "git", ["push"]);
+      expect(decision.allowed).toBe(false);
+      if (!decision.allowed) expect(decision.denial.code).toBe("argument_not_allowed");
+    });
+
+    it("reports the denial from the rule that matched furthest", () => {
+      // `diff` matches rule 2's first argument, so the useful complaint
+      // is about argument 1 — not rule 1's objection to argument 0.
+      const decision = evaluateCommand(multi(), context, "git", ["diff", "--staged"]);
+      expect(decision.allowed).toBe(false);
+      if (!decision.allowed) expect(decision.denial.subject).toBe("argv[1]");
+    });
+
+    it("denies a partial invocation that omits a required argument", () => {
+      const decision = evaluateCommand(multi(), context, "git", ["diff"]);
+      expect(decision.allowed).toBe(false);
+      if (!decision.allowed) expect(decision.denial.code).toBe("argument_not_allowed");
+    });
+  });
 });

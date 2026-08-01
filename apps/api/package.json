@@ -10,12 +10,14 @@
     "test": "vitest run --passWithNoTests",
     "build": "node build.mjs",
     "dev": "node build.mjs && node dist/main.js",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "fbl-028": "node build.mjs && node dist/fbl028-run-controlled-stage.js"
   },
   "dependencies": {
     "@foundry/contracts": "workspace:*",
     "@foundry/event-types": "workspace:*",
-    "@foundry/persistence": "workspace:*"
+    "@foundry/persistence": "workspace:*",
+    "@foundry/runtime-adapters": "workspace:*"
   },
   "devDependencies": {
     "esbuild": "^0.28.1"

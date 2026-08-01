@@ -59,6 +59,44 @@ export {
   type MockCommandScript,
 } from "./adapters/mockAdapter";
 
+export {
+  ClaudeCodeAdapter,
+  CONTROLLED_TOOLS,
+  buildClaudeCodePolicy,
+  controlledClaudeArgs,
+  type ClaudeCodeAdapterOptions,
+  type ClaudeCodeProfile,
+} from "./adapters/claudeCodeAdapter";
+
+export {
+  ALLOWED_WRITE_PATHS,
+  TASK_SPECIFICATION,
+  createFixtureRepository,
+  type Fixture,
+} from "./controlledStage/fixture";
+
+export {
+  buildValidationPolicy,
+  establishBaseline,
+  parsePorcelain,
+  runIndependentTests,
+  verifyWriteScope,
+  type TestValidationResult,
+  type ValidationOptions,
+  type ValidationProfile,
+  type WriteScopeResult,
+} from "./controlledStage/validation";
+
+export {
+  fileManifest,
+  runControlledStage,
+  type ControlledStageEvidence,
+  type ControlledStageOptions,
+  type ControlledStageOutcome,
+  type ControlledStageRequest,
+  type FileManifestEntry,
+} from "./controlledStage/runControlledStage";
+
 export type {
   CapturedOutput,
   CommandExecutionRecord,

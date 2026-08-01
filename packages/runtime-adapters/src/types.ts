@@ -17,6 +17,13 @@ export interface CommandInvocation {
   args: readonly string[];
   /** Optional working directory; must itself be contained. Defaults to the run's root. */
   cwd?: string;
+  /**
+   * Text written to the command's stdin. Free-form content belongs here
+   * rather than in `args`: stdin carries no syntax, so a task
+   * specification can be arbitrary prose without any allowlist rule
+   * being loosened to accommodate it.
+   */
+  stdin?: string;
 }
 
 export interface RunRequest {

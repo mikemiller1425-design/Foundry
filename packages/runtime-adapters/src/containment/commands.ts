@@ -36,8 +36,12 @@ export function evaluateCommand(
   const metacharacterCheck = rejectMetacharacters(executable, args);
   if (!metacharacterCheck.allowed) return metacharacterCheck;
 
-  const rule = policy.allowedCommands.find((candidate) => candidate.executable === executable);
-  if (!rule) {
+  // An executable may appear more than once, each entry describing one
+  // permitted argument vector — `git status --porcelain` and `git diff`
+  // are different capabilities and deserve separate, separately
+  // reviewable rules rather than one loose rule covering both.
+  const rules = policy.allowedCommands.filter((candidate) => candidate.executable === executable);
+  if (rules.length === 0) {
     return deny(
       "command_not_allowed",
       `Executable is not in the policy allowlist: ${executable}`,
@@ -45,15 +49,42 @@ export function evaluateCommand(
     );
   }
 
-  if (args.length > rule.maxArgs) {
-    return deny(
-      "argument_count_exceeded",
-      `Command ${executable} permits at most ${rule.maxArgs} arguments, received ${args.length}.`,
-      executable,
-    );
+  let bestDenial: PolicyDecision<ResolvedCommand> | undefined;
+  let bestMatched = -1;
+
+  for (const rule of rules) {
+    if (args.length > rule.maxArgs) {
+      if (bestMatched < 0) {
+        bestDenial = deny(
+          "argument_count_exceeded",
+          `Command ${executable} permits at most ${rule.maxArgs} arguments, received ${args.length}.`,
+          executable,
+        );
+        bestMatched = 0;
+      }
+      continue;
+    }
+
+    const attempt = resolveArguments(rule, context, executable, args);
+    if (attempt.decision.allowed) return attempt.decision;
+
+    // Report the denial from whichever rule got furthest, so the
+    // evidence names the argument that actually failed rather than
+    // whatever the first listed rule happened to object to.
+    if (attempt.matched > bestMatched) {
+      bestMatched = attempt.matched;
+      bestDenial = attempt.decision;
+    }
   }
 
-  return resolveArguments(rule, context, executable, args);
+  return (
+    bestDenial ??
+    deny(
+      "argument_not_allowed",
+      `No allowlist rule matches this invocation of ${executable}.`,
+      executable,
+    )
+  );
 }
 
 function rejectMetacharacters(
@@ -79,30 +110,53 @@ function rejectMetacharacters(
   return allow(true);
 }
 
+interface ArgumentAttempt {
+  decision: PolicyDecision<ResolvedCommand>;
+  /** How many leading arguments this rule accepted before failing. */
+  matched: number;
+}
+
 function resolveArguments(
   rule: CommandRule,
   context: ContainmentContext,
   executable: string,
   args: readonly string[],
-): PolicyDecision<ResolvedCommand> {
+): ArgumentAttempt {
   const resolved: string[] = [];
 
   for (const [index, arg] of args.entries()) {
     const argRule: ArgumentRule | undefined = rule.args[index] ?? rule.variadicTail;
     if (!argRule) {
-      return deny(
-        "argument_not_allowed",
-        `Command ${executable} declares no rule for argument ${index}; extra arguments are denied.`,
-        `argv[${index}]`,
-      );
+      return {
+        matched: index,
+        decision: deny(
+          "argument_not_allowed",
+          `Command ${executable} declares no rule for argument ${index}; extra arguments are denied.`,
+          `argv[${index}]`,
+        ),
+      };
     }
 
     const decision = applyArgumentRule(argRule, context, executable, index, arg);
-    if (!decision.allowed) return decision;
+    if (!decision.allowed) return { matched: index, decision };
     resolved.push(decision.value);
   }
 
-  return allow({ executable, args: resolved });
+  // A rule that declares more positional arguments than were supplied
+  // has not matched: `git commit -m <msg>` must not be satisfied by a
+  // bare `git commit`.
+  if (args.length < rule.args.length) {
+    return {
+      matched: args.length,
+      decision: deny(
+        "argument_not_allowed",
+        `Command ${executable} requires ${rule.args.length} arguments, received ${args.length}.`,
+        executable,
+      ),
+    };
+  }
+
+  return { matched: args.length, decision: allow({ executable, args: resolved }) };
 }
 
 function applyArgumentRule(

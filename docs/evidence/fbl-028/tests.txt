@@ -1,0 +1,20 @@
+✔ addTask returns a well-formed task (43.431916ms)
+✔ addTask trims the title (0.1355ms)
+✔ addTask rejects an empty or non-string title (3.7775ms)
+✔ task ids are unique (0.189333ms)
+✔ listTasks preserves insertion order (0.288708ms)
+✔ listTasks does not expose the store's own array (0.062209ms)
+✔ completeTask marks the task complete (0.341041ms)
+✔ completeTask throws for an unknown id (0.110291ms)
+✔ deleteTask removes the task and returns true (0.750584ms)
+✔ deleteTask throws for an unknown id (0.118583ms)
+✔ toJSON round-trips through createTaskStore (0.381584ms)
+✔ a restored store keeps working (0.0525ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 331.122542

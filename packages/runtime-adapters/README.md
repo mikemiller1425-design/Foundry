@@ -4,7 +4,7 @@ Controlled adapters that invoke external runtimes (for example Claude Code) behi
 
 ## Status
 
-**FBL-027 complete.** The policy boundary is implemented and the `mock` adapter runs behind it. No real external runtime is attached — that is FBL-028.
+**FBL-027 complete** (policy boundary + `mock` adapter). **FBL-028's controlled run is complete, operator review pending** — one real Claude Code stage has been executed through the boundary; see `docs/evidence/fbl-028/`.
 
 Backend-only. `apps/agent-city` neither depends on nor imports this package, and `src/frontendIsolation.test.ts` asserts both (ADR-006).
 
@@ -25,6 +25,10 @@ Everything is **deny-by-default**: a policy enumerates what is permitted, and ea
 | `evidence.ts` | Size-bounded, deep-frozen evidence records |
 | `boundary.ts` | `PolicyBoundary` — the one path every runtime executes through |
 | `adapters/mockAdapter.ts` | Deterministic `mock` runtime behind the same boundary |
+| `adapters/claudeCodeAdapter.ts` | The one controlled `claude_code` adapter (FBL-028) |
+| `controlledStage/fixture.ts` | Disposable fixture repository for the controlled stage |
+| `controlledStage/validation.ts` | Independent validation under its own narrower policy |
+| `controlledStage/runControlledStage.ts` | Orchestration; derives the verdict without consulting the runtime |
 
 ### Decisions worth knowing
 
@@ -38,10 +42,15 @@ Everything is **deny-by-default**: a policy enumerates what is permitted, and ea
 - **Timeouts terminate the process group.** Killing only the direct child leaves grandchildren holding the sandbox's file handles while the run *looks* contained.
 - **Evidence is retained for every terminal outcome** — success, failure, denial, and timeout alike (principle 17) — and is deep-frozen (principle 18). Size bounding drops captured output, never the record itself.
 
-### Known limitation
+### Known limitations
 
-`allowNetwork` is a **declared and recorded policy posture, not kernel-level enforcement**. This package does not create a network namespace or install a packet filter, so a permitted executable that opens a socket is not prevented from doing so by this boundary. Network denial in V1 rests on the command allowlist (no networking tool is allowlisted) and on the environment allowlist (no credentials or proxy configuration reach the child). Real isolation would require OS-level sandboxing and is not in V1 scope.
+These bound what the boundary actually guarantees. The full operator-facing version is §12 of `docs/evidence/fbl-028/operator-review-report.md`.
+
+- **The boundary governs invocation, not a running process.** It controls which binary runs, with which arguments, in which directory, with which environment, for how long, and what is captured. Once the process is executing, nothing here stops it from opening a path Foundry never mentioned — that needs OS-level sandboxing, which V1 does not implement. For the controlled Claude Code stage, that gap is covered by *layered* controls: the runtime's own `--tools` restriction (no `Bash`), directory scope, and post-hoc git verification that fails the run if anything outside the permitted paths changed. The last is detection, not prevention.
+- **`allowNetwork` is a declared and recorded posture, not kernel-level enforcement.** No network namespace or packet filter is created, so a permitted executable that opens a socket is not stopped by this boundary. Network denial elsewhere in V1 rests on the command allowlist (no networking tool is allowlisted) and the environment allowlist.
+- **The environment allowlist cannot keep a process away from the OS credential store.** Claude Code authenticates from the macOS Keychain, reached through the user session rather than any environment variable. Keeping secrets out of the *environment* is a real guarantee; sandboxing the Keychain is not one this boundary can make.
+- **Shape-based secret redaction is a safety net, not a guarantee.** Registered values cannot be missed; unregistered ones are caught only if they match a known credential format.
 
 ## Tests
 
-`pnpm --filter @foundry/runtime-adapters test` — 103 tests, including the security suite required by FBL-027: allowed/denied commands and arguments, injection attempts, absolute/relative/`..`/symlink escapes, environment leakage, secret redaction, process-tree termination on timeout, output bounding, evidence retention across all four terminal outcomes, and mock-adapter interface conformance.
+`pnpm --filter @foundry/runtime-adapters test` — 128 tests. The FBL-027 security suite: allowed/denied commands and arguments, injection attempts, absolute/relative/`..`/symlink/dangling-symlink escapes, environment leakage, secret redaction, real process-tree termination on timeout, output bounding, evidence retention across all four terminal outcomes, and mock-adapter interface conformance. Plus the FBL-028 F-12 integration suite, which drives the complete controlled-stage mechanism with **real** `git` and `node --test` — substituting only the Claude Code process — including a stage that exits `0` claiming success while the independent tests fail, one that rewrites the tests to pass, and one that smuggles in an extra file.

@@ -7,8 +7,14 @@
 import { build } from "esbuild";
 
 await build({
-  entryPoints: ["src/main.ts"],
-  outfile: "dist/main.js",
+  entryPoints: {
+    main: "src/main.ts",
+    // The FBL-028 operator entrypoint. Bundled alongside the service
+    // because it needs the same workspace-package resolution; it is run
+    // deliberately (`pnpm --filter @foundry/api fbl-028`), never on boot.
+    "fbl028-run-controlled-stage": "src/fbl028/runControlledStage.ts",
+  },
+  outdir: "dist",
   bundle: true,
   platform: "node",
   format: "esm",

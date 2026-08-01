@@ -96,7 +96,7 @@ export class PolicyBoundary {
     const environmentNames = Object.keys(env).sort();
 
     // Approve the whole plan before executing any of it.
-    const approved: { executable: string; args: string[]; cwd: string }[] = [];
+    const approved: { executable: string; args: string[]; cwd: string; stdin?: string }[] = [];
     for (const invocation of request.commands) {
       const cwdDecision = invocation.cwd
         ? resolveContainedPath(context, invocation.cwd)
@@ -130,6 +130,7 @@ export class PolicyBoundary {
         executable: executableDecision.value,
         args: commandDecision.value.args,
         cwd: cwdDecision.value,
+        stdin: invocation.stdin,
       });
     }
 
@@ -163,6 +164,7 @@ export class PolicyBoundary {
         env,
         limits: this.policy.limits,
         signal,
+        stdin: command.stdin,
       });
       const commandCompletedAt = this.now();
 

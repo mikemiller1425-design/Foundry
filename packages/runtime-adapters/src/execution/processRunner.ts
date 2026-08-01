@@ -37,6 +37,16 @@ export interface SpawnParameters {
   env: Record<string, string>;
   limits: ExecutionLimits;
   signal?: AbortSignal;
+  /**
+   * Written to the child's stdin, which is then closed.
+   *
+   * This exists so free-form text — a task specification, a prompt —
+   * never has to become an argument. An argument vector is something the
+   * allowlist must validate character by character; stdin is a data
+   * channel that carries no syntax and can hold arbitrary content
+   * without weakening a single rule in `containment/commands.ts`.
+   */
+  stdin?: string;
 }
 
 /** Accumulates a stream into a byte-bounded buffer, counting what it drops. */
@@ -70,7 +80,7 @@ class BoundedBuffer {
 }
 
 export function runProcess(parameters: SpawnParameters): Promise<SpawnOutcome> {
-  const { absoluteExecutable, args, cwd, env, limits, signal } = parameters;
+  const { absoluteExecutable, args, cwd, env, limits, signal, stdin } = parameters;
   const startedAt = Date.now();
 
   return new Promise<SpawnOutcome>((resolve) => {
@@ -84,9 +94,20 @@ export function runProcess(parameters: SpawnParameters): Promise<SpawnOutcome> {
       shell: false,
       // Own process group, so termination can cover descendants too.
       detached: true,
-      stdio: ["ignore", "pipe", "pipe"],
+      // stdin is a pipe only when there is something to send; otherwise
+      // it stays closed so a child can never block waiting on input that
+      // will never arrive.
+      stdio: [stdin === undefined ? "ignore" : "pipe", "pipe", "pipe"],
       windowsHide: true,
     });
+
+    if (stdin !== undefined && child.stdin) {
+      // A child that exits before reading raises EPIPE here. That is the
+      // child's decision, not a failure of the run — the exit code and
+      // captured output already describe what happened.
+      child.stdin.on("error", () => {});
+      child.stdin.end(stdin);
+    }
 
     let timedOut = false;
     let settled = false;

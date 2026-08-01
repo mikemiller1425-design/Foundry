@@ -105,6 +105,9 @@ importers:
       '@foundry/persistence':
         specifier: workspace:*
         version: link:../../packages/persistence
+      '@foundry/runtime-adapters':
+        specifier: workspace:*
+        version: link:../../packages/runtime-adapters
     devDependencies:
       esbuild:
         specifier: ^0.28.1
