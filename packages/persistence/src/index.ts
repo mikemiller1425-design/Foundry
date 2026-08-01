@@ -14,3 +14,11 @@ export {
   type AppendEventResult,
   type ReconcileResult,
 } from "./persistenceService";
+export { COMMAND_DEFINITIONS, ENTITY_TYPE_LABELS, type CommandDefinition } from "./commandDefinitions";
+export { TRANSITION_GRAPHS, isLegalTransition, type TransitionGraph } from "./transitionGraphs";
+export {
+  CommandHandler,
+  INSPECTOR_AGENT_ID,
+  type CommandActor,
+  type CommandOutcome,
+} from "./commandHandler";

@@ -52,7 +52,9 @@ afterAll(async () => {
 function snapshotAllPersistedState() {
   return {
     events: persistence.getAllEvents(),
-    entities: Object.fromEntries(ENTITY_TYPES.map((type) => [type, persistence.listEntities(type)])),
+    entities: Object.fromEntries(
+      ENTITY_TYPES.map((type) => [type, persistence.listEntities<{ id: string; status?: string }>(type)]),
+    ) as Record<string, { id: string; status?: string }[]>,
   };
 }
 
@@ -114,8 +116,8 @@ describe("GET /unknown-route", () => {
   });
 });
 
-describe("POST /commands — deny-by-default", () => {
-  it("accepts every documented command type for shape validation and rejects it with a structured, non-mutating response", async () => {
+describe("POST /commands — shape-valid but incomplete/illegal submissions are still rejected without mutation", () => {
+  it("accepts every documented command type for shape validation and rejects it (no entityId, no target entity) with a structured, non-mutating response", async () => {
     for (const commandType of COMMAND_TYPES) {
       const before = snapshotAllPersistedState();
 
@@ -168,6 +170,60 @@ describe("POST /commands — deny-by-default", () => {
       body: "{not json",
     });
     expect(res.status).toBe(400);
+    expect(snapshotAllPersistedState()).toEqual(before);
+  });
+});
+
+describe("POST /commands — FBL-025 real enforcement (a legal command now mutates persisted state)", () => {
+  it("accepts a legal Agent.Assign and appends exactly the resulting event + entity update", async () => {
+    const before = snapshotAllPersistedState();
+
+    const res = await fetch(`${baseUrl}/commands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        commandType: "Agent.Assign",
+        entityId: "agent-architect",
+        params: { taskId: "task-1", stageId: "stage-1", destinationBuildingId: "construction-office" },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.accepted).toBe(true);
+    expect(body.event.type).toBe("agent.assigned");
+
+    const after = snapshotAllPersistedState();
+    expect(after.events.length).toBe(before.events.length + 1);
+    const agent = after.entities.agents?.find((a) => a.id === "agent-architect");
+    expect(agent?.status).toBe("assigned");
+  });
+
+  it("rejects an illegal transition for a real entity (Agent already assigned) with zero mutation", async () => {
+    await fetch(`${baseUrl}/commands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        commandType: "Agent.Assign",
+        entityId: "agent-builder",
+        params: { taskId: "task-2", stageId: "stage-1", destinationBuildingId: "construction-office" },
+      }),
+    });
+    const before = snapshotAllPersistedState();
+
+    const res = await fetch(`${baseUrl}/commands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        commandType: "Agent.Assign",
+        entityId: "agent-builder",
+        params: { taskId: "task-3", stageId: "stage-1", destinationBuildingId: "construction-office" },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.accepted).toBe(false);
     expect(snapshotAllPersistedState()).toEqual(before);
   });
 });

@@ -1,20 +1,31 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { CommandRequestSchema, WorldStateSchema } from "@foundry/contracts";
-import { ENTITY_TYPES, type EntityType, type PersistenceService } from "@foundry/persistence";
+import type { ActorType } from "@foundry/event-types";
+import {
+  CommandHandler,
+  ENTITY_TYPES,
+  type EntityType,
+  type PersistenceService,
+} from "@foundry/persistence";
 
 const ENTITY_TYPE_SET = new Set<string>(ENTITY_TYPES);
 const MAX_BODY_BYTES = 1_000_000;
+const DEFAULT_ACTOR = { actorType: "operator" as ActorType, actorId: "operator" };
 
 /**
- * FBL-024: query/snapshot/health surface plus deny-by-default command
- * endpoints. No command handler mutates persisted state at this rung
- * (that is FBL-025) — every command that passes shape validation still
- * receives a structured rejection, and nothing is written to
- * `PersistenceService` from this module at all.
+ * FBL-024 built the query/snapshot/health surface and a deny-by-default
+ * command endpoint. FBL-025 replaces the deny-only stub with real
+ * `CommandHandler` enforcement (`@foundry/persistence`) — a command is
+ * now actually applied when (and only when) it passes shape validation,
+ * the entity's transition graph, and every named invariant guard. An
+ * invalid or unauthorized command still leaves persisted state
+ * byte-for-byte unchanged, exactly as it did at FBL-024, because
+ * `CommandHandler` never calls `appendEvent` for a rejected command.
  */
 export function createApp(persistence: PersistenceService): Server {
+  const commandHandler = new CommandHandler(persistence);
   return createServer((req, res) => {
-    void handleRequest(persistence, req, res).catch((err: unknown) => {
+    void handleRequest(persistence, commandHandler, req, res).catch((err: unknown) => {
       if (!res.headersSent) {
         sendJson(res, 500, {
           error: "internal_error",
@@ -27,6 +38,7 @@ export function createApp(persistence: PersistenceService): Server {
 
 async function handleRequest(
   persistence: PersistenceService,
+  commandHandler: CommandHandler,
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
@@ -57,7 +69,7 @@ async function handleRequest(
   }
 
   if (method === "POST" && segments.length === 1 && segments[0] === "commands") {
-    await handleCommandPost(req, res);
+    await handleCommandPost(commandHandler, req, res);
     return;
   }
 
@@ -92,7 +104,11 @@ function handleEntitiesGet(
   sendJson(res, 200, entity);
 }
 
-async function handleCommandPost(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handleCommandPost(
+  commandHandler: CommandHandler,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
   let raw: unknown;
   try {
     raw = await readJsonBody(req);
@@ -114,18 +130,17 @@ async function handleCommandPost(req: IncomingMessage, res: ServerResponse): Pro
     return;
   }
 
-  // Deny-by-default (FBL-024 → FBL-025 gate): the command shape is valid
-  // and known, but no invariant/state-machine enforcement exists yet, so
-  // it is structurally impossible for this handler to mutate persisted
-  // state — nothing here ever calls `persistence.appendEvent`.
-  const { commandType, entityId } = parsed.data;
-  sendJson(res, 200, {
-    accepted: false,
-    commandType,
-    entityId,
-    reason: "Enforcement not yet available — FBL-025 has not shipped state-machine validation for this command.",
-    correctiveAction: "Resubmit once FBL-025 (state machines and prerequisite enforcement) is complete.",
-  });
+  // No V1 authentication system exists (out of scope, v1-scope.md
+  // exclusions) — `actor` is a caller-asserted claim, defaulted to a
+  // generic operator when omitted. See CommandActorSchema's doc comment
+  // in @foundry/contracts for the security caveat this implies for
+  // actor-sensitive guards (e.g. F-05's Inspector-only check).
+  const actor = parsed.data.actor
+    ? { actorType: parsed.data.actor.actorType as ActorType, actorId: parsed.data.actor.actorId }
+    : DEFAULT_ACTOR;
+
+  const outcome = commandHandler.submit(parsed.data, actor);
+  sendJson(res, 200, outcome);
 }
 
 function readJsonBody(req: IncomingMessage): Promise<unknown> {
