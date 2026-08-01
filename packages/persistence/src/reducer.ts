@@ -16,7 +16,12 @@ import type {
   Upgrade,
   Vehicle,
 } from "@foundry/contracts";
-import { WAREHOUSE_LEVEL_2_SEEDED_PACKAGE_COUNT } from "@foundry/contracts";
+import {
+  CAPACITY_CAPABILITY_PREFIX,
+  WAREHOUSE_LEVEL_1_CAPACITY,
+  WAREHOUSE_LEVEL_2_SEEDED_PACKAGE_COUNT,
+  capacityCapability,
+} from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
 import { WORLD_AGENTS, WORLD_BUILDINGS, WORLD_VEHICLE } from "@foundry/world-model";
 
@@ -244,7 +249,11 @@ export function createInitialEntityState(): EntityState {
           level: 1,
           status: "idle",
           position: b.position,
-          capabilities: [],
+          // world-model.md → Warehouse V1 limits: "Level 1 capacity 25".
+          // Only the Warehouse declares a capacity in V1; it is the only
+          // building with an upgrade path.
+          capabilities:
+            b.buildingType === "warehouse" ? [capacityCapability(WAREHOUSE_LEVEL_1_CAPACITY)] : [],
           createdAt: NOW,
           updatedAt: NOW,
         } satisfies Building,
@@ -1137,12 +1146,24 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
       const buildingId = upgrade?.buildingId;
       const building = buildingId ? state.buildings[buildingId] : undefined;
       if (buildingId && building) {
+        // A new capacity *replaces* the old one rather than accumulating
+        // beside it — a building holding both `capacity:25` and
+        // `capacity:100` would have no answer to "what is its capacity?".
+        const addsCapacity = event.payload.capabilitiesAdded.some((capability) =>
+          capability.startsWith(CAPACITY_CAPABILITY_PREFIX),
+        );
+        const retained = addsCapacity
+          ? building.capabilities.filter(
+              (capability) => !capability.startsWith(CAPACITY_CAPABILITY_PREFIX),
+            )
+          : building.capabilities;
+
+        // Level and capacity are written together, in this one branch, so
+        // no observer can ever see one without the other (V-07).
         state.buildings[buildingId] = {
           ...building,
           level: event.payload.toLevel,
-          capabilities: [
-            ...new Set([...building.capabilities, ...event.payload.capabilitiesAdded]),
-          ],
+          capabilities: [...new Set([...retained, ...event.payload.capabilitiesAdded])],
           updatedAt: event.occurredAt,
         };
         touch(touched, "buildings", buildingId);

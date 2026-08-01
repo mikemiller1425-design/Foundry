@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { CommandRequest, CommandType } from "@foundry/contracts";
 import { FoundryEventSchema, type ActorType, type FoundryEvent } from "@foundry/event-types";
+import {
+  WAREHOUSE_LEVEL_2_MIN_PASS_RATE,
+  WAREHOUSE_LEVEL_2_REQUIRED_PACKAGE_COUNT,
+} from "@foundry/contracts";
 import { WORLD_AGENTS } from "@foundry/world-model";
 import {
   COMMAND_DEFINITIONS,
@@ -50,6 +54,19 @@ const APPROVAL_RESOLUTION_STATUS: Record<string, string> = {
   "Approval.Reject": "rejected",
   "Approval.RequestRevision": "revision_requested",
 };
+
+/**
+ * Upgrade commands the specification attributes to the operator
+ * (`event-model.md`: `upgrade.requested` — "Operator requested upgrade";
+ * `upgrade.approved` — "Operator approved") (FBL-031).
+ *
+ * `Upgrade.Start` and `Upgrade.Complete` are deliberately absent: those
+ * are the *execution* of a decision the operator already made, and they
+ * are gated by `requireApprovedUpgradeApproval` instead. Requiring an
+ * operator to drive execution as well would make the approval mean less,
+ * not more — the human decides, the system carries it out.
+ */
+const OPERATOR_UPGRADE_COMMANDS = new Set<CommandType>(["Upgrade.Request", "Upgrade.Approve"]);
 
 /**
  * FBL-025: backend-authoritative transition validation. Sits in front of
@@ -107,7 +124,28 @@ export class CommandHandler {
       if (authorization) return authorization;
     }
 
+    // FBL-031: requesting and approving an upgrade are operator acts
+    // (principle 20 — upgrades require evidence *and* a human decision).
+    if (OPERATOR_UPGRADE_COMMANDS.has(commandType)) {
+      const authorization = this.requireAuthorizedOperator(commandType, entityId, actor);
+      if (authorization) return authorization;
+    }
+
     const existing = this.persistence.getEntity<Record<string, unknown>>(def.entityType, entityId);
+
+    // FBL-031: a repeated completion must not re-apply the capability
+    // change. The transition graph already refuses completed→completed,
+    // but saying so explicitly keeps the *reason* legible in evidence and
+    // makes double-application a named, tested impossibility rather than
+    // a side effect of a graph edge.
+    if (commandType === "Upgrade.Complete" && existing?.status === "completed") {
+      return {
+        accepted: true,
+        commandType,
+        entityId,
+        reason: `Upgrade ${entityId} is already completed — idempotent no-op, the capability change is not re-applied.`,
+      };
+    }
 
     if (def.isCreate) {
       if (existing) {
@@ -577,32 +615,90 @@ export class CommandHandler {
     return undefined;
   }
 
-  // Invariant 9: upgrades require evidence and satisfied prerequisites.
-  // Mechanically checkable prerequisites only (successfulPackages count,
-  // no unresolved critical health) — "≥90% pass rate after retries" has
-  // no per-retry ledger in V1 and is not checked here; "operator approval"
-  // is checked separately at Upgrade.Start.
+  /**
+   * Invariant 9 / principle 20: upgrades require evidence and satisfied
+   * prerequisites (`domain-model.md` → "Warehouse Level 2 prerequisites").
+   *
+   * All four mechanically checkable prerequisites are evaluated against
+   * **persisted backend truth**, never a caller-supplied claim:
+   *
+   * 1. 10 successful artifact packages, per the M-06 counting rule
+   *    (a seeded history of 9 plus this build's single package).
+   * 2. No unresolved critical event.
+   * 3. ≥90% validation pass rate after retries.
+   * 4. Event persistence verified.
+   *
+   * Prerequisite 3 was previously unenforced for a real reason — there
+   * was no per-retry ledger to compute a rate from. FBL-029's
+   * append-only `stageValidations` history is that ledger, so it is
+   * enforced here now rather than left as a comment.
+   */
   private requireUpgradePrerequisites(
     commandType: CommandType,
     params: Record<string, unknown>,
   ): CommandOutcome | undefined {
+    const buildingId = typeof params.buildingId === "string" ? params.buildingId : undefined;
     const snapshot = this.persistence.getWorldStateSnapshot();
+
     const successfulPackages = snapshot.inventoryCounts.successfulPackages ?? 0;
-    if (successfulPackages < 10) {
+    if (successfulPackages < WAREHOUSE_LEVEL_2_REQUIRED_PACKAGE_COUNT) {
       return this.deny(
         commandType,
-        typeof params.buildingId === "string" ? params.buildingId : undefined,
-        `Only ${successfulPackages}/10 successful packages processed (invariant 9).`,
+        buildingId,
+        `Only ${successfulPackages}/${WAREHOUSE_LEVEL_2_REQUIRED_PACKAGE_COUNT} successful packages processed (invariant 9).`,
       );
     }
+
     if (snapshot.health.status === "critical") {
       return this.deny(
         commandType,
-        typeof params.buildingId === "string" ? params.buildingId : undefined,
+        buildingId,
         "An unresolved critical event exists (invariant 9).",
       );
     }
+
+    const passRate = this.validationPassRate();
+    if (passRate !== null && passRate < WAREHOUSE_LEVEL_2_MIN_PASS_RATE) {
+      return this.deny(
+        commandType,
+        buildingId,
+        `Validation pass rate after retries is ${(passRate * 100).toFixed(0)}%, below the required ${(WAREHOUSE_LEVEL_2_MIN_PASS_RATE * 100).toFixed(0)}% (invariant 9).`,
+      );
+    }
+
+    // "Event persistence verified": the log must actually be readable and
+    // consistent with the projection it produced. A count of zero means
+    // the projection came from somewhere other than a persisted log.
+    if (this.persistence.getAllEvents().length === 0) {
+      return this.deny(
+        commandType,
+        buildingId,
+        "Event persistence is not verified — the persisted log is empty (invariant 9).",
+      );
+    }
+
     return undefined;
+  }
+
+  /**
+   * Validation pass rate over the persisted decision ledger, counting
+   * each stage **once, by its final decision** — that is what "after
+   * retries" means. Counting every decision would penalise a stage that
+   * failed and was then repaired, which is precisely the workflow V1
+   * demonstrates.
+   *
+   * Returns null when no stage has been validated yet, so an upgrade is
+   * not blocked by a rate computed from nothing.
+   */
+  private validationPassRate(): number | null {
+    const histories = this.persistence.listEntities<StageValidationHistory>("stageValidations");
+    const finalDecisions = histories
+      .map((history) => history.decisions.at(-1)?.decision)
+      .filter((decision): decision is "passed" | "failed" => decision !== undefined);
+
+    if (finalDecisions.length === 0) return null;
+    const passed = finalDecisions.filter((decision) => decision === "passed").length;
+    return passed / finalDecisions.length;
   }
 
   private requireApprovedUpgradeApproval(

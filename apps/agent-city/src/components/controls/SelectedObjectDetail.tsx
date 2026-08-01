@@ -1,5 +1,6 @@
 "use client";
 
+import { readCapacity } from "@foundry/contracts";
 import { useRuntime } from "@/lib/mock-runtime";
 import {
   selectRequirementsByStage,
@@ -212,6 +213,7 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
       upgradeInProgress,
     );
     const spec = OPERATIONAL_BUILDING_VISUALS[status];
+    const capacity = readCapacity(building.capabilities);
     return (
       <>
         <h3 className="font-medium">Building: {building.name}</h3>
@@ -226,8 +228,23 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
           </div>
           <div>
             <dt className="inline text-neutral-500">level: </dt>
-            <dd className="inline">{building.level}</dd>
+            <dd className="inline" data-testid="building-level">
+              {building.level}
+            </dd>
           </div>
+          {/* FBL-031 / F-11: capacity must be *observable*, not merely
+              stored — "capacity 25→100" is an acceptance requirement, and
+              a number nobody can see cannot be checked. Rendered beside
+              level because the two change atomically (V-07): seeing them
+              disagree would itself be the failure. */}
+          {capacity !== null && (
+            <div>
+              <dt className="inline text-neutral-500">capacity: </dt>
+              <dd className="inline" data-testid="building-capacity">
+                {capacity}
+              </dd>
+            </div>
+          )}
         </dl>
       </>
     );
