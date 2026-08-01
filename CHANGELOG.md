@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — FBL-031 operator observation of the Warehouse upgrade
+
+Recorded the operator's observation of FBL-031's three visual checks. **Documentation only — no code, test, or behaviour changed.** Append-only record: `docs/evidence/fbl-031/operator-observation.md`.
+
+- **Confirmed 2026-08-01** by mikemiller1425-design against the real backend and frontend, with eligibility earned from genuine operational history rather than granted by fiat: Level 1/capacity 25 held while the upgrade was merely eligible and the approval pending; **level and capacity both remained unchanged throughout `upgrading`** (the V-07 assertion); and Level 2, capacity 100, and the Level 2 geometry appeared **together** only on `upgrade.completed`. A duplicate completion was refused as an idempotent no-op.
+- FBL-031's stop condition is therefore met and the rung is **closed**.
+- The record documents three interpretations rather than burying them: capacity is carried as a capability string because the frozen `Building` schema has no numeric capacity field (a future baseline should add one); the ≥90% pass rate counts each stage once by its final decision; and `Upgrade.Fail`'s empty payload means a failure reason cannot be recorded on the event.
+
 ### Added — FBL-031 Capability-based Warehouse upgrade
 
 Implemented the real approval-gated Warehouse Level 1→2 upgrade with eligibility from persisted metrics and an atomic level+capacity change. **Operator observation is pending**, so this rung's stop condition is not yet met and FBL-032 has not been started.
