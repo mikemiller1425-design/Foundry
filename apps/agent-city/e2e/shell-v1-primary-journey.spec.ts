@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { pauseDemoForStableFeed } from "./stable-state";
 
 // FBL-022 — the complete Agent City V1 primary journey (v1-acceptance.md
 // § "Primary user journey"; v1-scope.md § "Required workflow"), run live
@@ -79,7 +80,11 @@ test.describe("V1 primary journey — complete end-to-end run (FBL-022)", () => 
   test("cargo stays blocked and the vehicle stays parked through the intentional failure, then transfer authorizes and completes", async ({
     page,
   }) => {
-    test.setTimeout(45000);
+    // Longer than before because the observation phase now runs at 1×
+    // deliberately. This is a budget for work that genuinely takes longer,
+    // not slack bought to absorb a race — the race itself is removed by
+    // observing a state that outlasts the sampling interval.
+    test.setTimeout(90000);
     await page.goto("/");
     const cargoMarker = page.locator(
       '[data-testid="world-object-marker"][data-object-id="cargo-current-build"]',
@@ -90,11 +95,14 @@ test.describe("V1 primary journey — complete end-to-end run (FBL-022)", () => 
     await expect(cargoMarker).toHaveAttribute("data-visible", "true", { timeout: 20000 });
     await expect(vehicleMarker).toHaveAttribute("data-state", "Parked");
 
-    await page.selectOption("#demo-speed", "4");
-    await expect(cargoMarker).toHaveAttribute("data-state", "Blocked", { timeout: 15000 });
+    // Observe the Blocked window at normal speed — the marker text is
+    // sampled every 150 ms and 4× playback emits every 50 ms, so a short
+    // state can slip between two samples. Accelerate afterwards.
+    await expect(cargoMarker).toHaveAttribute("data-state", "Blocked", { timeout: 30000 });
     await expect(vehicleMarker).toHaveAttribute("data-state", "Parked");
 
-    await expect(cargoMarker).not.toHaveAttribute("data-state", "Blocked", { timeout: 15000 });
+    await expect(cargoMarker).not.toHaveAttribute("data-state", "Blocked", { timeout: 30000 });
+    await page.selectOption("#demo-speed", "4");
     await expect(page.getByTestId("approval-card")).toBeVisible({ timeout: 30000 });
     await page.getByTestId("approval-card").getByRole("button", { name: "Approve" }).click();
     await expect(page.getByTestId("command-feedback")).toHaveText("Demo complete", {
@@ -124,9 +132,8 @@ test.describe("V1 primary journey — complete end-to-end run (FBL-022)", () => 
   test("2D-only comprehension: every major transition is identifiable from the 2D panels alone, without reading the 3D world", async ({
     page,
   }) => {
-    test.setTimeout(60000);
+    test.setTimeout(90000);
     await page.goto("/");
-    await page.selectOption("#demo-speed", "4");
 
     // What is running.
     await expect(page.getByTestId("command-feedback")).toHaveText("Running");
@@ -142,12 +149,16 @@ test.describe("V1 primary journey — complete end-to-end run (FBL-022)", () => 
     const frontendStageRow = page
       .getByTestId("stage-list-item")
       .filter({ hasText: "Frontend implementation" });
-    await expect(frontendStageRow).toContainText("blocked", { timeout: 15000 });
-    // Pause immediately — playback continues at 4x speed otherwise, and by
-    // the time the next assertion runs the retry may already have
-    // resolved the block (the same race this rung's own eventToWorldMapping
-    // suite already had to guard against).
-    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    // Run this stretch at normal speed: the blocked window is a handful of
+    // events, and at 4× it can close between the assertion that observes
+    // it and the pause that is supposed to hold it.
+    await expect(frontendStageRow).toContainText("blocked", { timeout: 30000 });
+    // Pause and *confirm the runtime actually stopped* before reading the
+    // detail panel. A bare click only guarantees the event was dispatched;
+    // playback continues until the command is applied, which was long
+    // enough for the retry to resolve the block and for this test to read
+    // a completed stage where it expected a blocked one.
+    await pauseDemoForStableFeed(page);
     await expect(page.getByTestId("agent-list-item").filter({ hasText: "builder" })).toBeVisible();
 
     // What failed (the blocked reason, from the stage detail panel).
@@ -157,7 +168,10 @@ test.describe("V1 primary journey — complete end-to-end run (FBL-022)", () => 
       { timeout: 5000 },
     );
 
-    // Recovery, then what needs approval.
+    // Recovery, then what needs approval. Accelerate first: the remaining
+    // stretch is one where only the end state matters, and leaving it at
+    // 1× would push it past the timeout for no observational benefit.
+    await page.selectOption("#demo-speed", "4");
     await page.getByRole("button", { name: "Resume", exact: true }).click();
     await expect(page.getByTestId("approval-card")).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId("approval-card")).toContainText("Approve deployment package");

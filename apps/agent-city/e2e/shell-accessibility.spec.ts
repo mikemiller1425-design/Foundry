@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { pauseDemoForStableFeed } from "./stable-state";
 
 /**
  * FBL-033 — accessibility and reduced motion, across the completed app.
@@ -14,14 +15,34 @@ import { expect, test } from "@playwright/test";
  * test tells you the app was slow, not that it was reachable.
  */
 
-/** Advances focus and returns a stable description of what now has it. */
+/**
+ * Advances focus and returns a stable description of what now has it.
+ *
+ * The sibling index matters. Timeline rows all share one `data-testid`
+ * and carry no `aria-label`, so without it eight consecutive *distinct*
+ * rows describe identically — and the no-trap check below, which looks
+ * for a repeating suffix, reads that as focus being stuck. It fired only
+ * at 5120×1440, because only there is the feed tall enough that a 60-key
+ * walk is still inside the row list at the end. That was a defect in this
+ * descriptor, not a keyboard trap in the application.
+ *
+ * The index is positional rather than content-derived on purpose: row text
+ * changes as events arrive, and a descriptor that changed with it would
+ * make the focus-order comparison below unstable for the opposite reason.
+ */
 async function focusedDescriptor(page: import("@playwright/test").Page): Promise<string> {
   return page.evaluate(() => {
     const el = document.activeElement;
     if (!el || el === document.body) return "<body>";
     const testId = el.getAttribute("data-testid");
     const label = el.getAttribute("aria-label");
-    return [el.tagName.toLowerCase(), testId && `#${testId}`, label && `[${label}]`]
+    const siblingIndex = el.parentElement ? Array.from(el.parentElement.children).indexOf(el) : -1;
+    return [
+      el.tagName.toLowerCase(),
+      testId && `#${testId}`,
+      label && `[${label}]`,
+      siblingIndex >= 0 && `@${siblingIndex}`,
+    ]
       .filter(Boolean)
       .join("");
   });
@@ -34,6 +55,11 @@ test.describe("Accessibility — keyboard critical path (FBL-033)", () => {
     await page.goto("/");
     // Wait on a stable landmark rather than a timer.
     await expect(page.getByTestId("shell-world")).toBeVisible();
+    // Walk a feed that is at rest. Tabbing through a virtualized list
+    // while rows are still mounting and unmounting can drop focus back to
+    // the document — indistinguishable from a trap, and caused by the
+    // test rather than by the interface.
+    await pauseDemoForStableFeed(page);
 
     const seen: string[] = [];
     // A generous but bounded walk: enough to cycle the whole shell, small
@@ -54,6 +80,7 @@ test.describe("Accessibility — keyboard critical path (FBL-033)", () => {
   test("focus order is stable across repeated traversals", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("shell-world")).toBeVisible();
+    await pauseDemoForStableFeed(page);
 
     const walk = async () => {
       const order: string[] = [];
@@ -72,6 +99,7 @@ test.describe("Accessibility — keyboard critical path (FBL-033)", () => {
     // rather than the same one twice.
     await page.reload();
     await expect(page.getByTestId("shell-world")).toBeVisible();
+    await pauseDemoForStableFeed(page);
     const second = await walk();
 
     // Order must be deterministic: an unstable order makes the interface
@@ -82,12 +110,19 @@ test.describe("Accessibility — keyboard critical path (FBL-033)", () => {
   test("the focused control always shows a visible focus indicator", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("shell-world")).toBeVisible();
+    await pauseDemoForStableFeed(page);
 
     for (let i = 0; i < 12; i += 1) {
       await page.keyboard.press("Tab");
       const hasIndicator = await page.evaluate(() => {
         const el = document.activeElement as HTMLElement | null;
         if (!el || el === document.body) return true;
+        // `next dev` injects its own devtools overlay (`<nextjs-portal>`)
+        // into the tab order. It is not application UI, it does not exist
+        // in the production build the operator runs, and it carries no
+        // focus ring of its own — so asserting against it would be
+        // reporting the dev server's accessibility, not Agent City's.
+        if (el.tagName.toLowerCase() === "nextjs-portal") return true;
         const style = getComputedStyle(el);
         // Either a real outline, or a focus-visible class the design system uses.
         const outlined = style.outlineStyle !== "none" && parseFloat(style.outlineWidth) > 0;

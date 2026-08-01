@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { pauseDemoForStableFeed } from "./stable-state";
 
 // FBL-019 required automated tests: a state-mapping test (unit-tested
 // precisely in vehicleState.test.ts/vehicleVisuals.test.ts) confirmed here
@@ -41,6 +42,10 @@ test.describe("Utility vehicle (FBL-019)", () => {
     await page.goto("/");
     const vehicleMarker = marker(page, VEHICLE_ID);
     await expect(vehicleMarker).toHaveAttribute("data-visible", "true", { timeout: 20000 });
+    // The vehicle snaps between home, midpoint, and destination as real
+    // Transfer events arrive, so its screen position is only valid for as
+    // long as playback is stopped. Same moving-target race as the agents.
+    await pauseDemoForStableFeed(page);
 
     const xPercent = Number(await vehicleMarker.getAttribute("data-x-percent"));
     const yPercent = Number(await vehicleMarker.getAttribute("data-y-percent"));

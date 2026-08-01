@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { pauseDemoForStableFeed } from "./stable-state";
 
 // FBL-020 required automated tests: selection hit-target tests for all
 // three agents, state-mapping proof (all eight allowed states are
@@ -57,6 +58,13 @@ test.describe("Agent representations (FBL-020)", () => {
   }) => {
     await page.goto("/");
     await waitForMarkersReady(page);
+    // Agents move as the run progresses: the Architect walks from its
+    // residence to the Construction Office and back. Reading its screen
+    // position and then clicking there is a moving-target race — by the
+    // time the click lands, the agent may be somewhere else entirely.
+    // Bringing playback to rest pins the target; what is under test is the
+    // pointer hit target, not the animation.
+    await pauseDemoForStableFeed(page);
 
     const architectMarker = marker(page, "agent-architect");
     const xPercent = Number(await architectMarker.getAttribute("data-x-percent"));

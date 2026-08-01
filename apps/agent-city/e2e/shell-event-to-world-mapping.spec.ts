@@ -181,16 +181,30 @@ test.describe("Event-to-world mapping (FBL-021)", () => {
   test("reduced motion: the same operational sequence is communicated (blocked -> attention -> approved -> completed)", async ({
     page,
   }) => {
-    test.setTimeout(45000);
+    test.setTimeout(60000);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
-    await page.selectOption("#demo-speed", "4");
 
+    // Observe the Blocked window at *normal* speed, not 4×.
+    //
+    // The accessible marker text is sampled every 150 ms, and playback at
+    // 4× emits an event every 50 ms — so a state spanning a couple of
+    // events can be gone between two samples. This test used to pass only
+    // because the browser was rasterizing WebGL in software and starving
+    // the timer, which stretched every window until it happened to be wide
+    // enough to catch. That is not a property to depend on: it made the
+    // test pass for a reason unrelated to what it asserts, and it inverted
+    // — the faster the machine, the more likely the failure.
+    //
+    // At 1× the state persists for longer than the sampling interval, so
+    // observing it is deterministic rather than lucky. Speed is raised
+    // afterwards, for the stretch where only the end state matters.
     const cargoMarker = marker(page, "cargo-current-build");
     await expect(cargoMarker).toHaveAttribute("data-visible", "true", { timeout: 20000 });
-    await expect(cargoMarker).toHaveAttribute("data-state", "Blocked", { timeout: 20000 });
-    await expect(cargoMarker).not.toHaveAttribute("data-state", "Blocked", { timeout: 20000 });
+    await expect(cargoMarker).toHaveAttribute("data-state", "Blocked", { timeout: 30000 });
+    await expect(cargoMarker).not.toHaveAttribute("data-state", "Blocked", { timeout: 30000 });
 
+    await page.selectOption("#demo-speed", "4");
     const status = page.getByTestId("lighthouse-status");
     await expect(status).toHaveText(/Attention required/, { timeout: 20000 });
     await page.getByTestId("approval-card").getByRole("button", { name: "Approve" }).click();

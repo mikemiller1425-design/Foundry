@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { pauseDemoForStableFeed, readEventTotal, waitForFeedToGrowBeyond } from "./stable-state";
 
 // FBL-009 required automated tests (browser-level): full demo ordering as
 // rendered in the real DOM, filtering, pause behavior, payload inspection,
@@ -54,10 +55,13 @@ test.describe("Event timeline", () => {
     page,
   }) => {
     await page.goto("/");
-    await page.waitForTimeout(1000);
-    const first = await page.getByTestId("timeline-row").count();
-    await page.waitForTimeout(1500);
-    const second = await page.getByTestId("timeline-row").count();
+    // The subject here is *growth*, so the wait is on growth itself. A
+    // fixed sleep asserts nothing about the feed and everything about how
+    // busy the machine happened to be.
+    await expect(page.getByTestId("timeline-row").first()).toBeVisible();
+    const first = await readEventTotal(page);
+    await waitForFeedToGrowBeyond(page, first);
+    const second = await readEventTotal(page);
     expect(second).toBeGreaterThanOrEqual(first);
   });
 
@@ -96,7 +100,7 @@ test.describe("Event timeline", () => {
 
   test("pause autoscroll stops the view from jumping, resume restores it", async ({ page }) => {
     await page.goto("/");
-    await page.waitForTimeout(1500);
+    await expect(page.getByTestId("timeline-row").first()).toBeVisible();
 
     const pauseButton = page.getByRole("button", { name: "Pause autoscroll" });
     await pauseButton.click();
@@ -105,8 +109,14 @@ test.describe("Event timeline", () => {
       "true",
     );
 
-    await page.waitForTimeout(1500);
-    await expect(page.getByRole("button", { name: "Resume autoscroll" })).toBeVisible();
+    // The control must hold across further events arriving — so wait for
+    // events to actually arrive, rather than for a duration during which
+    // they may or may not have.
+    await waitForFeedToGrowBeyond(page, await readEventTotal(page));
+    await expect(page.getByRole("button", { name: "Resume autoscroll" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
 
     await page.getByRole("button", { name: "Resume autoscroll" }).click();
     await expect(page.getByRole("button", { name: "Pause autoscroll" })).toHaveAttribute(
@@ -119,7 +129,13 @@ test.describe("Event timeline", () => {
     page,
   }) => {
     await page.goto("/");
-    await page.waitForTimeout(1500);
+    // This is the FBL-028 §12.7 failure ("element detached from the DOM
+    // while clicking a row in the live-updating timeline"). The feed is
+    // virtualized: as events arrive the mounted window slides, so a row
+    // resolved a moment ago can be gone before the click lands. Bringing
+    // playback to rest first removes the race outright — a longer timeout
+    // would only have given the list more time to move.
+    await pauseDemoForStableFeed(page);
 
     await page.getByTestId("timeline-row").first().click();
     const detail = page.getByTestId("timeline-detail");
@@ -135,7 +151,9 @@ test.describe("Event timeline", () => {
     page,
   }) => {
     await page.goto("/");
-    await page.waitForTimeout(1500);
+    // Focusing and activating a row requires that row to still exist when
+    // the key lands — same detachment race as above.
+    await pauseDemoForStableFeed(page);
 
     await page.getByLabel("Filter by severity").focus();
     await expect(page.getByLabel("Filter by severity")).toBeFocused();

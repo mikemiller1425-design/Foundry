@@ -107,7 +107,13 @@ test.describe("Lighthouse", () => {
     expect(Number.isFinite(xPercent)).toBe(true);
     expect(Number.isFinite(yPercent)).toBe(true);
 
-    const pixel = await page.evaluate(
+    // The beacon rotates and pulses, so a single-instant sample reads
+    // whatever phase the animation happened to be in — bright on one run,
+    // dim on the next, with nothing about the application having changed.
+    // Sampling across a window and keeping the brightest reading removes
+    // the phase dependence: over a full cycle the beacon *must* light up,
+    // and if the Lighthouse were missing no sample would ever be bright.
+    const brightest = await page.evaluate(
       ({ xPercent, yPercent }) => {
         const canvas = document.querySelector<HTMLCanvasElement>(
           '[data-testid="shell-world"] canvas',
@@ -118,7 +124,6 @@ test.describe("Lighthouse", () => {
         off.height = canvas.height;
         const ctx = off.getContext("2d");
         if (!ctx) return null;
-        ctx.drawImage(canvas, 0, 0);
         const px = Math.min(
           canvas.width - 1,
           Math.max(0, Math.round((xPercent / 100) * canvas.width)),
@@ -127,20 +132,31 @@ test.describe("Lighthouse", () => {
           canvas.height - 1,
           Math.max(0, Math.round((yPercent / 100) * canvas.height)),
         );
-        return Array.from(ctx.getImageData(px, py, 1, 1).data);
+
+        return new Promise<number>((resolve) => {
+          let best = 0;
+          let framesLeft = 150;
+          const sample = () => {
+            ctx.drawImage(canvas, 0, 0);
+            const [r = 0, g = 0, b = 0] = Array.from(ctx.getImageData(px, py, 1, 1).data);
+            best = Math.max(best, r, g, b);
+            framesLeft -= 1;
+            if (framesLeft > 0) requestAnimationFrame(sample);
+            else resolve(best);
+          };
+          requestAnimationFrame(sample);
+        });
       },
       { xPercent, yPercent },
     );
 
-    expect(pixel).not.toBeNull();
+    expect(brightest).not.toBeNull();
     // The healthy beacon (#f5f5f5, emissive) is much brighter than the
     // dark background (#151a24) or ground (#333c52) — a bright pixel at
     // the Lighthouse's own reported location is strong, targeted evidence
     // that the Lighthouse itself, not just the environment, is what's
     // rendered there.
-    const [r = 0, g = 0, b = 0] = pixel!;
-    const maxChannel = Math.max(r, g, b);
-    expect(maxChannel).toBeGreaterThan(150);
+    expect(brightest!).toBeGreaterThan(150);
   });
 
   test("reduced motion: the Lighthouse still renders and its status still updates", async ({
