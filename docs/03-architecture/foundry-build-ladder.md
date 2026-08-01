@@ -2,7 +2,7 @@
 
 **Foundation:** 1.0
 **Authority:** Sequential implementation program derived from `docs/03-architecture/implementation-plan.md` and all active specification documents
-**Status:** `FBL-001`–`FBL-032` are **complete**. `FBL-028`'s controlled Claude Code run was executed, its evidence captured, and that evidence **reviewed and approved by the operator on 2026-08-01** — narrowly, and explicitly not as an OS-level security sandbox classification (`docs/evidence/fbl-028/operator-approval.md`). Foundry Foundation is **approved (1.0)**. `FBL-022` (complete simulated V1 workflow) was completed under its own separate operator authorization. `FBL-023` (persistence foundation), `FBL-024` (backend API), `FBL-025` (state machines and prerequisite enforcement), and `FBL-026` (realtime event delivery) were completed under an operator-authorized bounded sequence covering `FBL-023`–`FBL-026`, which is **now exhausted**. `FBL-027` (runtime adapter boundary) and `FBL-028` (controlled Claude Code execution) are complete under a subsequent operator-authorized bounded sequence covering `FBL-027`–`FBL-028`, which is now **exhausted**. `FBL-029` and later are **not authorized**; they remain explicitly out of scope until separately authorized, per this document's own rules below.
+**Status:** `FBL-001`–`FBL-033` are **complete**. `FBL-028`'s controlled Claude Code run was executed, its evidence captured, and that evidence **reviewed and approved by the operator on 2026-08-01** — narrowly, and explicitly not as an OS-level security sandbox classification (`docs/evidence/fbl-028/operator-approval.md`). Foundry Foundation is **approved (1.0)**. `FBL-022` (complete simulated V1 workflow) was completed under its own separate operator authorization. `FBL-023` (persistence foundation), `FBL-024` (backend API), `FBL-025` (state machines and prerequisite enforcement), and `FBL-026` (realtime event delivery) were completed under an operator-authorized bounded sequence covering `FBL-023`–`FBL-026`, which is **now exhausted**. `FBL-027` (runtime adapter boundary) and `FBL-028` (controlled Claude Code execution) are complete under a subsequent operator-authorized bounded sequence covering `FBL-027`–`FBL-028`, which is now **exhausted**. `FBL-029` and later are **not authorized**; they remain explicitly out of scope until separately authorized, per this document's own rules below.
 **Method:** Contract-first vertical slices (ADR-003)
 
 ## How to read this document
@@ -702,7 +702,7 @@ Parallel groups are defined precisely in §4.
 
 ### Phase G — Hardening and acceptance
 
-#### FBL-033 — Accessibility and reduced motion
+#### FBL-033 — Accessibility and reduced motion — ✅ Complete
 
 | Field | Content |
 | --- | --- |
@@ -720,6 +720,8 @@ Parallel groups are defined precisely in §4.
 | 12. Failure and rollback conditions | Any critical control unreachable by keyboard, or any state distinguishable only by color, is a failure. |
 | 13. Stop condition | A11y and reduced-motion suites green, operator-observed. Hard stop. |
 | 14. Dependency on next rung | FBL-035 depends on this rung (jointly with FBL-034). |
+| **Implementation record** | Cross-cutting a11y pass over the completed application. `colorIndependence.test.ts` (20 tests) asserts "colour not sole signal" **structurally across the whole visual vocabulary** rather than spot-checking components, checking two distinct failures: a state with no label is invisible to anyone not perceiving colour, while two states sharing a label are worse than none — the text asserts they are the same when the colour says they differ. `shell-accessibility.spec.ts` (7 tests × 3 viewports, 21/21) covers the keyboard critical path with no trap, deterministic focus order, visible focus indicators, navigator equivalents for canvas objects, semantic landmarks, and the reduced-motion journey preserving textual meaning — **every wait on stable state, never elapsed time**. No production code changed: the audit found no colour-only state and no keyboard trap to repair. Two errors of the assistant's own were caught by the gates: `blur()` does not reset focus to the document start, so the focus-order comparison was reading different slices; and `test.use({ reducedMotion })` is a project-level option `typecheck` rejected inside a describe block. 20 new unit tests (787 total). |
+| **Operator acceptance** | ✅ **Accepted 2026-08-01** by mikemiller1425-design (`docs/evidence/fbl-033/operator-observation.md`). Recorded as an operator **decision** rather than a narrated walkthrough: the assistant did not witness the keyboard-only and reduced-motion journeys and was not told their step-by-step results, so the record states what actually occurred rather than inventing observation detail. The record also names three honest gaps the automated pass did **not** close — no axe-style scanner run, no screen-reader verification, and no WebGL-unavailable fallback test. |
 
 #### FBL-034 — Ultrawide performance validation
 

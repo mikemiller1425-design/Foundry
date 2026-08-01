@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — FBL-033 operator acceptance of the accessibility pass
+
+Recorded the operator's acceptance of FBL-033. **Documentation only — no code, test, or behaviour changed.** Append-only record: `docs/evidence/fbl-033/operator-observation.md`.
+
+- **Accepted 2026-08-01** by mikemiller1425-design, who directed that the observation be recorded and the rung closed.
+- Recorded as an operator **decision**, not a narrated walkthrough. The rung's field 10 calls for a keyboard-only journey and a reduced-motion journey; the assistant did not witness those and was not told their results, so the record states what actually occurred rather than inventing observation detail. An operator may accept a rung on their own judgement; the assistant may not invent the contents of an observation it did not receive.
+- The record names three gaps the automated pass did **not** close, so they are visible rather than assumed: no axe-style accessibility scanner was run, no screen-reader verification was performed, and no WebGL-unavailable fallback test was added. These are limitations of the pass, not defects found and waived.
+- FBL-034 is next and carries the two intermittent browser defects deferred to it.
+
 ### Added — FBL-033 Accessibility and reduced motion (automated pass)
 
 Cross-cutting accessibility and reduced-motion hardening across the completed application. **Operator observation is pending** (keyboard-only primary journey, then again with reduced motion), so this rung's stop condition is not yet met and FBL-034 has not been started.
