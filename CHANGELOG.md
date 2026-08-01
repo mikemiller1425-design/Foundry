@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — FBL-033 Accessibility and reduced motion (automated pass)
+
+Cross-cutting accessibility and reduced-motion hardening across the completed application. **Operator observation is pending** (keyboard-only primary journey, then again with reduced motion), so this rung's stop condition is not yet met and FBL-034 has not been started.
+
+- `apps/agent-city/src/lib/world/colorIndependence.test.ts` (20 tests): asserts "colour not sole signal" **structurally over the whole visual vocabulary** — operational buildings, residences, vehicle, agents, cargo, construction site, and the Lighthouse — rather than spot-checking components. Two distinct failures are checked because they break differently: a state with *no* label is invisible to anyone not perceiving colour, while two states *sharing* a label are worse than none — the text actively asserts they are the same thing when the colour says they differ, misinforming rather than merely uninforming. Also pins that FBL-029's validation rejection stays textually distinct from an ordinary block, not just red-vs-orange.
+- `apps/agent-city/e2e/shell-accessibility.spec.ts` (7 tests × 3 viewports): keyboard critical path with no trap, deterministic focus order, visible focus indicator on every focused control, navigator equivalents for canvas objects, semantic landmarks, and the reduced-motion journey preserving textual meaning. **Every wait is on stable state, never elapsed time** — a timing-based accessibility test reports that the app was slow, not that it was reachable.
+- No production code changed: the audit found no color-only state and no keyboard trap to fix.
+- Two errors of mine were caught by the gates: the focus-order test used `blur()` to reset, which only drops focus so the second traversal resumed mid-order and compared different slices (now a reload); and `test.use({ reducedMotion })` is a project-level option that `typecheck` rejected inside a describe block (now `page.emulateMedia` per test).
+- Verification: typecheck (8/8) and lint clean; unit + integration green (787 tests: 767 pre-existing + 20 new); accessibility e2e 21/21 across all three target viewports.
+
 ### Observed — FBL-032 operator observation of restart and recovery
 
 Recorded the operator's observation of FBL-032's four restoration checks. **Documentation only — no code, test, or behaviour changed.** Append-only record: `docs/evidence/fbl-032/operator-observation.md`.
