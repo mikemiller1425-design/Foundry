@@ -16,6 +16,9 @@ await build({
     // FBL-029 operator helper: seeds one QA stage into `validating` for
     // the visual check. Appends declared events only; bypasses no guard.
     "fbl029-seed-stage": "src/fbl029/seedStage.ts",
+    // FBL-031 operator helper: seeds the operational history that makes
+    // the Warehouse upgrade genuinely eligible. Declared events only.
+    "fbl031-seed-upgrade-ready": "src/fbl031/seedUpgradeReady.ts",
   },
   outdir: "dist",
   bundle: true,

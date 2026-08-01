@@ -12,7 +12,8 @@
     "dev": "node build.mjs && node dist/main.js",
     "start": "node dist/main.js",
     "fbl-028": "node build.mjs && node dist/fbl028-run-controlled-stage.js",
-    "fbl-029:seed": "node build.mjs && node dist/fbl029-seed-stage.js"
+    "fbl-029:seed": "node build.mjs && node dist/fbl029-seed-stage.js",
+    "fbl-031:seed": "node build.mjs && node dist/fbl031-seed-upgrade-ready.js"
   },
   "dependencies": {
     "@foundry/contracts": "workspace:*",
