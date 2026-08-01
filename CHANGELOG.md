@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Verified — FBL-035 acceptance rerun after both remediations (rung still OPEN)
+
+Full acceptance rerun at `7dc7a23` following FBL-021A and the FBL-034 reopening. **V1 is not complete:** one finding is open and operator sign-off has not been given. Report: `docs/evidence/fbl-035/v1-acceptance-report.md`.
+
+- **Chromium acceptance suite is clean:** 378 passed / 0 failed / 3 skipped across the three target viewports. Typecheck 8/8, lint clean, production build, **813** unit/integration tests, **16/16** performance budgets at all three target viewports plus the supplementary HiDPI configuration.
+- **Findings 4 and 5 closed.** `jump to world object` is implemented (FBL-021A) and no "not yet available" assertion remains; the camera-settling race is deterministically repaired with three consecutive clean full runs, two under CPU contention.
+- **The camera repair also fixed WebKit's findings 3b and 3c** — both now pass under WebKit, confirming 3c was the same camera-timing race rather than the `preserveDrawingBuffer` limitation originally hypothesised. The operator's classification of 3c as "not a real Safari rendering defect" is unchanged; only the mechanism is better understood.
+- **Finding 6 (OPEN) — three newly surfaced, unclassified WebKit failures.** WebKit automation is 372 passed / 6 failed: three are the operator-classified configuration-dependent Tab issue (finding 3a, classification preserved), and three are new — `shell-selection.spec.ts:150` (×2 viewports) and `shell-event-to-world-mapping.spec.ts:119`. They were masked while the suite failed for other reasons at those viewports. **Not diagnosed, not classified, not waived.**
+- **Exclusions re-verified** after FBL-021A: no new dependency, risk ceiling still `z.enum(["R0","R1","R2"])`, demo command set still exactly six, no excluded concept present in source.
+- **F-12 evidence unchanged** (`evidence.json` md5 `11635c1b0bd1c3703da7047a21ae351c`); its authorization remains spent.
+- **A measurement discrepancy is recorded rather than dropped:** an intermediate performance run taken immediately after the CPU-saturation runs reported 14.6 FPS sustained-low at HiDPI; re-measured on a settled machine it was 41.7. The performance suite requires a quiet machine by design, and the recorded figures are the settled ones.
+
 ### Fixed — FBL-034 reopened: camera-settling moving-target race
 
 Resolves FBL-035 blocking finding 5, under operator authorization. **Test-side only — no production camera behaviour changed, no timeout raised, no retry added.** Measurements: `docs/evidence/fbl-034/performance-measurements.md` §9.

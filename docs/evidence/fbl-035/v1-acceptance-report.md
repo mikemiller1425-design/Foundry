@@ -6,15 +6,18 @@
 **Authority:** `docs/02-specification/v1-acceptance.md` (entire document); `docs/01-mission/active-mission.md` § "Completion gate"; `docs/01-mission/exclusions.md`
 **Machine:** Apple M4 Pro (12 CPU / 16 GPU cores), 24 GB, macOS 25.5.0; primary display Samsung LS49C95xU (native 5120×1440)
 
-**Status (updated 2026-08-01, after real-Safari observation, the authorized F-12 re-execution, and a narrow copy correction):**
+**Status (final automated run, 2026-08-01, at `7dc7a23` — after FBL-021A and the FBL-034 reopening):**
 
-- ✅ **Safari findings resolved.** All three classified against the operator's real-Safari observation — none is a product defect (§7, finding 3).
-- ✅ **F-12 verified by one authorized live re-execution** (§7, finding 2).
-- ⛔ **Finding 4 — `jump to world object` is a mandatory V1 capability that was never implemented.** Blocking.
-- ⛔ **Finding 5 — the Chromium acceptance gate is not clean:** an intermittent camera-settling race in `shell-selection.spec.ts:23`. Blocking.
-- ⏳ Operator sign-off not performed (§9).
+- ✅ **Chromium acceptance suite clean:** 378 passed / 0 failed / 3 skipped.
+- ✅ **Unit + integration:** 813 passed. Typecheck 8/8, lint clean, production build passing.
+- ✅ **Performance:** 16/16, every budget met at all three target viewports **and** the supplementary HiDPI configuration.
+- ✅ **Finding 4 closed** — `jump to world object` implemented as **FBL-021A**; no "not yet available" assertion remains.
+- ✅ **Finding 5 closed** — camera-settling race repaired deterministically; three consecutive full runs (377 / 377 / 378), two under CPU contention.
+- ✅ **F-12** verified by the authorized single re-execution; evidence unchanged.
+- ⚠️ **Safari/WebKit automation is not clean:** 372 passed / 6 failed. Three are the operator-classified configuration-dependent Tab issue (finding 3a); **three are newly surfaced and unclassified** (§7, finding 6).
+- ⏳ **Operator sign-off not performed** (§9).
 
-**V1 is not declared complete by this report.** Two blocking items remain, both requiring an operator decision rather than an assistant judgement.
+**V1 is not declared complete by this report.**
 
 This report covers what the assistant executed and verified. Field 10 of this rung requires the operator to perform the complete primary journey personally, end-to-end and unassisted. That has not happened and is not claimed anywhere in this document.
 
@@ -228,18 +231,46 @@ Its appearance in Chromium independently **confirms** the operator's classificat
 
 **Consequence:** FBL-035 field 12 requires *"a full clean run passes with zero reopened items outstanding."* An intermittent failure is not a clean run, so this rung cannot close while it stands. The repair is the same deterministic stable-state synchronization used in FBL-034 — settle the camera before reading the marker position — and is test-side only, touching no application code. **Not applied**, pending authorization (§9).
 
+### Finding 4 — CLOSED: `jump to world object` implemented (FBL-021A)
+
+Implemented as an amendment rung, `FBL-021A — Timeline-to-world-object navigation closure`, per the ladder's own amendment rule and without renumbering. **The specification was implemented, not weakened.**
+
+Resolution is by declared identifier only — `entityId` where the entity *is* a world object, or a named `IdSchema` payload field where the contract declares the relationship. A test asserts that the display name `"Architect"` resolves to nothing, because a jump that guesses is worse than one that is unavailable. `transfer.completed`, `upgrade.completed` and every project-level event stay unavailable **with a stated reason**, rendered as text with `aria-describedby` rather than a `title` tooltip. Agents gained camera focus they never had, resolved from their live position. Navigation emits no operational event.
+
+22 new tests; the two that pinned "not yet available" were replaced with tests of the real capability, verified across all three target viewports.
+
+### Finding 5 — CLOSED: camera-settling race repaired (FBL-034 reopened)
+
+`stableProjectedPosition()` waits until a marker's projected coordinates stop changing before they are read and clicked. **No timeout raised, no retry added, no production camera behaviour changed.**
+
+Before: 4 failures in 36 runs (11%). After: 72/72. Three consecutive full-suite runs — idle 377, six burners plus a looping unit suite 377, twelve burners with all cores saturated 378 — all zero failures.
+
+A second instance of the same defect was found *by* the contention run (`shell-lighthouse.spec.ts:88`) and repaired identically.
+
+### Finding 6 — NEW: three unclassified Safari/WebKit automation failures (OPEN)
+
+The final WebKit run is **372 passed / 6 failed**, down from 7. What changed is informative:
+
+- **The camera-settling repair fixed WebKit too.** The original finding 3b (`shell-selection.spec.ts:23` pointer click) and finding 3c (`shell-lighthouse.spec.ts:88` pixel readback) now **pass** under WebKit. That confirms 3c was the same camera race rather than a `preserveDrawingBuffer` limitation, as §9 of the FBL-034 evidence anticipated.
+- **Three remaining failures are finding 3a** (`shell-panels.spec.ts:20`, all three viewports) — the `<button>`-not-Tab-reachable issue the operator classified as Safari configuration-dependent after observing real Safari PASS. Expected to persist in Playwright's WebKit; **classification preserved, not re-opened.**
+- **Three are newly surfaced and have no classification:** `shell-selection.spec.ts:150` ("selecting the Lighthouse moves the camera to focus on it", 5120×1440 and 3840×1080) and `shell-event-to-world-mapping.spec.ts:119` ("every meaningful visual transition has a readable timeline equivalent", 5120×1440).
+
+These three were masked before — the suite failed earlier for other reasons at those viewports. They have **not** been diagnosed and are **not** classified. They may be further instances of the same camera-timing class, or WebKit-specific behaviour, or real defects; saying which without evidence is exactly the shortcut this ladder forbids.
+
+**Impact on the acceptance criteria:** `v1-acceptance.md` names Safari as a target browser, and the operator's real-Safari observation recorded a full PASS including the primary journey. Automated WebKit coverage is not clean. Whether that blocks V1 is an operator determination — the specification requires Safari to *work*, which real Safari does; it does not require Playwright's WebKit build to be green.
+
 ## 8. Definition of done
 
 `v1-acceptance.md` § "Definition of done":
 
 | Condition | Status |
 | --- | --- |
-| All mandatory tests pass | ⛔ **No.** The rerun shows 1 intermittent Chromium failure (§7, finding 5). Safari is resolved — all three WebKit issues classified as non-defects against real-Safari observation (§7, finding 3). No mandatory test was waived. |
+| All mandatory tests pass | ⚠️ **Chromium: yes** — 378 passed / 0 failed, plus 813 unit/integration and 16 performance, no mandatory test waived. **WebKit automation: 6 failures** — 3 the classified configuration-dependent Tab issue, 3 newly surfaced and unclassified (§7, finding 6). Real Safari was observed to PASS. |
 | No TypeScript, lint, or production build errors | ✅ gates 1–3 |
 | Automated tests cover transitions, idempotency, approval gates, transfer gates | ✅ `commandHandler.test.ts` / `transitionGraphs.ts`, F-09, F-06, F-04 |
 | Deterministic demo completes reliably | ✅ full journey green ×3 consecutive browser runs, two under CPU contention (FBL-034) |
 | One real Claude Code stage completes in the controlled adapter | ✅ **Re-executed live under the operator's one-run authorization and verified** — write confinement clean, independent validation 12/12 (§7, finding 2) |
-| Documentation matches implementation | ⛔ **No.** `interface-model.md` documents `jump to world object` in the bottom event timeline; the implementation does not have it (§7, finding 4). Two stale strings were corrected; this one is a missing capability, not copy. |
+| Documentation matches implementation | ✅ **Yes.** `jump to world object` is implemented (FBL-021A); the two stale strings were corrected; world-model, target resolutions, demo command set, and backend-mode docs all re-verified against source. |
 | Excluded features remain unimplemented | ✅ §5 |
 
 `active-mission.md` § "Completion gate" — every mandatory acceptance test passes, excluded features remain unimplemented, and documentation matches behaviour. Two of the three hold unconditionally. The first holds **on Chromium only**; on Safari, a named target browser, it does not (§7, finding 3).
@@ -254,29 +285,21 @@ Three ways forward, all of them the operator's call, not the assistant's:
 
 ## 9. What is NOT established, and what the operator must decide
 
-**V1 is not complete.** Two blocking items stand, and neither is the assistant's to resolve.
+**V1 is not complete.** One item is open, and the operator's sign-off has not been given.
 
-### Blocking item 1 — finding 4: `jump to world object`
+### Open item — finding 6: three unclassified WebKit automation failures
 
-A mandatory capability named in `interface-model.md` and in FBL-009's objective, never implemented, and pinned as absent by two tests. Options:
+`shell-selection.spec.ts:150` (×2 viewports) and `shell-event-to-world-mapping.spec.ts:119` (×1). Not diagnosed, not classified, not waived. Options: diagnose and classify them as the earlier three were; repair them if they prove to be further camera-timing instances; or record that automated Safari coverage is advisory and real-Safari observation is the acceptance evidence. Each is an operator decision.
 
-1. **Implement it.** Reopens **FBL-009** (which named it) or **FBL-021** (the rung at which it became implementable), fixed there, then FBL-035 re-runs — the sequence field 12 prescribes. The two tests that assert *"not yet available"* would be updated to assert the working control.
-2. **Amend the specification** to drop it from V1. This changes Foundation 1.0 and per `FOUNDATION_VERSION.md` requires a reviewed amendment, not a silent edit.
-
-No fix has been attempted; the stale wording around it was left in place deliberately, because correcting the wording alone would conceal the gap.
-
-### Blocking item 2 — finding 5: intermittent Chromium failure
-
-`shell-selection.spec.ts:23` fails intermittently on a camera-settling moving-target race. Test-side only; no application code involved. The repair is the deterministic stable-state synchronization already used in FBL-034 for agents and the vehicle. Owning rung is **FBL-034** (assigned the timing-race hardening) or **FBL-015** (which owns the test). Not applied, pending authorization — the operator's standing instruction was not to reopen FBL-015 on the Safari observations, and this is new evidence rather than a Safari observation.
+The three *previously* classified WebKit failures (finding 3a) remain classified as Safari configuration-dependent, on the strength of the operator's real-Safari observation. That classification is **preserved, not revisited**.
 
 ### Operator sign-off
 
 Field 10 requires the operator to perform the complete primary user journey personally, end-to-end, unassisted — confirming ten-second comprehension and every acceptance behaviour live, *not merely reading automated test output*. This report is automated test output and cannot substitute for it.
 
-The operator has reported a real-Safari primary-journey PASS (§7, finding 3), performed on the production build at 5120×1440. Whether that satisfies field 10's "complete primary user journey … unassisted" is **the operator's determination, not the assistant's** — it is recorded here as reported and is not counted as sign-off.
-
 ### Also not established
 
-- Results are from one machine. Chromium has one intermittent failure; Safari was verified manually rather than by automation, and its three automation findings are classified as non-defects.
-- Screenshot baselines created during this run guard future runs but prove nothing on the run that generated them (§7, finding 1).
-- The F-12 authorization is **spent**: one run performed, no further controlled Claude Code execution is authorized.
+- Results are from one machine. The performance suite requires a quiet one: an intermediate run taken immediately after the CPU-saturation runs reported 14.6 FPS sustained-low at HiDPI; re-measured on a settled machine it was 41.7. The recorded figures are the settled ones, and this is noted so the discrepancy is visible rather than silently dropped.
+- Screenshot baselines guard future runs but prove nothing on the run that generated them.
+- The F-12 authorization is **spent**: one run performed and verified, evidence unchanged (`evidence.json` md5 `11635c1b0bd1c3703da7047a21ae351c`).
+- FBL-021A's operator validation is folded into FBL-035's final journey; it has no separate observation gate.
