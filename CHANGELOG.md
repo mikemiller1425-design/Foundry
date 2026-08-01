@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — FBL-032 operator observation of restart and recovery
+
+Recorded the operator's observation of FBL-032's four restoration checks. **Documentation only — no code, test, or behaviour changed.** Append-only record: `docs/evidence/fbl-032/operator-observation.md`.
+
+- **Confirmed 2026-08-01** by mikemiller1425-design: mid-build, blocked, pending-approval, and post-completion each restored correctly across **both** a browser reload and a full backend restart. The resolved approval kept its resolver, a conflicting reversal was still refused, and an upgrade eligibility evaluation was correctly refused on real metrics rather than assumed.
+- FBL-032's stop condition is therefore met and the rung is **closed**.
+- **Procedural note recorded in the evidence file:** an earlier `APPROVED — CONTINUE` arrived before this gate had been presented — no services were running and no steps existed, so nothing could have been observed. It was not recorded as an observation. Only the observation performed after the gate was actually presented is recorded.
+- The record carries forward that this rung's fully clean browser run (342 passed / 0 failed) does **not** retire the intermittent 5120×1440 `approval-card` timeout or `shell-timeline.spec.ts:118`; both remain open for FBL-034.
+
 ### Added — FBL-032 Restart and recovery
 
 Proved that every state the workflow can reach is reconstructed from the persisted log alone. **Operator observation is pending**, so this rung's stop condition is not yet met and FBL-033 has not been started.
