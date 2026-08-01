@@ -1,13 +1,18 @@
 # FBL-028 — Controlled Claude Code Execution: Operator Review Report
 
-**Status:** Awaiting operator review. **Not reviewed. Not approved.**
+**Status:** ✅ **Reviewed and approved** by the operator on 2026-08-01 for the narrow Agent City V1 proof — see `operator-approval.md` (adjacent, append-only) for the decision, its scope, and its explicit limits. That record, not this line, is authoritative for the approval.
 **Rung:** FBL-028 — Controlled Claude Code execution (ADR-006, F-12, `v1-scope.md` stage 4 `backend_implementation`)
 **Run date:** 2026-08-01 (UTC)
 **Outcome:** `succeeded` — determined by Foundry's independent validation, not by the runtime's self-report
 **Raw evidence:** `evidence.json`, `diff.patch`, `stdout.txt`, `stderr.txt`, `tests.txt` (this directory)
 
-> This report is presented for review. Nothing in it constitutes operator
-> approval, and FBL-029 has not been started.
+> This report was presented for review and has been approved. The approval
+> is **narrow**: it covers one controlled Claude Code Builder stage in
+> disposable, non-sensitive fixture repositories, R0–R2 only, exclusively
+> through the FBL-027 boundary, with independent validation mandatory and
+> self-certification forbidden. It explicitly does **not** classify the
+> runtime adapter as an OS-level security sandbox. FBL-029 remains
+> unauthorized and has not been started.
 
 **Disclosure — the controlled stage was executed twice.** A first run (fixture `…-1hkdLx`, 22.3 s, $0.078) also succeeded. While reviewing it, a gap was found in the *evidence capture*, not in containment: write-scope verification used a plain `git diff HEAD`, which shows nothing for a file the stage newly *created*, so a rogue new file would have been named by `git status` while its contents went missing from the diff. The capture was fixed (stage, then `git diff --cached HEAD`), a regression test added, and the stage re-run so that the retained evidence corresponds exactly to the code being committed. This report and every artifact in this directory describe the **second** run (fixture `…-VGyvj1`). Both runs produced the same outcome: one file changed, zero denials, 12/12 independent tests passing. The first run's artifacts were overwritten and are not retained.
 
@@ -183,6 +188,8 @@ These are stated plainly because they bound what this rung actually proves.
 
    This is flagged rather than re-run quietly to green: a suite whose failures move around under load is a real maintenance signal, and it is worth its own remediation rather than being absorbed silently into this rung's evidence.
 
+   **Operator decision (2026-08-01):** accepted as **deferred hardening work, assigned to FBL-034**. It does **not** block FBL-029.
+
 ---
 
 ## 13. Verification gates
@@ -196,6 +203,10 @@ These are stated plainly because they bound what this rung actually proves.
 | `pnpm build` | passes |
 | Controlled run | `succeeded` |
 
-## 14. What the operator is being asked to decide
+## 14. Operator decision
 
-Whether the containment demonstrated here is sufficient to proceed, and whether limitations 1–5 are acceptable as the standing posture for V1 or require hardening first. **FBL-029 has not been started and is not authorized.**
+**Approved on 2026-08-01** for the narrow Agent City V1 proof. The full decision, its scope, and its explicit limits are recorded in `operator-approval.md`, which is authoritative; the summary below is a pointer, not a substitute.
+
+Limitations 1–5 are **accepted as the standing posture for V1** and must not be generalized into production security guarantees — in particular, this approval does **not** classify the runtime adapter as an OS-level security sandbox. Limitation 7 is deferred to FBL-034. Limitation 6 stands as stated.
+
+**FBL-029 has not been started and remains unauthorized.**

@@ -4,7 +4,9 @@ Controlled adapters that invoke external runtimes (for example Claude Code) behi
 
 ## Status
 
-**FBL-027 complete** (policy boundary + `mock` adapter). **FBL-028's controlled run is complete, operator review pending** — one real Claude Code stage has been executed through the boundary; see `docs/evidence/fbl-028/`.
+**FBL-027 complete** (policy boundary + `mock` adapter). **FBL-028 complete** — one real Claude Code stage has been executed through the boundary, and its evidence was reviewed and approved by the operator on 2026-08-01; see `docs/evidence/fbl-028/`.
+
+That approval is **narrow**: one controlled Builder stage, disposable non-sensitive fixture repositories only, R0–R2 only, invocation exclusively through this boundary, independent validation mandatory, no self-certification. It explicitly does **not** classify this package as an OS-level security sandbox — see the limitations below, which are accepted for V1 and must not be generalized into production security guarantees.
 
 Backend-only. `apps/agent-city` neither depends on nor imports this package, and `src/frontendIsolation.test.ts` asserts both (ADR-006).
 

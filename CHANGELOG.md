@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Approved — FBL-028 operator approval of the controlled Claude Code run
+
+Recorded the operator's review decision for FBL-028. **Documentation only — no code, test, or behavior changed.** Append-only record: `docs/evidence/fbl-028/operator-approval.md`.
+
+- **Approved 2026-08-01** by mikemiller1425-design, against `docs/evidence/fbl-028/operator-review-report.md`, having reviewed the declared task, controlled fixture location, command and tool policy, captured logs, diff, exit status, independent validation, persistence evidence, containment tests, and disclosed limitations. FBL-028's stop condition ("evidence captured **and reviewed**") is therefore met and the rung is **closed**.
+- **The approval is deliberately narrow:** one controlled Claude Code Builder stage; disposable, non-sensitive fixture repositories only; R0–R2 actions only; invocation exclusively through the FBL-027 runtime-adapter boundary; independent validation mandatory; Claude Code may not self-certify completion.
+- **It explicitly does not classify the runtime adapter as an OS-level security sandbox.** Four limitations are accepted for V1 and **must not be generalized into production security guarantees**: write confinement is detected after execution rather than enforced by an OS sandbox; network posture is declared but not OS-enforced; the process may access the user-session macOS Keychain for Claude authentication; and secret-pattern redaction is defense in depth, not guaranteed isolation. Execution must never target Foundry, the user's home directory, a broad `Documents` directory, or any repository containing sensitive or valuable data.
+- **Deferred:** the timing-sensitive browser-test flakiness under CPU contention (review report §12.7) is assigned to **FBL-034**, where the rung's "Deferred work assigned here" row now names the three specs, the evidence that they are not FBL-027/028 regressions, and the requirement that the fix remove the race rather than re-run until green. It does **not** block FBL-029.
+- FBL-029 remains **unauthorized** and has not been started.
+
 ### Added — FBL-028 Controlled Claude Code execution
 
 Attached one real Claude Code adapter behind the FBL-027 boundary and executed the single controlled `backend_implementation` Builder stage (F-12, `v1-scope.md` stage 4), per the operator-authorized bounded sequence FBL-027–FBL-028. **Operator review of the captured evidence is pending**, so the rung's stop condition is not yet fully met and FBL-029 has not been started.
