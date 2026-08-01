@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — FBL-030 operator observation of the human approval gate
+
+Recorded the operator's observation of FBL-030's two visual runs. **Documentation only — no code, test, or behaviour changed.** Append-only record: `docs/evidence/fbl-030/operator-observation.md`.
+
+- **Confirmed 2026-08-01** by mikemiller1425-design: the approve run cleared the approval card and the Lighthouse attention signal and recorded `resolvedBy: operator-1` — a value the browser never sent, derived from the credential; the reject run cleared the card while leaving the approval-gated transfer shut, and a subsequent conflicting approval was refused.
+- The credential-required state was confirmed visibly distinct from the disconnected banner, so "not authorized" and "backend unreachable" remain tellable apart.
+- FBL-030's stop condition is therefore met and the rung is **closed**. The record restates that the operator credential is **not** a session system and must not be treated as production authentication.
+
 ### Added — FBL-030 Human approval workflow
 
 Implemented the real persisted request-to-resolution approval gate. **Operator observation of the two visual runs is pending**, so this rung's stop condition is not yet met and FBL-031 has not been started.
