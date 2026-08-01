@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — administrative closure of the Agent City V1 mission
+
+**Status correction only — not a new mission baseline and not a specification amendment.** `FOUNDATION_VERSION.md` operational metadata now records the active mission as complete: mission status **Complete**, Agent City V1 implementation **Complete**, completion date **2026-08-01**, final approval commit **`f78a675`**, referencing `docs/evidence/fbl-035/operator-final-approval.md`.
+
+- **Foundry Foundation 1.0 is unchanged.** No principle, mission scope, domain term, or ADR was touched, and the "Authority", "Operator approval record", and "Change control" sections keep their substance. Per that document's own change-control rule this is a clarification that does not change meaning.
+- **Finding 6 remains explicitly open** and is now carried in `FOUNDATION_VERSION.md` as an item that outlived completion: three undiagnosed Playwright-WebKit failures, **accepted by operator decision rather than resolved**, and not to be read as accepted non-defects. It was not investigated or fixed as part of this closure.
+- The V1 observation server on port 4500 was stopped gracefully.
+- No V2, post-V1 implementation, or Future Registry work has been started; any such work requires a new reviewed mission baseline.
+
 ### Approved — Agent City V1 COMPLETE (FBL-035 terminal rung closed)
 
 **Agent City V1 is complete.** Approved 2026-08-01 by mikemiller1425-design with the required wording `I APPROVE AGENT CITY V1 FOR COMPLETION`, against commit `c659d0e`. Append-only record: `docs/evidence/fbl-035/operator-final-approval.md`. **Documentation only — no code, test, or behaviour changed.**
