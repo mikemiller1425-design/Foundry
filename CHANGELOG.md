@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — FBL-034 operator acceptance of the ultrawide performance pass
+
+Recorded the operator's acceptance of FBL-034. **Documentation only — no code, test, or behaviour changed.** Append-only record: `docs/evidence/fbl-034/operator-observation.md`.
+
+- **Accepted 2026-08-01** by mikemiller1425-design, in response to the observation gate being presented with a production build served at `localhost:4500` and a seven-step journey specified (warm start, motion at 1×, selection responsiveness, feed scrolling and filtering, Pause/Resume and 4× to the approval gate, approval through completion, upgrade to Level 2).
+- Recorded as an operator **decision**, not a narrated walkthrough, following the FBL-033 precedent. The rung's field 10 calls for the operator to run the journey at 5120×1440 and confirm it feels responsive at desk distance; the assistant did not witness that and was not told its results, so the record states what actually occurred. An operator may accept a rung on their own judgement; the assistant may not invent the contents of an observation it did not receive.
+- The record names what the pass did **not** establish, so the gaps stay visible: no witnessed walkthrough; measurements from one machine only; the 10,000-event result being a jsdom DOM-boundedness measurement rather than a rendered frame-rate one; realtime latency measured as the render half composed with FBL-026's separately measured transport half; frame-rate figures establishing that budgets are met rather than the hardware maximum; and known per-frame allocation waste deliberately left in place because no budget was under pressure.
+- FBL-034's stop condition is therefore met and the rung is **closed**. With FBL-033 also closed, the track-E hardening pair is complete and FBL-035's prerequisites are satisfied — but **FBL-035 has not been started and is not authorized by this record**; it requires its own explicit operator authorization.
+
 ### Added — FBL-034 Ultrawide performance validation (automated pass)
 
 Measured the full performance budget at every target viewport, and repaired the browser-test flakiness deferred here from FBL-028 §12.7. **Operator observation is pending** (full journey on the target Mac at 5120×1440, confirming it feels responsive at desk distance), so this rung's stop condition is not yet met and FBL-035 has not been started. Measurements: `docs/evidence/fbl-034/performance-measurements.md`.
