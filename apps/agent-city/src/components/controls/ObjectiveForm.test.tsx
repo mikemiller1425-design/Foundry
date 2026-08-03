@@ -177,3 +177,39 @@ describe("ObjectiveForm — an unavailable control explains itself", () => {
     expect(screen.getByTestId("objective-blocked").textContent).not.toBe(disconnected);
   });
 });
+
+describe("ObjectiveForm — the credential can actually be supplied", () => {
+  /**
+   * Before AC-103 the only credential field in the application lived
+   * inside `ApprovalCard`, which renders nothing until an approval is
+   * pending. In this slice no approval ever exists, so without an entry
+   * point here the operator would face a permanently disabled control and
+   * no way to enable it.
+   */
+  it("offers a credential field when this browser holds none", () => {
+    renderForm({ operatorCredentialRequired: true });
+    expect(screen.getByTestId("objective-operator-credential-input")).toBeTruthy();
+  });
+
+  it("stores the credential the operator supplies", () => {
+    const setOperatorCredential = vi.fn();
+    renderForm({ operatorCredentialRequired: true, setOperatorCredential });
+
+    fireEvent.change(screen.getByTestId("objective-operator-credential-input"), {
+      target: { value: "operator-token" },
+    });
+    fireEvent.click(screen.getByTestId("objective-operator-credential-save"));
+
+    expect(setOperatorCredential).toHaveBeenCalledWith("operator-token");
+  });
+
+  it("does not offer a credential field once one is held", () => {
+    renderForm();
+    expect(screen.queryByTestId("objective-operator-credential-input")).toBeNull();
+  });
+
+  it("does not offer a credential field while disconnected, where it would not help", () => {
+    renderForm({ mutationsEnabled: false, operatorCredentialRequired: true });
+    expect(screen.queryByTestId("objective-operator-credential-input")).toBeNull();
+  });
+});

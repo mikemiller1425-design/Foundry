@@ -4,6 +4,7 @@ import { OBJECTIVE_MAX_LENGTH, type V1RiskClass } from "@foundry/contracts";
 import { useRuntime } from "@/lib/mock-runtime";
 import type { ObjectiveSubmissionResult } from "@/lib/backend/objectiveSubmission";
 import { useState } from "react";
+import { OperatorCredentialEntry } from "./OperatorCredentialEntry";
 
 /**
  * The operator states what should be built (AC-103).
@@ -40,10 +41,11 @@ export function ObjectiveForm() {
 
   if (!submitObjective) return null;
 
+  const credentialRequired = mutationsEnabled && Boolean(operatorCredentialRequired);
   const blockedReason = !mutationsEnabled
     ? "Backend disconnected — an objective cannot be submitted until the connection is restored."
-    : operatorCredentialRequired
-      ? "No operator credential in this browser. Paste the operator token printed by the API at startup, then submit."
+    : credentialRequired
+      ? "No operator credential in this browser. Submitting an objective is a human act of direction, so the backend requires an authenticated operator."
       : null;
 
   async function onSubmit(event: React.FormEvent) {
@@ -124,6 +126,18 @@ export function ObjectiveForm() {
         <p data-testid="objective-blocked" className="text-[11px] text-amber-300">
           {blockedReason}
         </p>
+      )}
+
+      {/* The credential field lived only inside `ApprovalCard`, which
+          renders nothing until an approval is pending — so before AC-103
+          there was no approval yet, and therefore no way to supply the
+          credential this control requires. The entry point has to exist
+          wherever the credential is first needed. */}
+      {credentialRequired && (
+        <OperatorCredentialEntry
+          idPrefix="objective-operator-credential"
+          explanation="Paste the operator credential the API printed at startup to enable submission."
+        />
       )}
 
       <div role="status" aria-live="polite" data-testid="objective-result">

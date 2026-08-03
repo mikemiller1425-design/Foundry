@@ -2,6 +2,7 @@
 
 import { useRuntime } from "@/lib/mock-runtime";
 import { useState } from "react";
+import { OperatorCredentialEntry } from "./OperatorCredentialEntry";
 
 const OPERATOR_ID = "operator-1";
 
@@ -11,15 +12,9 @@ const OPERATOR_ID = "operator-1";
 // mock engine itself enforces the pause (runtime.ts), this card is what
 // lets the operator resolve it.
 export function ApprovalCard() {
-  const {
-    worldState,
-    resolveApproval,
-    mutationsEnabled,
-    operatorCredentialRequired,
-    setOperatorCredential,
-  } = useRuntime();
+  const { worldState, resolveApproval, mutationsEnabled, operatorCredentialRequired } =
+    useRuntime();
   const [note, setNote] = useState("");
-  const [credentialDraft, setCredentialDraft] = useState("");
   const pending = worldState.approvals.find((a) => a.status === "pending");
 
   // FBL-030: resolving requires an authenticated operator. Without a
@@ -86,38 +81,7 @@ export function ApprovalCard() {
           distinct from the disconnected message above so the operator can
           tell "not authorized" from "backend unreachable". */}
       {mutationsEnabled && operatorCredentialRequired && (
-        <div
-          data-testid="operator-credential-required"
-          className="mt-3 rounded border border-sky-800 bg-sky-950 p-2 text-sky-200"
-        >
-          <p role="status">
-            Operator credential required — approvals are a human decision and must be authenticated.
-            The backend prints this credential at startup.
-          </p>
-          <label htmlFor="operator-credential" className="mt-2 block text-sky-400">
-            Operator credential
-          </label>
-          <input
-            id="operator-credential"
-            type="password"
-            data-testid="operator-credential-input"
-            value={credentialDraft}
-            onChange={(e) => setCredentialDraft(e.target.value)}
-            className="mt-1 w-full rounded border border-sky-800 bg-neutral-950 p-1 text-neutral-200"
-          />
-          <button
-            type="button"
-            data-testid="operator-credential-save"
-            disabled={credentialDraft.trim().length === 0}
-            onClick={() => {
-              setOperatorCredential?.(credentialDraft);
-              setCredentialDraft("");
-            }}
-            className="mt-2 rounded border border-sky-700 px-2 py-1 font-medium hover:bg-sky-900 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-          >
-            Use credential
-          </button>
-        </div>
+        <OperatorCredentialEntry explanation="Operator credential required — approvals are a human decision and must be authenticated. The backend prints this credential at startup." />
       )}
 
       <div className="mt-3 flex gap-2">
