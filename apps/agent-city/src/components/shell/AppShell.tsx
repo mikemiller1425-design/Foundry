@@ -5,6 +5,7 @@ import { ApprovalCard } from "@/components/controls/ApprovalCard";
 import { CommandBar } from "@/components/controls/CommandBar";
 import { ConnectionBanner } from "@/components/controls/ConnectionBanner";
 import { LiveIntelligence } from "@/components/controls/LiveIntelligence";
+import { ObjectiveForm } from "@/components/controls/ObjectiveForm";
 import { SelectedObjectDetail } from "@/components/controls/SelectedObjectDetail";
 import type { Selection } from "@/components/controls/selection";
 import { StageAgentPanel } from "@/components/controls/StageAgentPanel";
@@ -215,7 +216,16 @@ export function AppShell() {
           </CollapseToggleButton>
         </div>
         {!leftNavCollapsible.collapsed && (
-          <div className="overflow-y-auto p-4 pt-0 text-xs">
+          <div className="space-y-4 overflow-y-auto p-4 pt-0 text-xs">
+            {/* AC-103. Placed here rather than in the bottom command strip
+                for two reasons: the strip's V1 contents are the exhaustive
+                six demo-control commands (`interface-model.md`), and a
+                rejected objective needs room for per-field reasons that a
+                one-line strip cannot carry. It sits directly above "Current
+                build" so the operator sees their own words become backend
+                truth in the same column. Renders in backend mode only —
+                see `RuntimeContextValue.submitObjective`. */}
+            <ObjectiveForm />
             <StageAgentPanel selection={selection} onSelect={handleSelect} />
           </div>
         )}

@@ -112,7 +112,9 @@ export function applyEvent(state: WorldState, event: FoundryEvent): WorldState {
         sequenceNumber: 1,
         status: "planned",
         objectiveSnapshot: payload.objective,
-        currentStageId: "",
+        // Kept identical to the backend reducer (see `BuildSchema`): no
+        // stage exists until `stage.created`, and `""` is not a valid id.
+        currentStageId: null,
         createdAt: event.occurredAt,
         updatedAt: event.occurredAt,
       };

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { CommandRequest, CommandType } from "@foundry/contracts";
 import { FoundryEventSchema, type ActorType, type FoundryEvent } from "@foundry/event-types";
 import {
+  ObjectiveTextSchema,
   WAREHOUSE_LEVEL_2_MIN_PASS_RATE,
   WAREHOUSE_LEVEL_2_REQUIRED_PACKAGE_COUNT,
 } from "@foundry/contracts";
@@ -67,6 +68,19 @@ const APPROVAL_RESOLUTION_STATUS: Record<string, string> = {
  * not more — the human decides, the system carries it out.
  */
 const OPERATOR_UPGRADE_COMMANDS = new Set<CommandType>(["Upgrade.Request", "Upgrade.Approve"]);
+
+/**
+ * Project statuses that still count as open work (`ProjectStatusSchema`).
+ * `domain-model.md` → Project V1 limits: **one active project**.
+ */
+const OPEN_PROJECT_STATUSES = new Set(["draft", "active"]);
+
+/**
+ * Build statuses that still count as open work (`BuildStatusSchema` minus
+ * its terminal members). `domain-model.md` → Build V1 limits: **one active
+ * build**.
+ */
+const TERMINAL_BUILD_STATUSES = new Set(["completed", "failed", "cancelled"]);
 
 /**
  * FBL-025: backend-authoritative transition validation. Sits in front of
@@ -265,6 +279,10 @@ export class CommandHandler {
     actor: CommandActor,
   ): CommandOutcome | undefined {
     switch (commandType) {
+      case "Project.Create":
+        return this.requireBoundedObjective(commandType, entityId, params);
+      case "Build.Create":
+        return this.requireBuildCoherence(commandType, entityId, params);
       case "BuildStage.Complete":
         return this.requireMandatoryRequirementsPassed(commandType, entityId);
       case "BuildStage.RequestRevision":
@@ -533,6 +551,126 @@ export class CommandHandler {
       `Stage ${stageId} already has a recorded ${latest.decision} decision; a conflicting ${outcome} decision is rejected.`,
       "Reversing a recorded validation requires the Revision path (invariant 8), not a second validation command.",
     );
+  }
+
+  /**
+   * AC-103 — the objective a `Project.Create` carries must be bounded, and
+   * only one project may be open at a time.
+   *
+   * This is the *floor*, not the whole envelope. `ObjectiveIntake` validates
+   * the full submission (text, workspace, risk class, no unknown fields)
+   * before it ever gets here — but a caller can POST `Project.Create`
+   * straight to `/commands` and skip intake entirely, so the constraints
+   * that survive into persisted truth have to be enforced at the layer that
+   * writes it. Workspace and risk class are deliberately *not* re-checked
+   * here: `operator.objective_submitted` carries neither field
+   * (`event-model.md`), so neither is part of what this command persists,
+   * and a guard on a value that is about to be discarded would be theatre.
+   * They become enforceable state at the rung that makes them operational.
+   */
+  private requireBoundedObjective(
+    commandType: CommandType,
+    projectId: string,
+    params: Record<string, unknown>,
+  ): CommandOutcome | undefined {
+    const parsed = ObjectiveTextSchema.safeParse(params.objective);
+    if (!parsed.success) {
+      return this.deny(
+        commandType,
+        projectId,
+        `params.objective is not a bounded objective: ${parsed.error.issues.map((i) => i.message).join(" ")}`,
+        "Resubmit with a single line of printable text describing one small, self-contained software artifact.",
+      );
+    }
+    // Persist exactly what was validated, not what was typed around it.
+    params.objective = parsed.data;
+
+    const open = this.persistence
+      .listEntities<{ id: string; status: string; objective: string }>("projects")
+      .find((project) => OPEN_PROJECT_STATUSES.has(project.status));
+    if (open) {
+      return this.deny(
+        commandType,
+        projectId,
+        `Project ${open.id} is still ${open.status} ("${open.objective}") — V1 permits one active project at a time (domain-model.md → Project V1 limits).`,
+        "Foundry has no command that closes a project, so a different objective needs a fresh event log: stop the API, remove its database file, and restart.",
+      );
+    }
+
+    return undefined;
+  }
+
+  /**
+   * AC-103 — a `Build.Create` must be coherent with the project it claims.
+   *
+   * The identity check is the load-bearing one. `reducer.ts` keys the new
+   * Build by `payload.buildId`, while the create/exists check above keys it
+   * by `entityId`. When those disagree, the Build is written under an id the
+   * handler does not believe exists — so the "already exists" guard stops
+   * refusing a resubmission, and the same build can be created repeatedly.
+   * Requiring them to match closes that by construction rather than by
+   * asking every caller to remember.
+   */
+  private requireBuildCoherence(
+    commandType: CommandType,
+    buildId: string,
+    params: Record<string, unknown>,
+  ): CommandOutcome | undefined {
+    if (params.buildId !== buildId) {
+      return this.deny(
+        commandType,
+        buildId,
+        `params.buildId (${String(params.buildId)}) must equal entityId (${buildId}) — the projection keys the Build by params.buildId, so a mismatch would create a Build this handler cannot see.`,
+        "Send params.buildId identical to entityId.",
+      );
+    }
+
+    const projectId = typeof params.projectId === "string" ? params.projectId : undefined;
+    const project = projectId
+      ? this.persistence.getEntity<{ status: string; objective: string }>("projects", projectId)
+      : undefined;
+    if (!project) {
+      return this.deny(
+        commandType,
+        buildId,
+        `params.projectId must reference an existing Project; no Project with id ${String(params.projectId)}.`,
+        "Submit the objective first — a Build belongs to the Project the operator's objective created.",
+      );
+    }
+    if (!OPEN_PROJECT_STATUSES.has(project.status)) {
+      return this.deny(
+        commandType,
+        buildId,
+        `Project ${projectId} is ${project.status}; a Build cannot be created under a project that is no longer open.`,
+      );
+    }
+
+    // The Build's objective is a *snapshot* of the project's, so it has to
+    // be a snapshot of something. A build whose objective disagrees with
+    // its project would make the navigator and the timeline tell an
+    // operator two different stories about what was asked for.
+    if (params.objective !== project.objective) {
+      return this.deny(
+        commandType,
+        buildId,
+        `params.objective does not match Project ${projectId}'s objective — objectiveSnapshot must be a snapshot of the submitted objective.`,
+        "Send params.objective exactly as the project records it.",
+      );
+    }
+
+    const open = this.persistence
+      .listEntities<{ id: string; status: string }>("builds")
+      .find((build) => !TERMINAL_BUILD_STATUSES.has(build.status));
+    if (open) {
+      return this.deny(
+        commandType,
+        buildId,
+        `Build ${open.id} is still ${open.status} — V1 permits one active build at a time (domain-model.md → Build V1 limits).`,
+        "Let the open build reach a terminal state before creating another.",
+      );
+    }
+
+    return undefined;
   }
 
   // F-04 / invariant 2: mandatory requirements must pass before stage completion.

@@ -23,7 +23,20 @@ export const BuildSchema = z.object({
   sequenceNumber: z.number().int().positive(),
   status: BuildStatusSchema,
   objectiveSnapshot: z.string().min(1),
-  currentStageId: IdSchema,
+  /**
+   * `null` until the Build has a stage.
+   *
+   * `domain-model.md` lists this among Build's **required fields**, and it
+   * stays required — the field is always present. What it may now hold is
+   * the state that has always existed and was never representable: a Build
+   * created from an objective, before anything has planned a stage for it.
+   * Both reducers previously wrote `""` there, which `IdSchema` rejects, so
+   * `WorldStateSchema.parse` at the `/world-state` boundary threw for any
+   * Build that had not yet reached `stage.created`. In V1 a stage always
+   * followed immediately and the gap never opened; AC-103 creates a Build
+   * and deliberately stops, which is what surfaced it.
+   */
+  currentStageId: IdSchema.nullable(),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
   startedAt: TimestampSchema.optional(),

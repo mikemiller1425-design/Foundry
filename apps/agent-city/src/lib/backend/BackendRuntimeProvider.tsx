@@ -5,7 +5,9 @@ import type { FoundryEvent } from "@foundry/event-types";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RuntimeContext, type RuntimeContextValue } from "@/lib/mock-runtime/RuntimeProvider";
 import { BackendClient } from "./backendClient";
+import { interpretCommandResponse, requestedCommandType } from "./commandFeedback";
 import { applyConnectionStatus, areMutationsAllowed } from "./connectionState";
+import { postObjective, type ObjectiveInput } from "./objectiveSubmission";
 import {
   commandHeaders,
   readOperatorCredential,
@@ -62,9 +64,21 @@ export function BackendRuntimeProvider({
 
   const postCommand = useCallback(
     async (body: unknown) => {
+      const commandType = requestedCommandType(body);
+
       // Never send a mutation while disconnected — the backend is the
-      // authority and we cannot know current state (F-10).
-      if (!mutationsEnabled) return;
+      // authority and we cannot know current state (F-10). Saying so is
+      // part of the contract: refusing to send is still a refusal, and it
+      // must read as one rather than as a button that did nothing.
+      if (!mutationsEnabled) {
+        setLastRejection({
+          commandType,
+          reason:
+            "Not sent — the backend is not connected, so its current state is unknown. Commands resume when the connection is restored.",
+        });
+        return;
+      }
+
       try {
         const res = await fetch(`${baseUrl.replace(/\/$/, "")}/commands`, {
           method: "POST",
@@ -72,18 +86,16 @@ export function BackendRuntimeProvider({
           headers: commandHeaders(readOperatorCredential()),
           body: JSON.stringify(body),
         });
-        const outcome = await res.json();
-        setLastRejection(
-          outcome?.accepted === false
-            ? {
-                commandType: String(outcome.commandType ?? "unknown"),
-                reason: String(outcome.reason ?? "Rejected"),
-              }
-            : null,
-        );
+        let outcome: unknown = null;
+        try {
+          outcome = await res.json();
+        } catch {
+          // An unparseable response is still an outcome to report.
+        }
+        setLastRejection(interpretCommandResponse(res.status, outcome, commandType));
       } catch (err) {
         setLastRejection({
-          commandType: "unknown",
+          commandType,
           reason: err instanceof Error ? err.message : "Command failed to reach the backend",
         });
       }
@@ -126,6 +138,32 @@ export function BackendRuntimeProvider({
     [postCommand, worldState.approvals],
   );
 
+  /**
+   * AC-103 — the operator's objective enters the system here.
+   *
+   * Not routed through `submitCommand`: an objective is not one of the 84
+   * declared command types, and inventing one would be a specification
+   * change made in passing. `POST /objectives` translates it into
+   * `Project.Create` and `Build.Create` server-side, through the same
+   * `CommandHandler` every other caller faces.
+   *
+   * The result is returned rather than stored, so the form can show the
+   * per-field detail a one-line rejection banner cannot carry.
+   */
+  const submitObjective = useCallback(
+    async (input: ObjectiveInput) => {
+      if (!mutationsEnabled) {
+        return {
+          accepted: false,
+          reason:
+            "Not sent — the backend is not connected, so its current state is unknown. Submission resumes when the connection is restored.",
+        };
+      }
+      return postObjective(baseUrl, input, readOperatorCredential());
+    },
+    [baseUrl, mutationsEnabled],
+  );
+
   // Selection is a UI-only concern with no operational authority
   // (world-model.md → Object selection), so it stays local and remains
   // available while disconnected.
@@ -155,6 +193,7 @@ export function BackendRuntimeProvider({
         connectionStatus,
         mutationsEnabled,
         submitCommand,
+        submitObjective,
         resolveApproval,
         selectBuilding,
         clearSelection,

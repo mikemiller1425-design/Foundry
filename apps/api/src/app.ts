@@ -3,9 +3,11 @@ import { CommandRequestSchema, WorldStateSchema } from "@foundry/contracts";
 import {
   CommandHandler,
   ENTITY_TYPES,
+  ObjectiveIntake,
   PrincipalRegistry,
   bearerToken,
   type EntityType,
+  type ObjectiveRejectionCode,
   type PersistenceService,
 } from "@foundry/persistence";
 import { handleEventStream } from "./eventStream";
@@ -35,21 +37,27 @@ export function createApp(
   principals: PrincipalRegistry = new PrincipalRegistry(),
 ): Server {
   const commandHandler = new CommandHandler(persistence);
+  // AC-103: the objective intake is a *client* of the command handler, not
+  // a second write path — see `objectiveIntake.ts`.
+  const objectiveIntake = new ObjectiveIntake(commandHandler);
   return createServer((req, res) => {
-    void handleRequest(persistence, commandHandler, principals, req, res).catch((err: unknown) => {
-      if (!res.headersSent) {
-        sendJson(res, 500, {
-          error: "internal_error",
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-      }
-    });
+    void handleRequest(persistence, commandHandler, objectiveIntake, principals, req, res).catch(
+      (err: unknown) => {
+        if (!res.headersSent) {
+          sendJson(res, 500, {
+            error: "internal_error",
+            message: err instanceof Error ? err.message : "Unknown error",
+          });
+        }
+      },
+    );
   });
 }
 
 async function handleRequest(
   persistence: PersistenceService,
   commandHandler: CommandHandler,
+  objectiveIntake: ObjectiveIntake,
   principals: PrincipalRegistry,
   req: IncomingMessage,
   res: ServerResponse,
@@ -114,6 +122,11 @@ async function handleRequest(
 
   if (method === "POST" && segments.length === 1 && segments[0] === "commands") {
     await handleCommandPost(commandHandler, principals, req, res);
+    return;
+  }
+
+  if (method === "POST" && segments.length === 1 && segments[0] === "objectives") {
+    await handleObjectivePost(objectiveIntake, principals, req, res);
     return;
   }
 
@@ -208,6 +221,66 @@ async function handleCommandPost(
 
   const outcome = commandHandler.submit(parsed.data, principal);
   sendJson(res, 200, outcome);
+}
+
+/**
+ * The status each intake rejection deserves.
+ *
+ * These are separated because they mean genuinely different things to the
+ * operator, and a UI that renders all failures identically teaches nobody
+ * anything: 403 is "you are not permitted to do this", 400 is "what you
+ * typed is out of bounds", 409 is "what you typed is fine but the world is
+ * not in a state that allows it".
+ */
+const OBJECTIVE_REJECTION_STATUS: Record<ObjectiveRejectionCode, number> = {
+  unauthorized: 403,
+  invalid_objective: 400,
+  command_rejected: 409,
+};
+
+/**
+ * `POST /objectives` — the operator's intention enters the system (AC-103).
+ *
+ * Deliberately *not* a new command type. `COMMAND_TYPES` is the closed V1
+ * vocabulary transcribed from `domain-model.md`, and adding an entry to it
+ * would be a specification change made in passing. This route submits the
+ * existing declared commands (`Project.Create`, `Build.Create`) through the
+ * same `CommandHandler` and the same enforcement every other caller faces.
+ *
+ * Every failure answers with a body of the same shape as the success case,
+ * carrying a reason and a corrective action. A control that can fail
+ * silently is worse than one that is missing, because the operator cannot
+ * tell "refused" from "broken".
+ */
+async function handleObjectivePost(
+  objectiveIntake: ObjectiveIntake,
+  principals: PrincipalRegistry,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  let raw: unknown;
+  try {
+    raw = await readJsonBody(req);
+  } catch (err) {
+    sendJson(res, 400, {
+      accepted: false,
+      error: "invalid_request",
+      reason: err instanceof Error ? err.message : "Malformed request body",
+      correctiveAction: "Send a JSON object with objective, workspace, and riskClass.",
+    });
+    return;
+  }
+
+  const principal = principals.resolve(bearerToken(req.headers.authorization));
+  const result = objectiveIntake.submit(raw, principal);
+
+  if (result.accepted) {
+    sendJson(res, 201, result);
+    return;
+  }
+
+  const status = result.code ? OBJECTIVE_REJECTION_STATUS[result.code] : 400;
+  sendJson(res, status, { ...result, error: result.code });
 }
 
 function readJsonBody(req: IncomingMessage): Promise<unknown> {

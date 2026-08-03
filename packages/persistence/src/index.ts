@@ -30,3 +30,10 @@ export {
   type CommandActor,
   type CommandOutcome,
 } from "./commandHandler";
+export {
+  ObjectiveIntake,
+  type ObjectiveIdFactory,
+  type ObjectiveIntakeResult,
+  type ObjectiveIssue,
+  type ObjectiveRejectionCode,
+} from "./objectiveIntake";

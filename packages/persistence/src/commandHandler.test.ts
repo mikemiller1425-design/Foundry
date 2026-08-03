@@ -389,6 +389,184 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
     expect(second.accepted).toBe(false);
   });
 
+  describe("Project.Create — the objective must be bounded (AC-103)", () => {
+    it.each([
+      ["missing", undefined],
+      ["empty", ""],
+      ["below the length floor", "too short"],
+      ["over-long", "x".repeat(501)],
+      ["multi-line", "line one\nline two"],
+    ])("rejects a %s objective with zero mutation", (_label, objective) => {
+      const before = fullSnapshot();
+      const outcome = handler.submit(
+        { commandType: "Project.Create", entityId: "project-1", params: { objective } },
+        OPERATOR,
+      );
+      expect(outcome.accepted).toBe(false);
+      expect(outcome.reason).toMatch(/bounded objective/i);
+      expect(fullSnapshot()).toEqual(before);
+    });
+
+    it("persists the trimmed objective rather than the submitted whitespace", () => {
+      handler.submit(
+        {
+          commandType: "Project.Create",
+          entityId: "project-1",
+          params: { objective: "   Build a bounded thing   ", projectId: "project-1" },
+        },
+        OPERATOR,
+      );
+      expect(persistence.getEntity<{ objective: string }>("projects", "project-1")?.objective).toBe(
+        "Build a bounded thing",
+      );
+    });
+
+    it("refuses a second project while one is still open (V1 limit: one active project)", () => {
+      expect(
+        handler.submit(
+          {
+            commandType: "Project.Create",
+            entityId: "project-1",
+            params: { objective: "Build a bounded thing", projectId: "project-1" },
+          },
+          OPERATOR,
+        ).accepted,
+      ).toBe(true);
+
+      const before = fullSnapshot();
+      const outcome = handler.submit(
+        {
+          commandType: "Project.Create",
+          entityId: "project-2",
+          params: { objective: "Build a different thing", projectId: "project-2" },
+        },
+        OPERATOR,
+      );
+      expect(outcome.accepted).toBe(false);
+      expect(outcome.reason).toMatch(/one active project/i);
+      expect(fullSnapshot()).toEqual(before);
+    });
+  });
+
+  describe("Build.Create — must be coherent with its Project (AC-103)", () => {
+    function createProject(objective = "Build a bounded thing") {
+      return handler.submit(
+        {
+          commandType: "Project.Create",
+          entityId: "project-1",
+          params: { objective, projectId: "project-1" },
+        },
+        OPERATOR,
+      );
+    }
+
+    it("creates the Build when entityId, buildId, project, and objective all agree", () => {
+      createProject();
+      const outcome = handler.submit(
+        {
+          commandType: "Build.Create",
+          entityId: "build-1",
+          params: {
+            projectId: "project-1",
+            buildId: "build-1",
+            objective: "Build a bounded thing",
+          },
+        },
+        OPERATOR,
+      );
+      expect(outcome.accepted).toBe(true);
+      expect(persistence.getWorldStateSnapshot().currentBuild?.id).toBe("build-1");
+    });
+
+    it("rejects a buildId that disagrees with entityId, which would create an invisible Build", () => {
+      createProject();
+      const before = fullSnapshot();
+      const outcome = handler.submit(
+        {
+          commandType: "Build.Create",
+          entityId: "build-1",
+          params: {
+            projectId: "project-1",
+            buildId: "build-2",
+            objective: "Build a bounded thing",
+          },
+        },
+        OPERATOR,
+      );
+      expect(outcome.accepted).toBe(false);
+      expect(outcome.reason).toMatch(/must equal entityId/i);
+      expect(fullSnapshot()).toEqual(before);
+    });
+
+    it("rejects a Build whose project does not exist", () => {
+      const before = fullSnapshot();
+      const outcome = handler.submit(
+        {
+          commandType: "Build.Create",
+          entityId: "build-1",
+          params: { projectId: "no-such-project", buildId: "build-1", objective: "Build a thing" },
+        },
+        OPERATOR,
+      );
+      expect(outcome.accepted).toBe(false);
+      expect(outcome.reason).toMatch(/existing Project/i);
+      expect(fullSnapshot()).toEqual(before);
+    });
+
+    it("rejects an objectiveSnapshot that is not a snapshot of the project's objective", () => {
+      createProject();
+      const before = fullSnapshot();
+      const outcome = handler.submit(
+        {
+          commandType: "Build.Create",
+          entityId: "build-1",
+          params: {
+            projectId: "project-1",
+            buildId: "build-1",
+            objective: "Something the operator never asked for",
+          },
+        },
+        OPERATOR,
+      );
+      expect(outcome.accepted).toBe(false);
+      expect(outcome.reason).toMatch(/does not match/i);
+      expect(fullSnapshot()).toEqual(before);
+    });
+
+    it("refuses a second build while one is still open (V1 limit: one active build)", () => {
+      createProject();
+      handler.submit(
+        {
+          commandType: "Build.Create",
+          entityId: "build-1",
+          params: {
+            projectId: "project-1",
+            buildId: "build-1",
+            objective: "Build a bounded thing",
+          },
+        },
+        OPERATOR,
+      );
+
+      const before = fullSnapshot();
+      const outcome = handler.submit(
+        {
+          commandType: "Build.Create",
+          entityId: "build-2",
+          params: {
+            projectId: "project-1",
+            buildId: "build-2",
+            objective: "Build a bounded thing",
+          },
+        },
+        OPERATOR,
+      );
+      expect(outcome.accepted).toBe(false);
+      expect(outcome.reason).toMatch(/one active build/i);
+      expect(fullSnapshot()).toEqual(before);
+    });
+  });
+
   it("Building: Select is always allowed; ChangeState is always denied (system-only)", () => {
     const select = handler.submit(
       {

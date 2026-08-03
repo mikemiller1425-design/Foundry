@@ -4,6 +4,7 @@ import type { ConnectionStatus, WorldState } from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import type { ObjectiveInput, ObjectiveSubmissionResult } from "@/lib/backend/objectiveSubmission";
 import { DEFAULT_SEED, MockRuntime } from "./runtime";
 import { clearRuntimeCursor, loadRuntimeCursor, saveRuntimeCursor } from "./sessionPersistence";
 
@@ -26,6 +27,20 @@ export interface RuntimeContextValue {
   connectionStatus: ConnectionStatus;
   mutationsEnabled: boolean;
   submitCommand: (raw: unknown) => void;
+  /**
+   * AC-103: submits one bounded objective, creating a real Project and
+   * Build as backend truth.
+   *
+   * Present in backend mode only, and its absence is what hides the
+   * objective control rather than a mode flag read somewhere else. The mock
+   * runtime is a deterministic recording of a run that already happened
+   * (ADR-001) — it is its own authority, its canonical fixture is the V1
+   * regression baseline, and an objective submitted into it could not
+   * become real work. Offering a control there that cannot do its job is
+   * the silent no-op this rung exists to remove, so the control is simply
+   * not offered.
+   */
+  submitObjective?: (input: ObjectiveInput) => Promise<ObjectiveSubmissionResult>;
   resolveApproval: (
     decision: "approved" | "rejected" | "revision_requested",
     resolvedBy: string,

@@ -704,7 +704,10 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
         sequenceNumber: 1,
         status: "planned",
         objectiveSnapshot: event.payload.objective,
-        currentStageId: "",
+        // No stage exists yet; `stage.created` fills this in. See the field
+        // comment on `BuildSchema` — `""` was not a valid `IdSchema` value
+        // and made the projection unserialisable until the first stage.
+        currentStageId: null,
         createdAt: event.occurredAt,
         updatedAt: event.occurredAt,
       };
