@@ -8,8 +8,11 @@ import { BackendClient } from "./backendClient";
 import { interpretCommandResponse, requestedCommandType } from "./commandFeedback";
 import { applyConnectionStatus, areMutationsAllowed } from "./connectionState";
 import { postObjective, type ObjectiveInput } from "./objectiveSubmission";
+import { deriveCredentialState, isAuthFailure } from "./credentialState";
 import {
+  clearOperatorCredential,
   commandHeaders,
+  fetchHandoffCredential,
   readOperatorCredential,
   writeOperatorCredential,
 } from "./operatorCredential";
@@ -92,6 +95,10 @@ export function BackendRuntimeProvider({
         } catch {
           // An unparseable response is still an outcome to report.
         }
+        // An authorization refusal is a credential fact, not just a
+        // command outcome — it is what turns "held" into "rejected" so the
+        // panel can stop claiming the credential is fine.
+        if (isAuthFailure(res.status, outcome)) setCredentialRejected(true);
         setLastRejection(interpretCommandResponse(res.status, outcome, commandType));
       } catch (err) {
         setLastRejection({
@@ -160,6 +167,9 @@ export function BackendRuntimeProvider({
         };
       }
       const result = await postObjective(baseUrl, input, readOperatorCredential());
+      if (!result.accepted && /authenticated operator/i.test(result.reason ?? "")) {
+        setCredentialRejected(true);
+      }
       // The SSE stream also re-arms the refresh when the two events land,
       // so this is not the only path — but a success message that claims a
       // Project and Build exist must not be able to appear next to a panel
@@ -177,18 +187,74 @@ export function BackendRuntimeProvider({
   const selectBuilding = useCallback(() => {}, []);
   const clearSelection = useCallback(() => {}, []);
 
-  const [hasCredential, setHasCredential] = useState(false);
+  // ---- Operator credential (AC-105) --------------------------------------
+
+  const [storedCredential, setStoredCredential] = useState<string | null>(null);
+  const [handoffCredential, setHandoffCredential] = useState<string | null>(null);
+  const [credentialRejected, setCredentialRejected] = useState(false);
+
   useEffect(() => {
     // Read after mount only: localStorage does not exist during SSR, and
     // reading it during render would make the first paint differ between
     // server and client.
-    setHasCredential(readOperatorCredential() !== null);
+    setStoredCredential(readOperatorCredential());
+  }, []);
+
+  useEffect(() => {
+    /**
+     * Ask this host's server what the launch path handed it.
+     *
+     * Two jobs, and the second is why it runs even when a credential is
+     * already held: it supplies one when there is none, and it is what
+     * makes a *stale* credential detectable at all — a token that differs
+     * from the one this API session issued is left over from an earlier
+     * boot, which is otherwise indistinguishable from a wrong paste.
+     */
+    let cancelled = false;
+    void fetchHandoffCredential().then((credential) => {
+      if (cancelled) return;
+      setHandoffCredential(credential);
+      // Adopt it only when the browser holds nothing. An operator who
+      // deliberately pasted something is not overruled without being asked.
+      if (credential && readOperatorCredential() === null) {
+        writeOperatorCredential(credential);
+        setStoredCredential(readOperatorCredential());
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const setOperatorCredential = useCallback((value: string) => {
     writeOperatorCredential(value);
-    setHasCredential(readOperatorCredential() !== null);
+    setStoredCredential(readOperatorCredential());
+    // A new credential deserves a fresh verdict; keeping the old rejection
+    // would label a correct token invalid.
+    setCredentialRejected(false);
   }, []);
+
+  const clearCredential = useCallback(() => {
+    clearOperatorCredential();
+    setStoredCredential(null);
+    setCredentialRejected(false);
+  }, []);
+
+  const useHandoffCredential = useCallback(() => {
+    if (!handoffCredential) return;
+    setOperatorCredential(handoffCredential);
+  }, [handoffCredential, setOperatorCredential]);
+
+  const credentialState = useMemo(
+    () =>
+      deriveCredentialState({
+        connected: connectionStatus === "connected",
+        stored: storedCredential,
+        handoff: handoffCredential,
+        rejected: credentialRejected,
+      }),
+    [connectionStatus, storedCredential, handoffCredential, credentialRejected],
+  );
 
   return (
     <RuntimeContext.Provider
@@ -205,8 +271,15 @@ export function BackendRuntimeProvider({
         selectBuilding,
         clearSelection,
         lastRejection,
-        operatorCredentialRequired: !hasCredential,
+        // Kept as the existing boolean so every current call site behaves
+        // exactly as before; `credentialState` carries the detail.
+        operatorCredentialRequired: credentialState.needsCredential,
         setOperatorCredential,
+        credentialState,
+        storedCredential,
+        handoffAvailable: handoffCredential !== null,
+        useHandoffCredential,
+        clearOperatorCredential: clearCredential,
       }}
     >
       {children}

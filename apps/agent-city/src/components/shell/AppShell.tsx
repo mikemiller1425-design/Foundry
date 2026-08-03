@@ -6,6 +6,7 @@ import { CommandBar } from "@/components/controls/CommandBar";
 import { ConnectionBanner } from "@/components/controls/ConnectionBanner";
 import { LiveIntelligence } from "@/components/controls/LiveIntelligence";
 import { ObjectiveForm } from "@/components/controls/ObjectiveForm";
+import { OperatorCredentialPanel } from "@/components/controls/OperatorCredentialPanel";
 import { SelectedObjectDetail } from "@/components/controls/SelectedObjectDetail";
 import type { Selection } from "@/components/controls/selection";
 import { StageAgentPanel } from "@/components/controls/StageAgentPanel";
@@ -225,6 +226,11 @@ export function AppShell() {
                 build" so the operator sees their own words become backend
                 truth in the same column. Renders in backend mode only —
                 see `RuntimeContextValue.submitObjective`. */}
+            {/* AC-105. Above the objective form because it gates it: an
+                operator whose credential is stale needs to see *that*
+                before they wonder why submitting does nothing. Backend
+                mode only — see `RuntimeContextValue.credentialState`. */}
+            <OperatorCredentialPanel />
             <ObjectiveForm />
             <StageAgentPanel selection={selection} onSelect={handleSelect} />
           </div>

@@ -6,6 +6,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — AC-105: Runtime-mode selection and credential handoff at run time
+
+**Runtime mode is now a run-time input (F-103).** `page.tsx` read `NEXT_PUBLIC_FOUNDRY_API_URL` at module scope, and Next inlines `NEXT_PUBLIC_*` into the bundle at build time — so a built artifact was permanently one mode and switching required a rebuild (PV1-028), while the app's README claimed unqualified that "the runtime is selectable". The page now resolves mode per request from a **server-side** `FOUNDRY_API_URL`, with `export const dynamic = "force-dynamic"` — without that, Next prerenders the page and bakes the answer in, which is exactly how the defect worked. `NEXT_PUBLIC_FOUNDRY_API_URL` is still honoured second, so existing invocations and the `FBL-026` browser spec keep working unchanged.
+
+**The credential handoff removes the terminal step (F-104).** `pnpm dev` writes the operator token to `.foundry/operator-credential`, mode `0600`, git-ignored, deleted on shutdown, and tells the frontend server where it is. The **server** reads it; the browser fetches it over loopback from a new `GET /api/operator-credential` route. The credential is never inlined into the bundle and never appears in the served HTML — both asserted against a real build. The launcher no longer prints the token at all when the handoff succeeds: printing a credential nobody has to copy only puts it into terminal scrollback for no benefit. When the handoff cannot be performed it prints the token, says why, and the UI falls back to manual entry.
+
+**Four situations that shared one message are now distinct.** Absent, stale, invalid, and backend-unreachable all produced "credential required". `credentialState.ts` derives them, each with its own label, explanation, and action:
+
+- **stale** is detected *before* any rejection, by comparing what the browser holds against what this API session handed over — the API mints per boot and never persists, so a mismatch means a token from an earlier process. That is the most likely reason an operator's actions stop working and the one that most looks like a bug when unnamed.
+- **unreachable** outranks everything: a backend that is not answering cannot have rejected anything, and saying "invalid" there sends the operator to replace a token that is probably fine.
+
+**A mistaken token is now recoverable.** The credential field previously lived only inside prompts that render *because* a credential is missing, so once a wrong token was stored the prompt vanished and actions simply failed, with no way back. The new **Operator credential** panel sits at the top of the left navigator in backend mode, is present whether or not anything is wrong, shows the held credential **masked**, and carries **Change** and **Clear**. Manual entry is never removed. State is signalled by label and glyph as well as colour.
+
+**Both servers now bind loopback only.** The frontend serves a credential route, so a LAN-reachable server would hand an operator credential to whoever asked. The route additionally refuses a non-loopback `Host`. This is a tightening; nothing was relaxed.
+
+**Not a session system.** No login, expiry, refresh, logout, or users — `v1-scope.md` excludes authentication and that carries forward. The `403 actor_mismatch` rule and the `PrincipalRegistry` boundary are untouched; no backend file changed.
+
+**Verification.** New `pnpm verify:runtime-mode` — **7/7** — builds the frontend **once**, starts that same output twice, and asserts backend mode, then mock mode, with no rebuild, plus no credential in the bundle or the HTML. A unit test cannot make that claim; only building and starting the real artifact settles it. `pnpm verify:launch` **8/8** (AC-104 unregressed). Live end-to-end: handoff file `0600`, contents identical to the minted token, route serves it over loopback, a non-loopback `Host` gets 403, the handed credential authorizes a real objective (`201`, both declared events) against a clean database, and shutdown removes the file. `pnpm typecheck` 8/8 · `pnpm lint` clean · `pnpm build` clean · `pnpm -r run test` → **988 passed / 84 files / 0 failures** (up from 928; **60 new tests**).
+
+No screenshot baseline was touched, Finding 6 is untouched, no real Claude Code ran, and no NAS District file was modified.
+
 ### Observed — AC-104 closed: operator confirmed single-command launch (documentation only)
 
 The operator ran `pnpm dev` against commit `4e7d0f6` and reports that **both services started, the app opened, and Ctrl-C stopped both cleanly.** That is the rung's stop condition — *"Operator confirms single-command launch"* — so **`AC-104` is closed.**

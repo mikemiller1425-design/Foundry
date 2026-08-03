@@ -26,15 +26,14 @@ When it is ready you will see:
   Mode      backend
   API       http://localhost:4000  (/health, /world-state, /events)
 
-  Operator credential (this process only; not persisted)
-    <token>
-    Paste this into the app to enable operator actions.
-    Copy-paste is still required at AC-104 — AC-105 removes this step.
+  Operator  credential handed to the browser automatically
+            No copy-paste needed. Change or clear it in the app's
+            "Operator credential" panel at any time.
 
   Press Ctrl-C to stop both processes.
 ```
 
-Open <http://localhost:3000>, paste the credential where the app asks for it, and you have a working Foundry.
+Open <http://localhost:3000> and you have a working Foundry. **You do not need to copy a token** — the launcher hands the operator credential to the browser for you (`AC-105`).
 
 ## Stop it
 
@@ -49,7 +48,7 @@ Open <http://localhost:3000>, paste the credential where the app asks for it, an
 | `pnpm dev --api-port 4001` | Override the API port (or set `PORT`). |
 | `pnpm dev --web-port 3001` | Override the frontend port (or set `FOUNDRY_WEB_PORT`). |
 | `pnpm dev --help` | Show all options. |
-| `pnpm start` | Same, from a production build. See the caveat below. |
+| `pnpm start` | Same, from a production build. **One build serves either mode** — `FOUNDRY_API_URL` decides at start time, with no rebuild (`AC-105`). |
 
 ## Configuration
 
@@ -59,12 +58,29 @@ Copy it to `.env` and edit, or export variables in your shell. `pnpm dev` loads 
 
 **Every variable is optional.** With an empty environment, `pnpm dev` starts a working Foundry.
 
-## Two things this rung deliberately does not fix
+## The operator credential
 
-Both are recorded rather than hidden, and both belong to `AC-105`:
+Actions that need an authenticated operator — submitting an objective, resolving an approval — require a credential. The API mints one per boot and never persists it.
 
-1. **You still paste the credential.** The API mints per-boot credentials and prints them once; the launcher surfaces the operator token in its banner, but the browser does not receive it automatically. Removing that step is `AC-105`.
-2. **A production build is mode-locked.** Next inlines `NEXT_PUBLIC_*` at build time, so `pnpm start` bakes in whichever mode it was built for and switching requires a rebuild (PV1-028). `pnpm dev` is unaffected. Run-time mode selection is `AC-105`.
+**You normally do nothing.** `pnpm dev` writes the credential to a file only your user can read (`.foundry/operator-credential`, mode `0600`, deleted on shutdown), tells the frontend server where it is, and the browser fetches it over loopback on first load. The token is never inlined into the built bundle and never appears in the page HTML.
+
+The app's **"Operator credential"** panel, top of the left navigator, always shows where you stand:
+
+| State | Meaning | What to do |
+| --- | --- | --- |
+| **Operator credential held** | Working. | Nothing. **Change** or **Clear** are there if you need them. |
+| **No credential** | This browser holds none. | Press *Use this session's credential*, or paste one. |
+| **Stale credential** | Held credential is from an earlier API session. Restarting the API mints a new one. | Press *Use this session's credential*. |
+| **Credential rejected** | The backend refused it — it is not this session's token. | Use this session's credential, or clear and paste the right one. |
+| **Backend unreachable** | The API is not answering, so nothing can be checked. | Confirm the API is running; the state re-evaluates on reconnect. |
+
+**Manual entry is always available**, and **Change**/**Clear** mean a mistaken token is always recoverable.
+
+If the handoff cannot be performed for any reason, the launcher prints the token and says so, and the panel falls back to manual entry. It never fails silently.
+
+## One thing this rung deliberately does not do
+
+**It is not a session system.** No login, no expiry, no refresh, no logout, no users — `v1-scope.md` excludes authentication as a feature and that exclusion carries forward. This is a file copied between two processes owned by the same person on the same machine, which is the smallest thing that removes the copy-paste step.
 
 ## When something goes wrong
 
@@ -90,10 +106,13 @@ This is the only way to release an active project: V1 permits one active project
 ## Verifying the launch path
 
 ```bash
-pnpm verify:launch
+pnpm verify:launch        # F-101 — the launch path
+pnpm verify:runtime-mode  # F-103 — one build, both modes
 ```
 
-Drives the real command on non-default ports and asserts what `F-101` requires: one command starts both processes in deterministic order, `/health` returns 200, the frontend serves 200, SIGINT terminates cleanly with exit 0, and both ports are released.
+`verify:launch` drives the real command on non-default ports and asserts what `F-101` requires: one command starts both processes in deterministic order, `/health` returns 200, the frontend serves 200, SIGINT terminates cleanly with exit 0, and both ports are released.
+
+`verify:runtime-mode` builds the frontend **once**, then starts that same output twice with different environments and asserts it serves backend mode and then mock mode with no rebuild — plus that no operator credential appears in the built bundle or in the served HTML.
 
 It is a script rather than a unit test on purpose — it builds, boots, and binds real ports, which would make the fast test gate slow for everyone.
 

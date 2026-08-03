@@ -50,6 +50,45 @@ export function writeOperatorCredential(value: string, storage?: Storage): void 
   }
 }
 
+/**
+ * Clears the stored credential (AC-105).
+ *
+ * The operator asked for a mistaken token to be recoverable. Without this,
+ * a wrong paste could only be corrected by overwriting it with another
+ * guess — there was no way to get back to a clean "no credential" state,
+ * which is the state whose message actually tells you what to do next.
+ */
+export function clearOperatorCredential(storage?: Storage): void {
+  writeOperatorCredential("", storage);
+}
+
+/**
+ * Asks this host's frontend server for the credential the launch path
+ * handed it (AC-105 / F-104).
+ *
+ * Returns null whenever there is nothing to hand over — no handoff
+ * configured, no file, an unreadable file, or a non-local caller. Every
+ * one of those is a legitimate "paste it manually" situation, not an
+ * error to surface as a failure.
+ */
+export async function fetchHandoffCredential(
+  fetchImpl: typeof fetch = fetch,
+): Promise<string | null> {
+  try {
+    const res = await fetchImpl("/api/operator-credential", { cache: "no-store" });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { available?: unknown; credential?: unknown };
+    if (body.available !== true) return null;
+    return typeof body.credential === "string" && body.credential.length > 0
+      ? body.credential
+      : null;
+  } catch {
+    // The handoff is a convenience. If it cannot be reached, manual entry
+    // is still there, and that is what the UI will say.
+    return null;
+  }
+}
+
 /** Builds the request headers for a command, with the credential if present. */
 export function commandHeaders(credential: string | null): Record<string, string> {
   return {

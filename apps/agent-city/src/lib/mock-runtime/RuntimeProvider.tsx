@@ -5,6 +5,7 @@ import type { FoundryEvent } from "@foundry/event-types";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ObjectiveInput, ObjectiveSubmissionResult } from "@/lib/backend/objectiveSubmission";
+import type { CredentialState } from "@/lib/backend/credentialState";
 import { DEFAULT_SEED, MockRuntime } from "./runtime";
 import { clearRuntimeCursor, loadRuntimeCursor, saveRuntimeCursor } from "./sessionPersistence";
 
@@ -62,6 +63,24 @@ export interface RuntimeContextValue {
   operatorCredentialRequired?: boolean;
   /** Stores the operator credential for this client. Backend mode only. */
   setOperatorCredential?: (value: string) => void;
+  /**
+   * AC-105: the distinguishable credential situation.
+   *
+   * Absent, stale, invalid, backend-unreachable, and ready are five
+   * different problems with five different fixes; the single
+   * `operatorCredentialRequired` boolean collapsed four of them into one
+   * prompt. Present in backend mode only — the mock runtime is its own
+   * authority and needs no credential (ADR-001).
+   */
+  credentialState?: CredentialState;
+  /** The credential this browser holds, for masked display. */
+  storedCredential?: string | null;
+  /** True when this host's launch path handed over a credential. */
+  handoffAvailable?: boolean;
+  /** Adopts the credential this API session handed to the frontend server. */
+  useHandoffCredential?: () => void;
+  /** Discards the stored credential, so a mistaken token is recoverable. */
+  clearOperatorCredential?: () => void;
 }
 
 // Exported so tests can supply a fixed, hand-crafted event fixture via

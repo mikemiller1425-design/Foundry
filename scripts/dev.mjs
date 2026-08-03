@@ -26,11 +26,26 @@
  */
 
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+/** Where the credential handoff lives. Git-ignored; removed on shutdown. */
+const HANDOFF_DIR = ".foundry";
+const HANDOFF_FILE = "operator-credential";
+let handoffFileToRemove = null;
+
+/**
+ * Both servers bind loopback only.
+ *
+ * The frontend now serves the credential-handoff route, so a server
+ * reachable from the LAN would hand an operator credential to whoever
+ * asked. This is a tightening, not a weakening — and it keeps the handoff
+ * honest about being local.
+ */
+const LOOPBACK_HOST = "127.0.0.1";
 
 /** Defaults live here and are mirrored in `.env.example` and the quickstart. */
 const DEFAULTS = {
@@ -208,6 +223,10 @@ async function shutdown(code = 0) {
   shuttingDown = true;
   console.log(`\n${dim("Shutting down…")}`);
 
+  // The credential it holds dies with the API that minted it; leaving the
+  // file behind would only invite a later session to trust a dead token.
+  removeCredentialHandoff();
+
   for (const record of children) {
     if (record.exited) continue;
     try {
@@ -370,20 +389,33 @@ async function main() {
     console.log(`      ${green("✓")} API healthy`);
   }
 
-  // 4. Only now the frontend — deterministic ordering, so it never renders
+  // 4. Hand the operator credential to the frontend server, on this host,
+  //    through a file only this user can read (AC-105). This is what
+  //    removes the read-a-token-out-of-a-terminal step; the credential
+  //    never enters a build, and the browser fetches it over loopback.
+  const handoffPath = config.apiUrl ? writeCredentialHandoff() : null;
+
+  // 5. Only now the frontend — deterministic ordering, so it never renders
   //    against a backend that is not yet answering.
   step(++n, total, `Starting the frontend on :${config.webPort}…`);
   launch(
     "web",
     "pnpm",
     config.production
-      ? ["exec", "next", "start", "-p", String(config.webPort)]
-      : ["exec", "next", "dev", "-p", String(config.webPort)],
+      ? ["exec", "next", "start", "-p", String(config.webPort), "-H", LOOPBACK_HOST]
+      : ["exec", "next", "dev", "-p", String(config.webPort), "-H", LOOPBACK_HOST],
     {
       cwd: join(ROOT, "apps", "agent-city"),
-      env: config.apiUrl
-        ? { NEXT_PUBLIC_FOUNDRY_API_URL: config.apiUrl }
-        : { NEXT_PUBLIC_FOUNDRY_API_URL: "" },
+      env: {
+        // AC-105: a server-side variable, read per request, so one build
+        // serves either mode. `NEXT_PUBLIC_*` is deliberately not used —
+        // that prefix is inlined at build time and is the defect itself.
+        FOUNDRY_API_URL: config.apiUrl ?? "",
+        // Cleared explicitly so a value inherited from the operator's
+        // shell cannot silently override the mode chosen here.
+        NEXT_PUBLIC_FOUNDRY_API_URL: "",
+        ...(handoffPath ? { FOUNDRY_OPERATOR_CREDENTIAL_FILE: handoffPath } : {}),
+      },
     },
   );
 
@@ -435,6 +467,47 @@ function captureCredential(line) {
   if (match) operatorCredential = { id: match[1], token: match[2] };
 }
 
+/**
+ * Writes the operator credential where this host's frontend server can
+ * read it, and nobody else can (AC-105 / F-104).
+ *
+ * `0600`, under a git-ignored directory, removed on shutdown. It is a file
+ * copied between two processes owned by the same user on the same machine
+ * — not a session, not a token service, and not something that survives
+ * the run that created it.
+ */
+function writeCredentialHandoff() {
+  if (!operatorCredential) return null;
+  const dir = join(ROOT, HANDOFF_DIR);
+  const path = join(dir, HANDOFF_FILE);
+  try {
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    writeFileSync(path, operatorCredential.token, { mode: 0o600 });
+    handoffFileToRemove = path;
+    return path;
+  } catch (err) {
+    // Not fatal: manual entry still works, and the UI will say so. A
+    // launcher that refused to start over a convenience would be worse.
+    console.log(
+      dim(
+        `      credential handoff unavailable (${err instanceof Error ? err.message : String(err)}) — paste manually`,
+      ),
+    );
+    return null;
+  }
+}
+
+function removeCredentialHandoff() {
+  if (!handoffFileToRemove) return;
+  try {
+    rmSync(handoffFileToRemove, { force: true });
+  } catch {
+    // Best effort; the credential it held is already invalid once the API
+    // that minted it has stopped.
+  }
+  handoffFileToRemove = null;
+}
+
 function ready(config) {
   const mode = config.apiUrl ? "backend" : "mock";
   console.log(`\n${green(bold("✓ Foundry is running."))}\n`);
@@ -446,15 +519,28 @@ function ready(config) {
     console.log(
       `  ${bold("API")}       http://localhost:${config.apiPort}  ${dim("(/health, /world-state, /events)")}`,
     );
-    if (operatorCredential) {
+    if (handoffFileToRemove) {
+      // The token itself is deliberately not printed: it no longer needs
+      // to be read, and printing a credential nobody has to copy only puts
+      // it into terminal scrollback and shell logs for no benefit.
       console.log(
-        `\n  ${bold("Operator credential")} ${dim(`(this process only; not persisted)`)}`,
+        `  ${bold("Operator")}  ${green("credential handed to the browser automatically")}`,
+      );
+      console.log(
+        dim(
+          `            No copy-paste needed. Change or clear it in the app's\n` +
+            `            "Operator credential" panel at any time.`,
+        ),
+      );
+    } else if (operatorCredential) {
+      console.log(
+        `\n  ${bold("Operator credential")} ${dim("(this process only; not persisted)")}`,
       );
       console.log(`    ${operatorCredential.token}`);
       console.log(
         dim(
-          `    Paste this into the app to enable operator actions.\n` +
-            `    ${yellow("Copy-paste is still required at AC-104")} — AC-105 removes this step.`,
+          `    ${yellow("Automatic handoff unavailable")} — paste this into the app's\n` +
+            `    "Operator credential" panel to enable operator actions.`,
         ),
       );
     }
