@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — AC-104 closed: operator confirmed single-command launch (documentation only)
+
+The operator ran `pnpm dev` against commit `4e7d0f6` and reports that **both services started, the app opened, and Ctrl-C stopped both cleanly.** That is the rung's stop condition — *"Operator confirms single-command launch"* — so **`AC-104` is closed.**
+
+Recorded in `docs/evidence/ac-104/operator-observation.md` as an **operator-reported observation**, not an assistant-witnessed one, with the same standing as `fbl-035/real-safari-observation.md`. Stated precisely there: the operator confirmed the launch, the app opening, and clean shutdown; they did not state that they ran it from a freshly cloned directory, and the record does not claim they did. The **clean-clone** half of `F-101` is carried by the scripted check, which was run once in the working tree and once inside a genuine fresh clone.
+
+**Gates re-verified at `4e7d0f6`** with no uncommitted tracked changes: `pnpm verify:launch` **8/8**, `pnpm typecheck` 8/8, `pnpm lint` clean, `pnpm build` clean, `pnpm -r run test` **928 passed / 80 files / 0 failures** — unchanged, as expected for a rung that touched no application source.
+
+`F-101` and `F-102` are satisfied. Prohibited work confirmed not done: no Docker, compose, cloud deployment, process supervisor, or production packaging; no file under `apps/*/src/` or `packages/*/src/` changed; the loopback boundary is unchanged.
+
+**Two limitations deliberately left to `AC-105`,** stated in the quickstart and `.env.example` rather than left to be discovered: the operator still pastes the credential, and a production build remains mode-locked because Next inlines `NEXT_PUBLIC_*` at build time (PV1-028).
+
+**`AC-105` is not started** and requires its own explicit operator authorization. Finding 6 (`AC-103`), D-8, N-03, N-05, N-06, and the `AC-103P` residue all remain open and unchanged.
+
 ### Fixed — Correction: suite total misstated as 924; the correct total is 928 (documentation only)
 
 **Arithmetic only. Appended, not substituted — the original statements stand unedited, as principle 18 requires.**

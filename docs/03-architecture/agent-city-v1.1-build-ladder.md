@@ -34,7 +34,7 @@ This is the **authoritative V1.1 Build Ladder**. Before this document existed, t
 | AC-102 | DOC | V1.1 mission baseline ratification | AC-101 | **Ratify** | ✅ **Closed** — this ratification |
 | **AC-103P** | — | **Pre-ladder proof — objective submission** | — | Verified | ⚠️ **Preserved, not a rung.** See §3 |
 | AC-103 | FIX | Finding 6 resolution | AC-102 | **Accept closure** | ⬜ Not started |
-| AC-104 | HARD | One-command local operation | AC-102 | **Launch it** | ⬜ Not started |
+| AC-104 | HARD | One-command local operation | AC-102 | **Launch it** | ✅ **Closed** (`4e7d0f6`) |
 | AC-105 | FIX | Runtime-mode and credential handoff at runtime | AC-104 | Observe | ⬜ Not started — partially anticipated by AC-103P |
 | AC-106 | FIX | Backend-mode command honesty | AC-105 | Observe | ⬜ Not started — substantially anticipated by AC-103P |
 | AC-107 | FEAT | Bounded-objective contract | AC-106 | Review contract | ⬜ Not started — substantially anticipated by AC-103P |
@@ -97,13 +97,21 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **Stop condition:** Finding 6 closed with diagnosis, or explicitly re-accepted with an artifact. **Must close before AC-111.**
 - **Note:** Evidence belongs in `docs/evidence/ac-103/`, which is currently absent — the earlier directory of that name was renamed to `ac-103p` at ratification.
 
-### AC-104 — One-command local operation — [HARD] — ⬜ Not started
+### AC-104 — One-command local operation — [HARD] — ✅ Closed
 
 - **Objective:** One documented command, from a clean clone, brings up a working Foundry with both processes.
 - **Depends on:** AC-102.
 - **Prohibited work:** Docker, compose, cloud deployment, process supervisors, production packaging. Changing application behaviour. Weakening the loopback boundary.
 - **Operator gate:** **Launch it** from a clean clone.
 - **Stop condition:** Operator confirms single-command launch. **Hard stop** before any runtime-mode change.
+
+**Closed 2026-08-03** against commit `4e7d0f6`, on the operator's confirmation that `pnpm dev` started both services, the app opened, and Ctrl-C stopped both cleanly.
+
+- **Delivered:** `pnpm dev` (`scripts/dev.mjs`), the `pnpm verify:launch` scripted check (`scripts/verify-launch.mjs`), `.env.example`, `docs/operations/quickstart.md`, root `dev`/`start`/`verify:launch` scripts, corrected per-app run sections.
+- **Evidence:** `docs/evidence/ac-104/operator-observation.md`. `F-101` and `F-102` satisfied; `pnpm verify:launch` 8/8, run once in the working tree and once in a genuine clean clone; typecheck 8/8, lint clean, build clean, 928 tests / 0 failures.
+- **Prohibited work confirmed not done:** no application source changed — the commit touched no file under `apps/*/src/` or `packages/*/src/`.
+- **Deliberately left to `AC-105`:** the operator still pastes the credential, and a production build remains mode-locked (PV1-028). Both are stated in the quickstart rather than left to be discovered.
+- **Hard stop reached.** `AC-105` is not started and requires its own explicit operator authorization.
 
 ### AC-105 — Runtime-mode selection and credential handoff at runtime — [FIX] — ⬜ Not started
 
@@ -209,7 +217,7 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 | AC-101 | Read the corrected entry-point documents ✅ |
 | AC-102 | **Ratify or decline** the V1.1 baseline ✅ |
 | AC-103 | **Accept** Finding 6's closure against the chosen standard |
-| AC-104 | **Launch** Foundry from a clean clone with one command |
+| AC-104 | **Launch** Foundry from a clean clone with one command ✅ |
 | AC-106 | Press every backend-mode control and see a truthful result |
 | AC-108 | **Submit** a real objective and **review** the plan unassisted |
 | AC-110 | **Authorize** one controlled execution |
