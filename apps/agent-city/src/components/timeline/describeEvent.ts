@@ -48,8 +48,15 @@ export function describeEvent(event: FoundryEvent): string {
       return `Run failed: ${p.failureMessage}`;
     case "agentrun.timed_out":
       return "Run timed out";
+    // Deliberately does not repeat the objective text. `build.created`
+    // carries `objective` as the Build's snapshot of it, but the operator
+    // reads these two rows one after the other, and echoing the same
+    // sentence twice looked like the objective had been submitted twice.
+    // The objective is stated once, on the row that reports its
+    // submission; this row reports the new fact, which is that a Build now
+    // exists to pursue it. The full payload is still one click away.
     case "build.created":
-      return `Build created: "${p.objective}"`;
+      return "Build created for the submitted objective";
     case "build.planned":
       return `Build planned (${(p.stageIds as unknown[]).length} stages)`;
     case "build.ready":

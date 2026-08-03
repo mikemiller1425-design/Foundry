@@ -1,6 +1,6 @@
 import type { WorldState } from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BackendClient, type EventSourceLike } from "./backendClient";
 import { INITIAL_BACKOFF_MS } from "./connectionState";
 
@@ -250,5 +250,128 @@ describe("BackendClient — stop", () => {
 
     expect(source.closed).toBe(true);
     expect(client.getState().connectionStatus).toBe("disconnected");
+  });
+});
+
+/**
+ * AC-103 regression — the world-state projection must advance with the
+ * event log.
+ *
+ * The defect: the live-event listener merged each event and emitted, but
+ * never touched `worldState`, which only `reconcile()` ever wrote. After
+ * submitting an objective the operator saw two new timeline rows and
+ * "Current build: No build yet." — the timeline and the world disagreed
+ * because only one of them was ever refreshed.
+ */
+describe("BackendClient — world state advances with the event log (AC-103)", () => {
+  const buildSnapshot: WorldState = {
+    ...snapshot,
+    currentBuild: {
+      id: "build-1",
+      projectId: "project-1",
+      sequenceNumber: 1,
+      status: "planned",
+      objectiveSnapshot: "Add a JSON task store module with tests",
+      currentStageId: null,
+      createdAt: "2026-08-03T00:00:00.000Z",
+      updatedAt: "2026-08-03T00:00:00.000Z",
+    },
+  };
+
+  /** Serves `snapshot` until `promote()` is called, then `buildSnapshot`. */
+  function makeTrackingClient(options: { worldStateOk?: () => boolean } = {}) {
+    let current: WorldState = snapshot;
+    const worldStateReads: number[] = [];
+    const client = new BackendClient({
+      baseUrl: "http://api.test",
+      createEventSource: (url) => new FakeEventSource(url),
+      fetchImpl: (async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/world-state")) {
+          worldStateReads.push(worldStateReads.length);
+          if (options.worldStateOk && !options.worldStateOk()) {
+            return { ok: false, status: 503 } as Response;
+          }
+          const body = current;
+          return { ok: true, json: async () => body } as Response;
+        }
+        if (url.includes("/events")) {
+          return { ok: true, json: async () => serverEvents } as Response;
+        }
+        return { ok: false, status: 404 } as Response;
+      }) as typeof fetch,
+      scheduleRetry: (fn, ms) => retries.push({ fn, ms }),
+    });
+    return {
+      client,
+      worldStateReads,
+      promote: () => {
+        current = buildSnapshot;
+      },
+    };
+  }
+
+  it("refetches the authoritative world state when a live event arrives", async () => {
+    const { client, promote } = makeTrackingClient();
+    await client.start();
+    expect(client.getState().worldState?.currentBuild).toBeNull();
+
+    // The backend has created the Build; the event is what tells us so.
+    promote();
+    FakeEventSource.instances[0]!.emit(evt("build-created"));
+    await vi.waitFor(() => expect(client.getState().worldState?.currentBuild?.id).toBe("build-1"));
+  });
+
+  it("notifies subscribers of the refreshed projection, not only of the new event", async () => {
+    const { client, promote } = makeTrackingClient();
+    await client.start();
+
+    const seen: (string | null | undefined)[] = [];
+    client.subscribe((state) => seen.push(state.worldState?.currentBuild?.id ?? null));
+
+    promote();
+    FakeEventSource.instances[0]!.emit(evt("build-created"));
+    await vi.waitFor(() => expect(seen).toContain("build-1"));
+  });
+
+  it("coalesces a burst of events into a bounded number of world-state reads", async () => {
+    const { client, worldStateReads } = makeTrackingClient();
+    await client.start();
+    const readsAfterStart = worldStateReads.length;
+
+    const source = FakeEventSource.instances[0]!;
+    for (let i = 0; i < 20; i += 1) source.emit(evt(`burst-${i}`));
+    await vi.waitFor(() => expect(worldStateReads.length).toBeGreaterThan(readsAfterStart));
+
+    // At most one read in flight plus one coalesced follow-up — never one
+    // read per event, which is what a naive refresh would cost on replay.
+    expect(worldStateReads.length - readsAfterStart).toBeLessThanOrEqual(2);
+    expect(client.getState().events).toHaveLength(20);
+  });
+
+  it("keeps the last good projection when a refresh fails, rather than blanking the world", async () => {
+    let healthy = true;
+    const { client, promote } = makeTrackingClient({ worldStateOk: () => healthy });
+    await client.start();
+    promote();
+
+    healthy = false;
+    FakeEventSource.instances[0]!.emit(evt("during-outage"));
+    await vi.waitFor(() => expect(client.getState().events).toHaveLength(1));
+    expect(client.getState().worldState).toEqual(snapshot);
+
+    // A failed read must not spin; the next event re-arms it.
+    healthy = true;
+    FakeEventSource.instances[0]!.emit(evt("after-outage"));
+    await vi.waitFor(() => expect(client.getState().worldState?.currentBuild?.id).toBe("build-1"));
+  });
+
+  it("refreshWorldState() can be driven directly, for a command whose effect must be visible at once", async () => {
+    const { client, promote } = makeTrackingClient();
+    await client.start();
+
+    promote();
+    await client.refreshWorldState();
+    expect(client.getState().worldState?.currentBuild?.id).toBe("build-1");
   });
 });

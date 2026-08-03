@@ -195,7 +195,7 @@ describe("EventTimeline — payload inspection", () => {
     const rows = screen.getAllByTestId("timeline-row");
     fireEvent.click(rows[1]!);
     const detail = screen.getByTestId("timeline-detail");
-    expect(within(detail).getByText('Build created: "Build X"')).toBeInTheDocument();
+    expect(within(detail).getByText("Build created for the submitted objective")).toBeInTheDocument();
     expect(within(detail).getByText(/"buildId": "build-1"/)).toBeInTheDocument();
   });
 

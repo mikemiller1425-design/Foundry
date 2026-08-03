@@ -159,9 +159,16 @@ export function BackendRuntimeProvider({
             "Not sent — the backend is not connected, so its current state is unknown. Submission resumes when the connection is restored.",
         };
       }
-      return postObjective(baseUrl, input, readOperatorCredential());
+      const result = await postObjective(baseUrl, input, readOperatorCredential());
+      // The SSE stream also re-arms the refresh when the two events land,
+      // so this is not the only path — but a success message that claims a
+      // Project and Build exist must not be able to appear next to a panel
+      // still saying "No build yet", even for the width of a round trip,
+      // and not at all if the stream is momentarily wedged.
+      if (result.accepted) await client.refreshWorldState();
+      return result;
     },
-    [baseUrl, mutationsEnabled],
+    [baseUrl, client, mutationsEnabled],
   );
 
   // Selection is a UI-only concern with no operational authority

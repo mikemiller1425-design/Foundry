@@ -53,6 +53,11 @@ export class BackendClient {
   private worldState: WorldState | null = null;
   private connectionStatus: ConnectionStatus = "disconnected";
 
+  /** A live event has arrived and the held projection has not caught up yet. */
+  private worldStateStale = false;
+  /** A `/world-state` read is in flight; guarantees at most one at a time. */
+  private worldStateFetching = false;
+
   constructor(options: BackendClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, "");
     this.createEventSource =
@@ -87,6 +92,79 @@ export class BackendClient {
     this.source?.close();
     this.source = null;
     this.setConnectionStatus("disconnected");
+  }
+
+  /**
+   * Re-reads the authoritative `/world-state` projection (AC-103 fix).
+   *
+   * The bug this exists to close: the live-event listener merged each
+   * incoming event into the local log and emitted, but never touched
+   * `worldState`. `worldState` was therefore only ever written by
+   * `reconcile()` — at `start()` and on reconnect — so after any live
+   * change the timeline advanced while every world-state-derived panel
+   * kept showing the page-load snapshot. Submitting an objective produced
+   * exactly that: two new timeline rows, and "Current build: No build
+   * yet." The projection was not stale by a race; it was never refreshed
+   * at all.
+   *
+   * The projection is **refetched, not recomputed**. Deriving it locally
+   * from events would mean a second reducer whose agreement with the
+   * backend's is a thing to be maintained and proved, and the frontend
+   * would be computing operational state it does not own (principle 1,
+   * ADR-002). One read of the endpoint the backend already projects is
+   * both cheaper to reason about and correct by construction.
+   *
+   * Reads are coalesced rather than issued per event: at most one is in
+   * flight, and events arriving during it collapse into a single
+   * follow-up. A 124-event replay therefore costs two reads, not 124.
+   */
+  async refreshWorldState(): Promise<void> {
+    this.worldStateStale = true;
+    await this.drainWorldStateRefresh();
+  }
+
+  private async drainWorldStateRefresh(): Promise<void> {
+    // A caller that finds a read already in flight returns immediately,
+    // having set the stale flag — the running pass is responsible for
+    // picking it up. That hand-off is why the loop below must not abandon
+    // a request that arrived while it was working.
+    if (this.worldStateFetching) return;
+    this.worldStateFetching = true;
+    try {
+      while (this.worldStateStale && !this.stopped) {
+        this.worldStateStale = false;
+        const applied = await this.readWorldStateOnce();
+
+        // A failed read leaves the last good projection in place — a
+        // world that blanks itself because one request failed is worse
+        // than one that is briefly behind, and the SSE connection, not
+        // this read, owns connection status.
+        //
+        // The `worldStateStale` check is the part that is easy to get
+        // wrong: if a refresh was requested *during* this read, that
+        // caller has already returned believing this pass would serve it.
+        // Giving up here would strand it until the next event arrived,
+        // which is a lost wake-up, not a retry policy. So the loop
+        // continues for the newer request. It still cannot spin: each
+        // iteration consumes exactly one request, and with no new
+        // requests `worldStateStale` is false and the loop ends.
+        if (!applied && !this.worldStateStale) break;
+      }
+    } finally {
+      this.worldStateFetching = false;
+    }
+  }
+
+  private async readWorldStateOnce(): Promise<boolean> {
+    try {
+      const res = await this.fetchImpl(`${this.baseUrl}/world-state`);
+      if (!res.ok) return false;
+      this.worldState = (await res.json()) as WorldState;
+      this.emit();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private async reconcile(): Promise<void> {
@@ -133,6 +211,11 @@ export class BackendClient {
         this.events = mergeEvents(this.events, [event]);
         this.setConnectionStatus("connected");
         this.emit();
+        // The event log and the world-state projection are two views of
+        // the same truth, so they have to advance together. Emitting the
+        // new event without this is what let the timeline and "Current
+        // build" disagree.
+        void this.refreshWorldState();
       } catch {
         // A malformed frame must never corrupt the local log.
       }
