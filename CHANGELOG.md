@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — AC-103: Operator verification record (documentation only)
+
+`docs/evidence/ac-103/operator-verification.md` records that the operator **manually verified objective submission in backend mode** against commit `9345a04`, following their own defect report against the preceding commit. Recorded as an operator-reported observation, not an assistant-witnessed one, with the same standing as `docs/evidence/fbl-035/real-safari-observation.md`.
+
+It is deliberately scoped: it verifies the objective-submission fix, it is **not** an acceptance sign-off for `AC-103`, and it does not close the rung. The six backend-mode screenshot baselines, Finding 6, and the deferred one-command startup are each recorded as still open. No source file changed.
+
 ### Fixed — AC-103: The world-state projection never advanced with the event log
 
 Reported by the operator after the first live backend-mode submission: the success message named a real project and build, the timeline showed `operator.objective_submitted` and `build.created`, and "Current build" still read **"No build yet."** — while the objective text appeared to be duplicated in the timeline.
