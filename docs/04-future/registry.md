@@ -177,16 +177,64 @@ Shared V1-compatible hooks for all concepts: stable IDs, event provenance, capab
 
 | Field | Content |
 | --- | --- |
-| Insight | Match spare capacity to demand |
-| Purpose | Rank opportunities against skills and capacity |
-| Real-world equivalent | BD / internal mobility desk |
-| Potential entities | Opportunity, MatchScore |
-| Potential events | `opportunity.discovered`, `opportunity.ranked` |
-| Dependencies | Market Intelligence, metrics |
-| Risks | Low-quality leads; misaligned incentives |
-| V1 hooks | Capability inventory fields |
+| Insight | A local commercial opportunity should move through a governed evidence chain: public-business discovery, identity verification, website assessment, qualification, private prototype, independent review, proposal, and human-approved outreach. The world visualizes that real chain; it never invents prospects or activity. |
+| Purpose | Discover small businesses within an operator-approved geographic boundary, verify their official public websites, identify evidence-backed improvement opportunities, create bounded clean-room prototypes for qualified cases, and prepare proposals without autonomously contacting or impersonating a business. |
+| Real-world equivalent | Local business-development center combining market research, web consultancy, solutions architecture, proposal operations, and compliance review |
+| Potential entities | OpportunityCase, GeographicSearch, BusinessRecord, SourceRecord, DomainCandidate, IdentityMatch, WebsiteSnapshot, SiteAssessment, Finding, OpportunityScore, ContactPolicyCheck, PrototypeBrief, PrivatePrototype, ValidationReport, ProposalPackage, OutreachDraft, SuppressionRecord |
+| Potential events | `opportunity.search_authorized`, `business.discovered`, `business.deduplicated`, `domain.candidate_found`, `domain.verified`, `site.snapshot_captured`, `site.assessed`, `opportunity.qualified`, `opportunity.disqualified`, `compliance.cleared`, `prototype.authorized`, `prototype.created`, `prototype.validation_failed`, `prototype.validated`, `proposal.prepared`, `outreach.approval_requested`, `outreach.approved`, `outreach.rejected`, `contact.suppressed` |
+| Dependencies | V1.1 real-build orchestration; bounded disposable workspaces; provenance and evidence retention; independent Inspector validation; human approval gates; external-source adapter policy; robots/terms/rate-limit controls; geographic-query and business-directory adapters; domain-verification confidence model; contact suppression and opt-out controls; jurisdiction-specific legal review before activation |
+| Risks | Incorrect business identity or domain; stale or duplicated listings; collection that violates source terms or robots policy; excessive request rates; privacy and marketing-law exposure; unsupported or insulting website claims; copied copyrighted content or branding; insecure generated prototypes; accidental public deployment; spam; repeated contact after opt-out; reputational harm; presenting a prototype as authorized by the business |
+| V1 hooks | Agent identity and residences; workplace assignment; objective/build/stage/task/artifact graph; append-only provenance; R0–R2 ceiling; independent Inspector; approval queue; event-driven transfers; Lighthouse attention; runtime-adapter boundary |
 | Status | Future Registry |
-| Earliest epoch | After multi-workload capacity |
+| Earliest epoch | Discovery and assessment pilot after V1.1 operational readiness; private prototype workflow after repeatable bounded builds; external outreach only in a separately reviewed V2 commercial-operations mission |
+
+### Opportunity Center operating model
+
+The Opportunity Center is a **workplace and governed workflow**, not one oversized scraping agent. Persistent workers keep their identities at their residences and accept bounded assignments inside the Center.
+
+| Worker | Responsibility | Authority boundary |
+| --- | --- | --- |
+| Scout Agent | Discover public business records inside an operator-approved ZIP code or geographic boundary and record source provenance | Cannot contact businesses, infer private facts, bypass source controls, or widen geography |
+| Identity Agent | Deduplicate records and verify the official business domain using multiple public signals and confidence scoring | Cannot treat an unverified directory link or social profile as an official website |
+| Site Inspector Agent | Capture an approved public snapshot and measure accessibility, mobile behavior, performance, security posture, SEO fundamentals, content structure, and interaction quality | Reports observable evidence; cannot make unsupported legal, revenue, or quality claims |
+| Opportunity Agent | Score fit, likely improvement value, confidence, feasibility, and disqualification conditions | Cannot authorize prototype work or external contact |
+| Compliance Agent | Enforce source policy, collection limits, contact eligibility, suppression, opt-out, and jurisdictional rules | May block progression; cannot be overridden silently by another agent |
+| Architect Agent | Reused Foundry worker that produces a bounded prototype brief and acceptance criteria | Cannot copy a production site wholesale or authorize execution |
+| Builder Agent | Reused Foundry worker that creates a private clean-room prototype in a disposable workspace | Cannot deploy publicly, modify the real business site, or validate its own work |
+| Inspector Agent | Reused independent worker that validates the prototype and improvement claims | Must remain independent from Builder execution |
+| Proposal Agent | Packages verified findings, private prototype evidence, scope, assumptions, and pricing inputs | Cannot claim affiliation, guarantee outcomes, or send outreach |
+| Outreach Agent | Drafts a personalized message from the approved evidence package | Draft-only; every send requires a human approval and suppression check |
+
+### Opportunity case state flow
+
+```text
+Operator authorizes geography and sources
+  -> Scout discovers public business record
+  -> Identity verifies business and official domain
+  -> Site Inspector produces evidence-backed assessment
+  -> Opportunity Agent qualifies or archives the case
+  -> Compliance clears or blocks prototype eligibility
+  -> Human authorizes bounded prototype work
+  -> Architect plans
+  -> Builder creates private clean-room prototype
+  -> Independent Inspector validates or returns revision
+  -> Proposal Agent prepares evidence package
+  -> Compliance rechecks contact eligibility
+  -> Human approves, rejects, or revises outreach
+  -> Outreach Agent may send only through a separately authorized adapter
+```
+
+No vehicle, cargo, building signal, or timeline event may advance ahead of the corresponding declared backend event. A private prototype is an artifact, not a representation that the business requested, endorsed, or owns the work.
+
+### Activation boundaries
+
+- Public discovery, website assessment, prototype generation, and outreach are separate authority grants.
+- An operator must approve geography, sources, collection policy, and rate limits before discovery.
+- Only verified official domains may reach assessment.
+- Only qualified and compliance-cleared cases may reach prototype authorization.
+- Prototypes remain private and use only the minimum public content necessary to demonstrate structure and capability; protected assets should be replaced with neutral placeholders unless licensed.
+- External contact remains impossible until a dedicated outreach adapter, suppression registry, audit trail, and human approval gate are reviewed and activated.
+- Autonomous bulk outreach, purchased personal-contact enrichment, credentialed access to business systems, public deployment, and modification of a business's real website remain excluded.
 
 ## Market Intelligence
 

@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Post-V1 truth audit, V1.1 proposals, and a refined inactive Opportunity Center registry entry
+
+**Non-authoritative documentation only. Nothing here amends Foundry Foundation 1.0, reopens the V1 Build Ladder, alters V1 evidence, or promotes anything from the Future Registry.** No source file, test, or behaviour changed. Verified at this commit: `pnpm -r run test` → **813 passed / 78 files / 0 failures** (contracts 56, ui 18, world-model 7, event-types 14, runtime-adapters 128, persistence 135, agent-city 411, api 44) — reproducing the `FBL-035` acceptance figure exactly.
+
+- **`docs/audits/agent-city-post-v1-truth-audit.md`** — independent read-only audit against `3cdd539`. 53 findings (9 BLOCKER, 29 MAJOR, 10 MINOR, 5 INFO). §0 states plainly that the document **has no authority and amends nothing**; a finding becomes actionable only if the operator ratifies a V1.1 mission baseline.
+- **`docs/proposals/agent-city-v1.1-mission-proposal.md`** — proposed V1.1 mission baseline. A proposal permanently; ratification is a separate act producing its own mission document.
+- **`docs/proposals/agent-city-v1.1-build-ladder-proposal.md`** — proposed 20-rung ladder `AC-101`–`AC-120` in a namespace disjoint from `FBL-*`, so no `FBL` identifier is ever reused, renumbered, or reopened.
+- **`docs/proposals/agent-city-v1.1-to-v2-roadmap.md`** — proposed capability epochs V1.1 → V1.2 → V1.3 → V1.4 → V1.5 → V2 with suggested ladder namespaces `RB-201`, `OC-301`, `LD-401`, `PP-501`, `CO-601`. Explicitly not an active mission or authorization.
+- **`docs/04-future/registry.md`** — the **Opportunity Center** entry is expanded into a full operating model: ten worker roles each with a stated authority boundary, eighteen declared event names, a case state flow, and explicit activation boundaries separating discovery, assessment, prototyping, and outreach into distinct authority grants. Its **Status remains `Future Registry`** — the entry is inactive, authorizes nothing, and is non-authoritative for every rung, exactly as principles 27–29 require. Every other registry entry is untouched.
+
+These four documents are recorded before any reconciliation work references them, so the inputs to that work are durable and citable.
+
 ### Changed — administrative closure of the Agent City V1 mission
 
 **Status correction only — not a new mission baseline and not a specification amendment.** `FOUNDATION_VERSION.md` operational metadata now records the active mission as complete: mission status **Complete**, Agent City V1 implementation **Complete**, completion date **2026-08-01**, final approval commit **`f78a675`**, referencing `docs/evidence/fbl-035/operator-final-approval.md`.
