@@ -1,6 +1,6 @@
 # Event Model — Agent City V1
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Authority:** Immutable event vocabulary  
 **Package target:** `packages/event-types`
 

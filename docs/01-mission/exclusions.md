@@ -1,6 +1,6 @@
 # Agent City V1 Exclusions
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Authority:** Explicit non-goals for the active mission
 
 The following are **excluded from V1**. They may appear only in `docs/04-future/registry.md` and must not be implemented:

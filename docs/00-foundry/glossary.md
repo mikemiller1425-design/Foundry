@@ -1,6 +1,6 @@
 # Foundry Glossary
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Authority:** Canonical terminology for active documents and packages
 
 For each term: **Definition**, **Correct usage**, and **Incorrect alternatives** where relevant.

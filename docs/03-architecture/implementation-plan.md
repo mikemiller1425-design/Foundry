@@ -1,8 +1,10 @@
 # Implementation Plan — Agent City V1
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Method:** Contract-first vertical slices  
-**Status:** Planning only — implementation blocked pending audit
+**Status:** **Superseded and complete.** Operationally superseded by `docs/03-architecture/foundry-build-ladder.md`, which derived from this plan and carried the work. All 18 stages below were executed via `FBL-001`–`FBL-035`; stage 18's gate ("All mandatory tests pass; V1 complete") was reached on 2026-08-01.
+
+> **Reading note (2026-08-03).** The stage content below is Foundation 1.0 text and is **deliberately left unrewritten**, including its future tense — it is the historical plan as approved, not a status report. Only this header records that the plan is finished and superseded. Where this document and the Build Ladder differ on sequencing, the Build Ladder is the operational record. See `docs/audits/agent-city-post-v1-truth-audit.md` PV1-005.
 
 For each stage: objective, dependencies, deliverables, required tests, prohibited scope, completion gate.
 

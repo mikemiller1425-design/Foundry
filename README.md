@@ -74,14 +74,17 @@ Supporting context: `docs/00-foundry/vision.md`, `docs/00-foundry/glossary.md`.
 ## Repository map
 
 ```text
-apps/agent-city/     Agent City application (not implemented yet)
-packages/            Shared contracts, event types, world model, adapters, UI
+apps/agent-city/     Agent City application (Next.js + React Three Fiber)
+apps/api/            Backend service — owns operational truth (ADR-002)
+packages/            Shared contracts, event types, world model, adapters, persistence, UI
 docs/00-foundry/     Vision, glossary, principles
 docs/01-mission/     Active mission, scope, exclusions
 docs/02-specification/ World, domain, event, interface, acceptance
-docs/03-architecture/ Implementation plan and ADRs
+docs/03-architecture/ Implementation plan, Build Ladder, and ADRs
 docs/04-future/      Future Registry (non-active)
 docs/audits/         Audit deliverables
+docs/proposals/      Proposals awaiting review (non-authoritative)
+docs/evidence/       Per-rung evidence and operator records (append-only)
 docs/handoffs/       Claude Code / agent handoffs
 docs/archive/        Historical drafts (not authoritative)
 assets/ config/ scripts/ tools/ tests/   Reserved placeholders
@@ -91,19 +94,20 @@ assets/ config/ scripts/ tools/ tests/   Reserved placeholders
 
 | Item | Value |
 | --- | --- |
-| Foundation | **1.0-rc1** |
-| Status | Awaiting specification audit |
-| Application code | None |
-| Dependencies installed | None |
-| Implementation | **Blocked** |
+| Foundation | **1.0** — approved and frozen (2026-07-30) |
+| Status | Approved for implementation |
+| Active application | Agent City |
+| Active mission | V1 Operational Neighborhood — **Complete** (2026-08-01) |
+| Application code | `apps/agent-city`, `apps/api`, and six shared packages |
+| Dependencies installed | Yes (pnpm workspace, eight projects) |
+| Implementation | **V1 complete** — `FBL-001`–`FBL-035` including `FBL-021A`, each closed under its own operator authorization |
+| Tests | 813 unit/integration tests across 78 files, plus browser, WebKit, and performance suites |
+| Open item carried past completion | **Finding 6** — three undiagnosed Playwright-WebKit failures, accepted by operator decision rather than resolved |
 
-## Implementation blocked
+`FOUNDATION_VERSION.md` is the authoritative record of foundation version and mission status. `docs/03-architecture/foundry-build-ladder.md` is the closed V1 implementation program.
 
-Do not write application code, install dependencies, scaffold Next.js, or begin frontend/backend implementation until:
+## Implementation authority
 
-1. `docs/handoffs/001-foundation-audit.md` is executed
-2. Findings are saved to `docs/audits/foundry-foundation-v1-audit.md`
-3. Blocking findings are reviewed and resolved
-4. Foundation status is explicitly advanced beyond `1.0-rc1`
+Foundation 1.0 is frozen and approved for implementation. **Any further implementation work requires a new reviewed mission baseline** — the V1 Build Ladder reached its terminal stop at `FBL-035` and grants no standing authorization. Completed `FBL-*` rungs are historical: never reopened, renumbered, or re-graded.
 
-`docs/handoffs/002-frontend-foundation.md` is **BLOCKED** until that review completes.
+Substantive changes to principles, mission scope, domain language, or ADRs require a new reviewed mission baseline, not a silent edit. See `FOUNDATION_VERSION.md` § "Change control".

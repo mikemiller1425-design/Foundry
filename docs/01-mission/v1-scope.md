@@ -1,6 +1,6 @@
 # Agent City V1 Scope
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Authority:** Positive scope for the active mission
 
 ## Required world elements

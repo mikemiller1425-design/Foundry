@@ -1,6 +1,6 @@
 # Future Registry
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Status:** Non-active — **none of these concepts are V1 scope**  
 **Rule:** Preserve ideas here; only the active mission may be implemented
 

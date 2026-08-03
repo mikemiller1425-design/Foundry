@@ -1,6 +1,6 @@
 # Domain Model — Agent City V1
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Authority:** Backend language for entities, lifecycles, invariants, commands, and events  
 **Note:** No SQL or database implementation in this document.
 

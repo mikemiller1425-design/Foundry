@@ -10,17 +10,25 @@ Foundry Platform
 
 ## Status
 
-Foundation is **1.0**. `FBL-001` through `FBL-022` are complete: the full V1 placeholder neighborhood (Lighthouse, residences, operational buildings, roads, the utility vehicle, and the three agents) is wired to a deterministic mock runtime whose events drive every 2D panel and 3D world object, and the complete primary user journey — objective through build completion and the Warehouse Level 1→2 upgrade — runs end-to-end on that mock runtime. `FBL-023` (persistence), `FBL-024` (backend API, `apps/api`), `FBL-025` (state-machine enforcement), and `FBL-026` (realtime event delivery) are also complete, under a since-exhausted operator-authorized bounded sequence covering `FBL-023`–`FBL-026`. See `docs/03-architecture/foundry-build-ladder.md`; each further rung still requires its own separate, explicit operator authorization.
+Foundation is **1.0**. **Agent City V1 is complete** — `FBL-001` through `FBL-035`, including the `FBL-021A` amendment rung, are closed, each under its own operator authorization, with final operator approval recorded on 2026-08-01 (`docs/evidence/fbl-035/operator-final-approval.md`).
 
-This app can now run as a live projection of backend truth over SSE.
+The full V1 placeholder neighborhood (Lighthouse, residences, operational buildings, roads, the utility vehicle, and the three agents) is wired to a deterministic mock runtime whose events drive every 2D panel and 3D world object, and the complete primary user journey — objective through build completion and the Warehouse Level 1→2 upgrade — runs end-to-end on that mock runtime. Behind it sit persistence (`FBL-023`), the backend API (`FBL-024`, `apps/api`), backend-authoritative state machines (`FBL-025`), realtime delivery (`FBL-026`), the runtime-adapter policy boundary (`FBL-027`), one controlled Claude Code execution (`FBL-028`), independent Inspector validation (`FBL-029`), the human approval workflow (`FBL-030`), the capability-based Warehouse upgrade (`FBL-031`), restart and recovery (`FBL-032`), accessibility and reduced motion (`FBL-033`), and ultrawide performance validation (`FBL-034`).
 
-**The runtime is selectable.** The deterministic mock runtime (`src/lib/mock-runtime/`, ADR-001 / Principle 3a) remains the **default** — it is what every test and the demo mode run against, with no backend required. Set `NEXT_PUBLIC_FOUNDRY_API_URL` to point the app at a real `apps/api` instance instead:
+The V1 Build Ladder has reached its **terminal stop** and grants no standing authorization. Further implementation requires a new reviewed mission baseline. See `docs/03-architecture/foundry-build-ladder.md`.
+
+This app can also run as a live projection of backend truth over SSE.
+
+**The runtime is selectable — at build time.** The deterministic mock runtime (`src/lib/mock-runtime/`, ADR-001 / Principle 3a) is the **default** — it is what every test and the demo mode run against, with no backend required. Setting `NEXT_PUBLIC_FOUNDRY_API_URL` points the app at a real `apps/api` instance instead:
 
 ```sh
 NEXT_PUBLIC_FOUNDRY_API_URL=http://localhost:4000 pnpm --filter @foundry/agent-city dev
 ```
 
+**Important limitation:** `src/app/page.tsx` reads this variable at module scope, and Next.js inlines `NEXT_PUBLIC_*` values **at build time**. A `next build` artifact is therefore permanently mock-mode or permanently backend-mode; switching requires a rebuild. The command above works in development only. See `docs/audits/agent-city-post-v1-truth-audit.md` PV1-028.
+
 In backend mode the app subscribes to `/events/stream`, reconciles from `/world-state` on connect and reconnect, and submits commands to `/commands` (where FBL-025 enforces them). On disconnect it labels the projection stale, shows the Lighthouse as `disconnected`, and disables every mutation control until the stream is restored — it never invents authoritative events while offline.
+
+**What backend mode does not yet do.** Against a fresh `apps/api`, `/world-state` returns the initial projection with no project, build, stages, or approvals, and there is no operator surface for submitting an objective — so the world is empty and nothing can create work. The six persistent command-bar controls send `demo.*` command types, which are not in the closed `COMMAND_TYPES` vocabulary; the backend rejects them with `400` and the current rejection handler does not surface that, so those controls fail **silently** in backend mode. `building.selected` is emitted only by the mock runtime. These are recorded as PV1-012, PV1-013, and PV1-052 in the Post-V1 truth audit; the projection machinery itself works as described.
 
 ## Run locally
 
@@ -80,4 +88,4 @@ The single most relevant test for the complete journey is `src/lib/mock-runtime/
 - `docs/02-specification/`
 - `docs/03-architecture/foundry-build-ladder.md`
 
-Each build ladder rung beyond what is marked complete above requires its own separate, explicit operator authorization.
+The V1 Build Ladder is closed at its terminal rung. Any further implementation work requires a new reviewed mission baseline; completed `FBL-*` rungs are historical and are never reopened, renumbered, or re-graded.

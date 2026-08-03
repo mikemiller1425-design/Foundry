@@ -1,5 +1,7 @@
 # Handoff 002 — Frontend Foundation
 
+> **HISTORICAL RECORD (banner added 2026-08-03).** This handoff is **spent**. Every rung it anticipated is closed: `FBL-001`–`FBL-035`, including `FBL-021A`, completed with final operator approval on 2026-08-01. The "next eligible rung" line below was accurate when written and has not been true since `FBL-003` closed; it is preserved unedited as part of the record rather than corrected in place. **Nothing in this document authorizes any work.** See `FOUNDATION_VERSION.md` and `docs/03-architecture/foundry-build-ladder.md` for current status; `docs/audits/agent-city-post-v1-truth-audit.md` PV1-009 for the finding.
+
 ```text
 Foundation: 1.0 — approved for implementation
 Implementation follows docs/03-architecture/foundry-build-ladder.md

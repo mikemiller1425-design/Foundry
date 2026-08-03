@@ -1,6 +1,6 @@
 # V1 Acceptance — Agent City
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Authority:** Observable finish line for Agent City V1
 
 ## Ten-second comprehension

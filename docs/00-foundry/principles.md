@@ -1,6 +1,6 @@
 # Foundry Principles
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Authority:** Non-negotiable laws for Foundry and Agent City V1
 
 ## Operational truth

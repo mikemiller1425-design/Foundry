@@ -1,6 +1,6 @@
 # World Model — Agent City V1
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Authority:** Visual objects in the V1 operational neighborhood
 
 Global rules:

@@ -1,6 +1,6 @@
 # Foundry Vision
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Authority:** Product vision (supporting context; principles and mission outrank this file)
 
 ## Product hierarchy

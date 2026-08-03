@@ -1,6 +1,6 @@
 # Interface Model — Agent City V1
 
-**Foundation:** 1.0-rc1  
+**Foundation:** 1.0  
 **Authority:** Primary ultrawide shell and precision UI
 
 ## Doctrine

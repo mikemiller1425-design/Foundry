@@ -4,9 +4,23 @@ The Foundry backend service. Owns operational truth (ADR-002) via `packages/pers
 
 ## Status
 
-`FBL-024` (Backend API), `FBL-025` (state machines and prerequisite enforcement), and `FBL-026` (realtime event delivery) complete, under the operator-authorized bounded sequence `FBL-023`–`FBL-026`. Query, snapshot, and health endpoints are live. Commands are enforced backend-side: a command is applied only when it passes shape validation, its entity's transition graph, and every named invariant guard — otherwise it is rejected with a structured reason and zero mutation.
+**Agent City V1 is complete.** `FBL-024` (Backend API), `FBL-025` (state machines and prerequisite enforcement), `FBL-026` (realtime event delivery), `FBL-029` (independent Inspector validation with credentialed identity), `FBL-030` (human approval workflow), and `FBL-031` (capability-based upgrade) are all closed. Query, snapshot, and health endpoints are live. Commands are enforced backend-side: a command is applied only when it passes shape validation, its entity's transition graph, and every named invariant guard — otherwise it is rejected with a structured reason and zero mutation. 44 tests here, over 135 in `packages/persistence`.
 
-**Security caveat:** V1 has no authentication system (out of scope per `v1-scope.md` exclusions). The optional `actor` on a command is a caller-asserted claim, not a verified identity, so actor-sensitive guards (notably F-05's Inspector-only validation) are only as trustworthy as the caller. This service is intended for local/trusted-network operation only.
+**What this service does not do:** nothing decides what happens next. There is no orchestrator, scheduler, planner, or stage driver — every state transition in a real run must be submitted as an individual command. The `fbl-028`, `fbl-029:seed`, and `fbl-031:seed` scripts are standalone one-off entrypoints, unreachable from the HTTP surface. See `docs/audits/agent-city-post-v1-truth-audit.md` PV1-025.
+
+## Security posture
+
+**Identity is credentialed, not caller-asserted** (since `FBL-029`). `main.ts` mints one bearer credential per V1 agent plus one operator credential at every boot, held in memory and never persisted. `app.ts` resolves the caller from the `Authorization` bearer token, never from the request body; a body `actor` that contradicts the credential is refused with `403 actor_mismatch` rather than silently overridden. An anonymous caller cannot pass F-05's Inspector-only validation guard, and the browser never holds an agent credential — which is what makes a frontend self-certification attempt a denial rather than a naming coincidence.
+
+**This service is intended for local, single-operator, trusted-network operation only.** The following limitations are real and deliberate for V1, and must not be generalized:
+
+- **Reads are unauthenticated.** `GET /health`, `/world-state`, `/entities/*`, `/events`, and `/events/stream` require no credential. Anyone who can reach the port reads the entire operational history and live event stream.
+- **The origin policy is permissive.** `Access-Control-Allow-Origin: *`. This is safe *specifically* because agent credentials are bearer tokens the browser never holds, so a permissive origin cannot replay an authority it does not possess — but it must be revisited before any networked deployment.
+- **Credentials are per-boot, printed to stdout, and non-expiring.** There is no expiry, refresh, or logout. Tokens land in terminal scrollback; the operator's browser copy sits in `localStorage`. Every restart silently invalidates a previously pasted token.
+- **No transport security, rate limiting, or read auditing.** Plain HTTP; `MAX_BODY_BYTES = 1_000_000` is the only request-side limit. There is no loopback-only bind enforcement.
+- **Authentication as a *system* is out of scope** per `v1-scope.md` exclusions. What exists is the minimum that makes the Inspector and operator guards real.
+
+Recorded in full as PV1-035, PV1-036, and PV1-037 of the Post-V1 truth audit.
 
 ## Endpoints
 

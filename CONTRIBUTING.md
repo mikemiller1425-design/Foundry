@@ -15,7 +15,7 @@
 
 Archived documents under `docs/archive/` must never override active documents.
 
-Current foundation status is **1.0-rc1** — awaiting specification audit. Implementation is blocked until the audit is reviewed.
+Current foundation status is **1.0** — approved and frozen (2026-07-30). Agent City V1 is complete (2026-08-01); the V1 Build Ladder reached its terminal stop at `FBL-035`. Further implementation requires a new reviewed mission baseline.
 
 ## Rules
 
@@ -26,7 +26,7 @@ Current foundation status is **1.0-rc1** — awaiting specification audit. Imple
 5. Meaningful world activity must correspond to real events.
 6. Record new out-of-scope ideas in the Future Registry, then return to the active mission.
 7. Do not commit secrets, credentials, or local environment files.
-8. Do not install dependencies or write application code until Foundation status advances past `1.0-rc1` and the relevant handoff is unblocked.
+8. Do not write application code outside an authorized rung of the active mission's build ladder. Completed rungs are historical: never reopened, renumbered, or re-graded. When no ladder rung is authorized, no application code may be written.
 
 ## Documentation changes
 
