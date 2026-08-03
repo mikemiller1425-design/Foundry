@@ -12,6 +12,17 @@ Foundry is **not**:
 
 Foundry is the platform.
 
+## Getting started
+
+```sh
+pnpm install
+pnpm dev
+```
+
+One command starts the backend and the frontend, in that order, health-gated, and stops both on Ctrl-C. Full instructions, options, and troubleshooting: **[`docs/operations/quickstart.md`](docs/operations/quickstart.md)**.
+
+Every configuration variable, its default, and its effect: **[`.env.example`](.env.example)**.
+
 ## Foundry versus Agent City
 
 ```text
@@ -97,7 +108,8 @@ assets/ config/ scripts/ tools/ tests/   Reserved placeholders
 | Foundation | **1.0** — approved and frozen (2026-07-30) |
 | Status | Approved for implementation |
 | Active application | Agent City |
-| Active mission | V1 Operational Neighborhood — **Complete** (2026-08-01) |
+| Active mission | **V1.1 — Operational Readiness and First Real Build**, ratified 2026-08-03 |
+| Prior mission | V1 Operational Neighborhood — **Complete** (2026-08-01) |
 | Application code | `apps/agent-city`, `apps/api`, and six shared packages |
 | Dependencies installed | Yes (pnpm workspace, eight projects) |
 | Implementation | **V1 complete** — `FBL-001`–`FBL-035` including `FBL-021A`, each closed under its own operator authorization |
@@ -108,6 +120,8 @@ assets/ config/ scripts/ tools/ tests/   Reserved placeholders
 
 ## Implementation authority
 
-Foundation 1.0 is frozen and approved for implementation. **Any further implementation work requires a new reviewed mission baseline** — the V1 Build Ladder reached its terminal stop at `FBL-035` and grants no standing authorization. Completed `FBL-*` rungs are historical: never reopened, renumbered, or re-graded.
+Foundation 1.0 is frozen and approved for implementation. Further implementation work required a new reviewed mission baseline; **that baseline exists** — Agent City **V1.1**, ratified 2026-08-03, governed by `docs/01-mission/agent-city-v1.1-mission.md` and `docs/03-architecture/agent-city-v1.1-build-ladder.md`. Work proceeds rung by rung on the `AC-1xx` ladder, and **each rung still requires its own explicit operator authorization** — the ladder grants none standing.
+
+The V1 Build Ladder reached its terminal stop at `FBL-035` and is closed. Completed `FBL-*` rungs are historical: never reopened, renumbered, or re-graded.
 
 Substantive changes to principles, mission scope, domain language, or ADRs require a new reviewed mission baseline, not a silent edit. See `FOUNDATION_VERSION.md` § "Change control".

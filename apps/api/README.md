@@ -34,6 +34,17 @@ Recorded in full as PV1-035, PV1-036, and PV1-037 of the Post-V1 truth audit.
 
 ## Run locally
 
+**Normally you do not start this service on its own.** From the repository root:
+
+```sh
+pnpm install
+pnpm dev
+```
+
+That builds this service, starts it, waits until `/health` answers, and only then starts the frontend — see [`docs/operations/quickstart.md`](../../docs/operations/quickstart.md). It is the documented way to run Foundry (`AC-104`).
+
+To run only the API — useful when driving it with `curl`, or when the frontend is not wanted:
+
 ```sh
 pnpm --filter @foundry/api build
 pnpm --filter @foundry/api start
@@ -41,4 +52,4 @@ pnpm --filter @foundry/api start
 pnpm --filter @foundry/api dev
 ```
 
-`FOUNDRY_DB_PATH` (default `apps/api/data/foundry.sqlite`) and `PORT` (default `4000`) are configurable via environment variables. The database file is local runtime state and is git-ignored.
+**Configuration:** every variable, its default, and its effect is enumerated in [`.env.example`](../../.env.example) — the single place. This service reads `PORT` (default `4000`), `FOUNDRY_DB_PATH` (default `apps/api/data/foundry.sqlite`), and `FOUNDRY_OPERATOR_ID` (default `operator-1`). The database file is local runtime state and is git-ignored. Note that `.env` is loaded by the root `pnpm dev` launcher only; starting this service directly reads the real environment.

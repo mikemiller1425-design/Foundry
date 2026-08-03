@@ -8,6 +8,9 @@
   },
   "packageManager": "pnpm@11.15.1",
   "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "start": "node scripts/dev.mjs --prod",
+    "verify:launch": "node scripts/verify-launch.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --check .",

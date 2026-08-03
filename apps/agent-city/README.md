@@ -32,12 +32,28 @@ In backend mode the app subscribes to `/events/stream`, reconciles from `/world-
 
 ## Run locally
 
+From the repository root:
+
 ```sh
 pnpm install
+pnpm dev
+```
+
+That starts the API and this app together, in that order, and prints the operator credential — see [`docs/operations/quickstart.md`](../../docs/operations/quickstart.md). It is the documented way to run Foundry (`AC-104`). Add `--mock` to run this app alone against the deterministic mock runtime, with no API and no credential:
+
+```sh
+pnpm dev --mock
+```
+
+To run only this app, without the launcher:
+
+```sh
 pnpm --filter @foundry/agent-city dev
 ```
 
-Then open `http://localhost:3000`.
+Then open `http://localhost:3000`. Started this way the app uses the mock runtime unless `NEXT_PUBLIC_FOUNDRY_API_URL` is set in the real environment; the root launcher is what normally sets it.
+
+**Configuration:** every variable, its default, and its effect is enumerated in [`.env.example`](../../.env.example) — the single place.
 
 ## Demonstration: observing the complete V1 primary journey
 
