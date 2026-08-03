@@ -39,3 +39,35 @@ Stated precisely, because the difference matters:
 `pnpm typecheck` 8/8 · `pnpm lint` clean · `pnpm build` clean · `pnpm -r run test` → **924 passed / 80 files / 0 failures** (contracts 68, ui 18, world-model 7, event-types 14, runtime-adapters 128, persistence 169, agent-city 467, api 57).
 
 The automated suite is not what this record attests to. It is recorded here so a later reader can see what was and was not machine-checked alongside the human check.
+
+> **The total on the line above is wrong. See the correction below — the line is preserved unedited, as principle 18 requires.**
+
+---
+
+## Correction — 2026-08-03 — suite total misstated as 924
+
+**Status:** Correction of arithmetic only. Appended, not substituted; the original claim above stands unedited.
+**Corrects:** the "Automated evidence at this commit" line, as committed in `6f9c03e` (`docs: ratify the Agent City V1.1 mission baseline (AC-102)`), which carried the figure forward from this record's original form.
+
+| | |
+| --- | --- |
+| **Stated total** | 924 passed |
+| **Correct total** | **928 passed** / 80 files / 0 failures |
+
+**The per-package figures were correct as recorded.** contracts 68, ui 18, world-model 7, event-types 14, runtime-adapters 128, persistence 169, agent-city 467, api 57. They sum to **928**:
+
+```text
+68 + 18 + 7 + 14 + 128 + 169 + 467 + 57 = 928
+```
+
+**Only the arithmetic total was wrong.** The error was in adding the eight per-package counts, made by the assistant when reporting them. It was not a mis-read of the test output, and the eight component figures were never in doubt.
+
+**Nothing else changed.** No decision, no behaviour, no test result, and no test outcome is affected:
+
+- Every suite passed then and passes now. **0 failures** either way.
+- No operator decision rested on the total; the figure is context recorded alongside a human verification, not evidence the record attests to.
+- `pnpm typecheck` 8/8, `pnpm lint` clean, and `pnpm build` clean are unaffected.
+- The operator's manual verification of objective submission in backend mode — what this record actually attests to — is untouched.
+- `AC-103P`'s standing is unchanged: still a pre-ladder proof, still closing no rung.
+
+The same misstatement appears in `CHANGELOG.md`'s `AC-103P` verification line and is corrected there by its own dated entry, in the same way — appended, never overwritten.

@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — Correction: suite total misstated as 924; the correct total is 928 (documentation only)
+
+**Arithmetic only. Appended, not substituted — the original statements stand unedited, as principle 18 requires.**
+
+Two records state the full-suite result as **924 passed**. The correct figure is **928 passed / 80 files / 0 failures**:
+
+- `docs/evidence/ac-103p/operator-verification.md` § "Automated evidence at this commit", as committed in **`6f9c03e`**, which carried the figure forward from the record's original form. Corrected there by its own dated appended entry.
+- This changelog's `AC-103P` verification line (see "Fixed — AC-103P: The world-state projection never advanced with the event log", below). That line is **left as written**; this entry is its correction.
+
+**The per-package figures were correct in both places** — contracts 68, ui 18, world-model 7, event-types 14, runtime-adapters 128, persistence 169, agent-city 467, api 57 — and sum to **928** (`68 + 18 + 7 + 14 + 128 + 169 + 467 + 57`). Only the total was wrong, in the assistant's addition of the eight components when reporting them; it was not a mis-read of the test output.
+
+**No decision, behaviour, or test result changed.** Every suite passed then and passes now, with **0 failures** either way. `pnpm typecheck` 8/8, `pnpm lint` clean, and `pnpm build` clean are unaffected. No operator decision rested on the total. `AC-103P` remains a pre-ladder proof closing no rung, `AC-102` remains ratified, and every open item — Finding 6, D-8, N-03, N-05, N-06 — is unchanged.
+
+No application source, test, or screenshot baseline was touched.
+
 ### Added — AC-102: V1.1 mission baseline ratified (documentation only)
 
 **Authorized by the operator on 2026-08-03, documentation-only, AC-103P variant.** No application source changed, no screenshot baseline was regenerated, no rung was begun.
