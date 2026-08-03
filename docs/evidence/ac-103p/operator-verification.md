@@ -1,7 +1,10 @@
-# AC-103 — Operator Verification Record
+# AC-103P — Operator Verification Record
+
+> **Rung identifier corrected at `AC-102` (2026-08-03).** This record was written as "AC-103" before the V1.1 ladder was ratified. Under the ratified ladder, **`AC-103` is Finding 6 resolution**, and this work is **`AC-103P`** — a pre-ladder proof awaiting formal validation. The file moved from `docs/evidence/ac-103/` to `docs/evidence/ac-103p/` accordingly. Nothing about what the operator verified has changed. See `docs/audits/agent-city-v1.1-rung-label-reconciliation.md`.
 
 **Status:** ✅ **VERIFIED AND REPORTED BY THE OPERATOR**
-**Rung:** AC-103 — Operator objective submission (V1.1 first implementation slice)
+**Rung:** AC-103P — Operator objective submission (pre-ladder proof)
+**Formal status:** Pre-ladder proof. **Not** a closed rung; awaiting validation under `AC-105`–`AC-108`.
 **Verified by:** mikemiller1425-design (human operator)
 **Date:** 2026-08-03
 **Verified against:** commit `9345a04` — `fix: advance the world-state projection with the event log (AC-103)`
@@ -22,7 +25,7 @@ This follows the operator's own defect report against the preceding commit (`e1f
 Stated precisely, because the difference matters:
 
 - This is an **operator-reported manual verification**, not an assistant-witnessed one. The assistant did not observe the operator's session. It carries exactly the weight the operator's own report carries — the same standing as `docs/evidence/fbl-035/real-safari-observation.md`.
-- It covers **objective submission in backend mode**. It is not an acceptance sign-off for `AC-103` as a whole, and it does not close the rung.
+- It covers **objective submission in backend mode**. It is not an acceptance sign-off, and it closes no rung. `AC-103P` is a pre-ladder proof: the work landed before the ladder existed, and the rungs whose acceptance criteria it partially satisfies — `AC-105`, `AC-106`, `AC-107`, `AC-108` — have not been run or closed.
 - It does **not** cover the browser suite, the six backend-mode screenshot baselines, or Finding 6. Each of those remains open on its own terms — see below.
 
 ## What remains open at the time of this record

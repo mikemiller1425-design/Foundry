@@ -1,9 +1,14 @@
-# Active Mission — Agent City V1
+# Agent City V1 Mission — Closed
 
 **Foundation:** 1.0  
 **Mission status:** **Complete** — 2026-08-01  
 **Application:** Agent City  
-**Neighborhood:** V1 Operational Neighborhood
+**Neighborhood:** V1 Operational Neighborhood  
+**Superseded as the active mission by:** `docs/01-mission/agent-city-v1.1-mission.md` (V1.1, ratified 2026-08-03)
+
+> **Active-mission pointer (2026-08-03, `AC-102`).** This document is **no longer the active mission**; it is the closed V1 mission record. The active mission is **Agent City V1.1 — Operational Readiness and First Real Build**, ratified 2026-08-03 and governed by `docs/01-mission/agent-city-v1.1-mission.md`, `docs/02-specification/v1.1-acceptance.md`, and `docs/03-architecture/agent-city-v1.1-build-ladder.md`.
+>
+> Nothing about V1 changed. Its mission definition, scope, completion gate, and evidence are untouched; `FBL-001`–`FBL-035` remain historical completed authority, never reopened or re-graded. Only the *which mission is active* pointer moved, which is why this is recorded as an append-only clarification rather than an edit to the V1 text below.
 
 > **Status clarification (2026-08-03).** This document's *mission definition* — statement, primary user, display, hypothesis, completion gate — is Foundation 1.0 text and is unchanged in substance. Only the **operational status metadata** below has been corrected, under the change-control rule for clarifications that do not change meaning (`FOUNDATION_VERSION.md` § "Change control"). Before this correction the document stated in the present tense that implementation was blocked and had not begun, which contradicted `FOUNDATION_VERSION.md` — the other priority-1 document — and had been false since implementation began. See `docs/audits/agent-city-post-v1-truth-audit.md` PV1-002.
 
@@ -55,3 +60,5 @@ No excluded feature may be added as a substitute for a failing required feature.
 - Build Ladder (closed): `docs/03-architecture/foundry-build-ladder.md`
 - Final approval: `docs/evidence/fbl-035/operator-final-approval.md`
 - Audit handoff (historical): `docs/handoffs/001-foundation-audit.md`
+- **Active mission (V1.1):** `docs/01-mission/agent-city-v1.1-mission.md`
+- **Active ladder (V1.1):** `docs/03-architecture/agent-city-v1.1-build-ladder.md`

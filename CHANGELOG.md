@@ -6,13 +6,39 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added — AC-103: Operator verification record (documentation only)
+### Added — AC-102: V1.1 mission baseline ratified (documentation only)
 
-`docs/evidence/ac-103/operator-verification.md` records that the operator **manually verified objective submission in backend mode** against commit `9345a04`, following their own defect report against the preceding commit. Recorded as an operator-reported observation, not an assistant-witnessed one, with the same standing as `docs/evidence/fbl-035/real-safari-observation.md`.
+**Authorized by the operator on 2026-08-03, documentation-only, AC-103P variant.** No application source changed, no screenshot baseline was regenerated, no rung was begun.
+
+**What was wrong.** Six documents claiming V1.1 authority — including one headed "Mission status: **Active** — ratified" and an acceptance specification headed "**Ratified** at AC-102" — existed only as untracked files on one machine. A fresh clone had none of them. Meanwhile both priority-1 tracked documents stated the active mission was V1, complete, and that *"Any further implementation work requires a new reviewed mission baseline… None has been started"* — while four implementation commits sat on `main`. This is the same class of defect `AC-101` existed to fix, recurring in the opposite direction. The ladder those documents cited as their authority, `docs/03-architecture/agent-city-v1.1-build-ladder.md`, **did not exist at all**.
+
+**Ratified into git.** `agent-city-v1.1-mission.md`, `agent-city-v1.1-decision-record.md`, `agent-city-v1.1-scope.md`, `agent-city-v1.1-exclusions.md`, `v1.1-acceptance.md`, and `agent-city-post-v1-reconciliation.md` are now tracked authority. `docs/03-architecture/agent-city-v1.1-build-ladder.md` is created, derived from the tracked proposal, which becomes historical; where the two differ, the ladder governs.
+
+**Priority-1 documents corrected.** `docs/01-mission/active-mission.md` now states plainly that it is the **closed V1 mission record** and names V1.1 as active — as an append-only pointer, with the V1 text below it untouched. `FOUNDATION_VERSION.md` names V1.1 as the active mission with its document, ladder, and acceptance spec, and retires the now-false "None has been started."
+
+**The rung-label problem, resolved by mapping rather than rewrite (decision D-9).** Four commits (`9a6f7ee`, `e1fa301`, `9345a04`, `7b536a9`) carry the label "AC-103". Under the ratified ladder `AC-103` is **Finding 6 resolution**, and none of them touched it. Pushed history is append-only and identifiers are never reused, so:
+
+- `AC-103` **keeps** its ladder meaning and remains **not started**; it must close before `AC-111`.
+- The four commits are preserved as **`AC-103P`** — a pre-ladder proof, authorized directly by the operator before any ladder existed. **It closes no rung.**
+- `docs/evidence/ac-103/` renamed to `docs/evidence/ac-103p/`, freeing `ac-103/` for Finding 6's traces.
+- New `docs/audits/agent-city-v1.1-rung-label-reconciliation.md` maps each commit to what it truly implemented and what each anticipated rung still owes: `AC-105` (runtime-mode selection, automatic credential handoff), `AC-106` (PV1-013 `building.selected`, demo-control disposition), `AC-107` (plan and authorization contracts), `AC-108` (**Architect step, `BuildPlan`, plan review panel — none exist**, so its stop condition is unmet).
+
+**Two process failures recorded rather than quietly fixed.**
+
+- **An unrecorded specification amendment.** `9a6f7ee` changed `BuildSchema.currentStageId` to `IdSchema.nullable()`. It is defensible on its merits — `domain-model.md` lists the field among Build's *required* fields, meaning always present, and `nullable` keeps it present while making representable a state that always existed — but it was made inside a mislabelled slice without being recorded. Now logged in the V1.1 scope § 9, owned by `AC-107`.
+- **Out-of-order execution.** `AC-103P` landed before `AC-104` and `AC-105` because the operator explicitly deferred one-command startup for the first slice. Recorded so no reader infers those rungs were satisfied or waived; both remain required and un-started.
+
+**New observations N-06 and N-07** added to the reconciliation record: all six Playwright baselines are stale (30,127–49,360 pixels each, measured at zero tolerance) from **four** independent causes, three of which — `6dd9fa8`, `ca5b339`, and the operator's `e5378aa` — predate the V1.1 work; and the rung-label mismatch itself. **No baseline was updated, accepted, or regenerated.**
+
+**Still open, unchanged by this ratification:** Finding 6 (undiagnosed, `AC-103`), decision D-8 (`e5378aa` disposition, `AC-117`), N-03 (`pnpm format` fails on 28 files, pre-existing, `AC-119`), N-05 (`next-env.d.ts` drift, `AC-119`).
+
+### Added — AC-103P: Operator verification record (documentation only)
+
+`docs/evidence/ac-103p/operator-verification.md` (renamed from `ac-103/` at the `AC-102` ratification below) records that the operator **manually verified objective submission in backend mode** against commit `9345a04`, following their own defect report against the preceding commit. Recorded as an operator-reported observation, not an assistant-witnessed one, with the same standing as `docs/evidence/fbl-035/real-safari-observation.md`.
 
 It is deliberately scoped: it verifies the objective-submission fix, it is **not** an acceptance sign-off for `AC-103`, and it does not close the rung. The six backend-mode screenshot baselines, Finding 6, and the deferred one-command startup are each recorded as still open. No source file changed.
 
-### Fixed — AC-103: The world-state projection never advanced with the event log
+### Fixed — AC-103P: The world-state projection never advanced with the event log
 
 Reported by the operator after the first live backend-mode submission: the success message named a real project and build, the timeline showed `operator.objective_submitted` and `build.created`, and "Current build" still read **"No build yet."** — while the objective text appeared to be duplicated in the timeline.
 
@@ -32,7 +58,7 @@ Reads are **coalesced**: at most one is in flight, and everything arriving durin
 
 **Verification.** `pnpm typecheck` 8/8, `pnpm lint` clean, `pnpm build` clean, `pnpm -r run test` → **924 passed / 80 files / 0 failures** (contracts 68, ui 18, world-model 7, event-types 14, runtime-adapters 128, persistence 169, agent-city 467, api 57). **The browser suite was again not run**: the operator's own `next dev` held the app directory, and Next refuses a second dev server from it, so `playwright.config.ts` could not start one. The six backend-mode screenshot baselines still need regeneration under review, now for two reasons — the objective control in the navigator, and this changed timeline description.
 
-### Added — AC-103: Operator objective submission (V1.1 first implementation slice)
+### Added — AC-103P: Operator objective submission (V1.1 first implementation slice)
 
 **Authorized by the operator on 2026-08-03, scoped explicitly to objective submission.** The operator submits one safe, bounded software objective; Foundry validates it, creates the `Project` and `Build` as backend truth, emits the declared events, and updates the world and timeline. Rejections are visible and understandable. **Nothing is planned, scheduled, dispatched, or executed** — that boundary is enforced by tests, not only by intent.
 
