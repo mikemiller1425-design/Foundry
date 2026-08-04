@@ -92,13 +92,25 @@ export const OperatorExecutionAuthorizedEvent = defineEvent(
     authorizationId: IdSchema,
     planId: IdSchema,
     buildId: IdSchema,
-    /** Binds the authorization to the exact plan content that was reviewed. */
-    planFingerprint: z.string().min(1),
+    /**
+     * The plan revision the operator reviewed — a change indicator.
+     * The authoritative execution binding is the backend-generated
+     * SHA-256 over canonical persisted plan content, required at AC-110.
+     */
+    planRevision: z.string().min(1),
+    /**
+     * Backend-generated SHA-256 of canonical persisted plan content
+     * (AC-107 operator-review correction 2). Optional in the declared
+     * shape only because no producer exists yet; AC-110 must require it,
+     * compute it server-side, and compare it server-side.
+     */
+    planContentHash: z.string().min(1).optional(),
     /** Exactly one stage — an authorization is never build-wide. */
     stageName: z.string().min(1),
     riskClass: z.string().min(1),
     workspace: z.string().min(1),
-    maxBudgetUsd: z.number().positive().optional(),
+    /** Required — every issued authorization is budgeted. */
+    maxBudgetUsd: z.number().positive(),
     authorizedBy: IdSchema,
   }),
 );

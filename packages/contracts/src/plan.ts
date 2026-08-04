@@ -22,6 +22,11 @@ import { ObjectiveTextSchema, ObjectiveWorkspaceSchema } from "./objective";
  * - **Workspace and risk are re-stated on the plan and re-validated.** They
  *   are not inherited on trust from whatever submitted the objective, so a
  *   planner cannot quietly widen either.
+ * - **Real execution is allocated to one named stage or none.** The
+ *   `claude_code` runtime may be planned only for `backend_implementation`
+ *   (`CLAUDE_CODE_STAGE`), and never for more than one stage. A plan
+ *   cannot propose two real model invocations, or move the real one
+ *   somewhere the specification did not put it.
  * - **`.strict()` throughout.** An invented field is refused, not dropped.
  *
  * A plan is a *proposal to be reviewed*, never an authorization. Executing
@@ -99,15 +104,57 @@ const BuildPlanShape = z
   .strict();
 
 /**
- * The stage-set rule, applied as a whole-plan check.
+ * The one stage permitted to allocate the `claude_code` runtime.
+ *
+ * The authoritative rule is **narrower than "at most one"** — it names the
+ * stage. `domain-model.md` → AgentRun invariants: *"exactly one `AgentRun`
+ * in V1 uses `runtimeType: claude_code` (**the `backend_implementation`
+ * stage**, per `v1-scope.md`)"*. `v1-scope.md` stage 4 calls it "the one
+ * controlled Claude Code stage, R0–R2 only", and the V1.1 scope § 5.4
+ * carries it forward as "**One** real Claude Code stage".
+ *
+ * So a plan that allocated `claude_code` to `scaffold` would be refused
+ * even if it were the only such stage: the constraint is not a budget of
+ * one, it is a named stage.
+ */
+export const CLAUDE_CODE_STAGE = "backend_implementation" as const;
+
+/**
+ * Whole-plan rules, applied together.
  *
  * Per-stage validation can only see one stage. "Exactly the seven, once
- * each, in order" is a property of the list, so it is checked here — and
- * each violation reports the specific stage index, because a plan that is
+ * each, in order" and "at most one Claude Code stage, and only that one"
+ * are properties of the *list*, so they are checked here — and each
+ * violation reports the specific stage index, because a plan that is
  * simply "invalid" tells a reviewer nothing about which part to fix.
  */
 export const BuildPlanSchema = BuildPlanShape.superRefine((plan, ctx) => {
   const expected = BUILD_STAGE_SEQUENCE;
+
+  /**
+   * Real-execution allocation, checked before the stage-set rules so a
+   * plan that is *also* misordered still reports this — it is the
+   * constraint with the highest consequence, since it is what decides
+   * whether a real model invocation can be planned at all.
+   */
+  plan.stages.forEach((stage, index) => {
+    if (stage.runtime === "claude_code" && stage.name !== CLAUDE_CODE_STAGE) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["stages", index, "runtime"],
+        message: `Only the \`${CLAUDE_CODE_STAGE}\` stage may use the \`claude_code\` runtime; stage \`${stage.name}\` may not. V1.1 permits exactly one controlled Claude Code stage, and the specification names which one (domain-model.md → AgentRun invariants; v1-scope.md § "V1 Build Stages").`,
+      });
+    }
+  });
+
+  const claudeCodeStages = plan.stages.filter((stage) => stage.runtime === "claude_code");
+  if (claudeCodeStages.length > 1) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["stages"],
+      message: `A V1.1 plan may allocate the \`claude_code\` runtime to at most one stage; this plan allocates it to ${claudeCodeStages.length}. Each real invocation costs money and requires its own single-use operator authorization.`,
+    });
+  }
 
   if (plan.stages.length !== expected.length) {
     ctx.addIssue({
@@ -140,21 +187,36 @@ export const BuildPlanSchema = BuildPlanShape.superRefine((plan, ctx) => {
 export type BuildPlan = z.infer<typeof BuildPlanSchema>;
 
 /**
- * A stable fingerprint of the reviewed plan.
+ * A **revision indicator** for a plan. Not a security boundary.
  *
- * `F-113` requires an execution authorization to be **plan-bound**: "a
- * modified plan invalidates it". That needs a value that changes whenever
- * anything an operator reviewed changes, and this is it.
+ * ## What this is for
  *
- * Deliberately dependency-free and synchronous: this module is imported by
- * the browser bundle as well as the backend, so `node:crypto` is not
- * available, and an async digest would make the authorization contract
- * awkward for no benefit. It is a **change detector, not a security
- * primitive** — nothing here defends against a chosen-collision attacker,
- * and nothing is asked to. `createdAt` and `planId` are included, so two
- * plans with identical content but different identity are distinguishable.
+ * Detecting that a plan changed, cheaply, on either side of the wire —
+ * "the plan you are looking at is not the plan you reviewed". It is useful
+ * for review-time UX and drift detection, and it is deliberately
+ * dependency-free and synchronous because `packages/contracts` is imported
+ * by the browser bundle, where `node:crypto` does not exist.
+ *
+ * ## What this is NOT
+ *
+ * **It is not the execution binding**, and it must not be represented as
+ * one. FNV-1a is a non-cryptographic hash: it detects accidental and
+ * incidental change, and offers no resistance to a party that wants two
+ * different plans to produce the same value. Anything that gates a real
+ * model invocation must not rest on it.
+ *
+ * Per the operator's `AC-107` contract review, the authoritative execution
+ * binding required at `AC-110` is a **backend-generated SHA-256 hash of
+ * canonical persisted plan content, stored with the `Plan` and compared
+ * server-side** — never computed by, or accepted from, a client. That
+ * requirement is recorded in `docs/03-architecture/agent-city-v1.1-build-ladder.md`
+ * § AC-110 and in `docs/02-specification/v1.1-acceptance.md` `F-113`. It is
+ * **not implemented here**; `AC-107` is a contract-only rung.
+ *
+ * `createdAt` and `planId` are included, so two plans with identical
+ * content but different identity are distinguishable.
  */
-export function fingerprintPlan(plan: BuildPlan): string {
+export function planRevision(plan: BuildPlan): string {
   // Canonical form: field order fixed here rather than inherited from
   // whatever order the object happened to be built in, so the fingerprint
   // is a function of content and not of construction.
@@ -183,8 +245,9 @@ export function fingerprintPlan(plan: BuildPlan): string {
     ]),
   ]);
 
-  // FNV-1a, 32-bit, doubled over two offsets for a wider value. Chosen for
-  // being short, deterministic, and obviously not a cryptographic claim.
+  // FNV-1a, 32-bit, doubled over two offsets. Chosen for being short,
+  // deterministic, and obviously not a cryptographic claim — see the
+  // contract note above for what must gate a real invocation instead.
   const hash = (seed: number): string => {
     let value = seed;
     for (let i = 0; i < canonical.length; i += 1) {
@@ -194,5 +257,5 @@ export function fingerprintPlan(plan: BuildPlan): string {
     return value.toString(16).padStart(8, "0");
   };
 
-  return `plan-${hash(0x811c9dc5)}${hash(0x9e3779b9)}`;
+  return `rev-${hash(0x811c9dc5)}${hash(0x9e3779b9)}`;
 }

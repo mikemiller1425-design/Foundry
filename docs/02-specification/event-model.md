@@ -399,7 +399,7 @@ Plan **production** needs nothing new — `build.planned` already covers it. Wha
 | Meaning | Operator read the structured plan and recorded a decision |
 | Producer | Backend (after an authenticated operator act) |
 | Trigger | Operator resolves plan review |
-| Payload | `planId`, `buildId`, `planFingerprint`, `decision` (`proceed` \| `rejected` \| `revision_requested`), `reviewedBy`, optional `note` |
+| Payload | `planId`, `buildId`, `planRevision`, `decision` (`proceed` \| `rejected` \| `revision_requested`), `reviewedBy`, optional `note` |
 | Preconditions | A persisted plan exists for the build |
 | Backend effect | Records the decision. **Reviewing is not authorizing** — `proceed` alone permits no execution |
 | Frontend effect | Plan review panel state; timeline row |
@@ -413,8 +413,8 @@ Plan **production** needs nothing new — `build.planned` already covers it. Wha
 | Meaning | Operator authorized exactly one stage to execute, once |
 | Producer | Backend (after an authenticated operator act) |
 | Trigger | Operator authorizes execution, having read the plan |
-| Payload | `authorizationId`, `planId`, `buildId`, `planFingerprint`, `stageName`, `riskClass`, `workspace`, optional `maxBudgetUsd`, `authorizedBy` |
-| Preconditions | The named plan exists and its current fingerprint equals `planFingerprint`; the stage is in the plan |
+| Payload | `authorizationId`, `planId`, `buildId`, `planRevision`, `planContentHash` (backend SHA-256; required from `AC-110`), `stageName`, `riskClass`, `workspace`, **required** `maxBudgetUsd` (positive, finite, ≤ $25), `authorizedBy` |
+| Preconditions | The named plan exists; its **backend-generated SHA-256 over canonical persisted content** equals `planContentHash`, compared server-side; the stage is in the plan. `planRevision` is a change indicator only and is **not** the binding |
 | Backend effect | Records a **single-use, plan-bound** authorization. A modified plan invalidates it; one authorization never covers a second run (`F-113`) |
 | Frontend effect | Authorization state; timeline row |
 | Audit | Required — this is the gate before anything real runs |

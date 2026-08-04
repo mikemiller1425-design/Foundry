@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  ExecutionAuthorizationDraftSchema,
   ExecutionAuthorizationSchema,
   MAX_BUDGET_USD_CEILING,
   authorizesPlan,
+  isExecutionAuthorization,
   type ExecutionAuthorization,
 } from "./authorization";
 import { BUILD_STAGE_SEQUENCE } from "./entities/buildStage";
-import { fingerprintPlan, type BuildPlan } from "./plan";
+import { planRevision, type BuildPlan } from "./plan";
 
 function validPlan(): BuildPlan {
   return {
@@ -33,7 +35,7 @@ function validAuthorization(plan = validPlan()): ExecutionAuthorization {
   return {
     authorizationId: "auth-1",
     planId: plan.planId,
-    planFingerprint: fingerprintPlan(plan),
+    planRevision: planRevision(plan),
     projectId: plan.projectId,
     buildId: plan.buildId,
     stageName: "backend_implementation",
@@ -51,9 +53,11 @@ describe("ExecutionAuthorizationSchema — the accepted shape", () => {
     expect(ExecutionAuthorizationSchema.safeParse(validAuthorization()).success).toBe(true);
   });
 
-  it("accepts an omitted budget — the ceiling is enforced where a run is authorized", () => {
+  it("REJECTS an omitted budget — every issued authorization is budgeted", () => {
+    // Corrected at the operator AC-107 review: the field was optional
+    // while the contract claimed an absent budget was unrepresentable.
     const { maxBudgetUsd: _omitted, ...rest } = validAuthorization();
-    expect(ExecutionAuthorizationSchema.safeParse(rest).success).toBe(true);
+    expect(ExecutionAuthorizationSchema.safeParse(rest).success).toBe(false);
   });
 });
 
@@ -115,7 +119,7 @@ describe("ExecutionAuthorizationSchema — it cannot widen the boundary", () => 
   });
 
   it("requires an authorizing operator and a timestamp", () => {
-    for (const field of ["authorizedBy", "authorizedAt", "planFingerprint"] as const) {
+    for (const field of ["authorizedBy", "authorizedAt", "planRevision", "maxBudgetUsd"] as const) {
       const input: Record<string, unknown> = { ...validAuthorization() };
       delete input[field];
       expect(ExecutionAuthorizationSchema.safeParse(input).success, field).toBe(false);
@@ -188,5 +192,92 @@ describe("authorizesPlan — plan-bound", () => {
     const check = authorizesPlan(authorization, other);
     expect(check.mismatches.length).toBeGreaterThan(2);
     expect(check.valid).toBe(false);
+  });
+});
+
+/**
+ * AC-107 operator-review corrections.
+ */
+describe("ExecutionAuthorizationSchema — the budget is required and capped (correction 1)", () => {
+  it("caps V1.1 spend at $25", () => {
+    expect(MAX_BUDGET_USD_CEILING).toBe(25);
+  });
+
+  it("accepts a positive finite amount at or below the ceiling", () => {
+    for (const maxBudgetUsd of [0.01, 1, 24.99, MAX_BUDGET_USD_CEILING]) {
+      expect(
+        ExecutionAuthorizationSchema.safeParse({ ...validAuthorization(), maxBudgetUsd }).success,
+        String(maxBudgetUsd),
+      ).toBe(true);
+    }
+  });
+
+  it("rejects anything above the ceiling, including the previous $100 limit", () => {
+    for (const maxBudgetUsd of [25.01, 26, 100]) {
+      expect(
+        ExecutionAuthorizationSchema.safeParse({ ...validAuthorization(), maxBudgetUsd }).success,
+        String(maxBudgetUsd),
+      ).toBe(false);
+    }
+  });
+
+  it("rejects non-finite, zero, and negative amounts", () => {
+    for (const maxBudgetUsd of [0, -1, Number.POSITIVE_INFINITY, Number.NaN]) {
+      expect(
+        ExecutionAuthorizationSchema.safeParse({ ...validAuthorization(), maxBudgetUsd }).success,
+        String(maxBudgetUsd),
+      ).toBe(false);
+    }
+  });
+});
+
+describe("ExecutionAuthorizationDraftSchema — a draft can never authorize (correction 1)", () => {
+  function validDraft() {
+    return {
+      kind: "execution_authorization_draft" as const,
+      planId: "plan-1",
+      projectId: "project-1",
+      buildId: "build-1",
+      workspace: "foundry_managed" as const,
+      riskClass: "R2" as const,
+    };
+  }
+
+  it("accepts an incomplete draft — no stage, no budget, no operator", () => {
+    expect(ExecutionAuthorizationDraftSchema.safeParse(validDraft()).success).toBe(true);
+  });
+
+  it("a draft does NOT parse as an ExecutionAuthorization", () => {
+    expect(ExecutionAuthorizationSchema.safeParse(validDraft()).success).toBe(false);
+  });
+
+  it("a complete draft still does NOT parse as an ExecutionAuthorization", () => {
+    const filled = {
+      ...validDraft(),
+      stageName: "backend_implementation" as const,
+      planRevision: "rev-abc",
+      maxBudgetUsd: 5,
+    };
+    expect(ExecutionAuthorizationDraftSchema.safeParse(filled).success).toBe(true);
+    expect(ExecutionAuthorizationSchema.safeParse(filled).success).toBe(false);
+  });
+
+  it("an ExecutionAuthorization does NOT parse as a draft", () => {
+    expect(ExecutionAuthorizationDraftSchema.safeParse(validAuthorization()).success).toBe(false);
+  });
+
+  it("no object satisfies both schemas", () => {
+    const candidates: unknown[] = [validDraft(), validAuthorization()];
+    for (const candidate of candidates) {
+      const asDraft = ExecutionAuthorizationDraftSchema.safeParse(candidate).success;
+      const asAuth = ExecutionAuthorizationSchema.safeParse(candidate).success;
+      expect(asDraft && asAuth).toBe(false);
+    }
+  });
+
+  it("isExecutionAuthorization refuses every draft", () => {
+    expect(isExecutionAuthorization(validDraft())).toBe(false);
+    expect(isExecutionAuthorization({ ...validDraft(), singleUse: true })).toBe(false);
+    expect(isExecutionAuthorization(validAuthorization())).toBe(true);
   });
 });

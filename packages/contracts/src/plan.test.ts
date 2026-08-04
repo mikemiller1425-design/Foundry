@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { BUILD_STAGE_SEQUENCE, buildStageSequenceNumber } from "./entities/buildStage";
-import { BuildPlanSchema, PlannedStageSchema, fingerprintPlan, type BuildPlan } from "./plan";
+import {
+  BuildPlanSchema,
+  CLAUDE_CODE_STAGE,
+  PlannedStageSchema,
+  planRevision,
+  type BuildPlan,
+} from "./plan";
 
 /**
  * AC-107 / F-107 — the plan boundary is explicit and fail-closed before an
@@ -177,9 +183,9 @@ describe("BUILD_STAGE_SEQUENCE — transcribed from v1-scope.md", () => {
   });
 });
 
-describe("fingerprintPlan — plan-binding for F-113", () => {
+describe("planRevision — a change indicator, not the execution binding", () => {
   it("is stable for the same plan", () => {
-    expect(fingerprintPlan(validPlan())).toBe(fingerprintPlan(validPlan()));
+    expect(planRevision(validPlan())).toBe(planRevision(validPlan()));
   });
 
   it("does not depend on the order object keys were built in", () => {
@@ -194,7 +200,7 @@ describe("fingerprintPlan — plan-binding for F-113", () => {
       projectId: a.projectId,
       planId: a.planId,
     };
-    expect(fingerprintPlan(b)).toBe(fingerprintPlan(a));
+    expect(planRevision(b)).toBe(planRevision(a));
   });
 
   it.each([
@@ -216,10 +222,78 @@ describe("fingerprintPlan — plan-binding for F-113", () => {
     const before = validPlan();
     const after = validPlan();
     mutate(after);
-    expect(fingerprintPlan(after)).not.toBe(fingerprintPlan(before));
+    expect(planRevision(after)).not.toBe(planRevision(before));
   });
 
   it("is a short, printable, prefixed token", () => {
-    expect(fingerprintPlan(validPlan())).toMatch(/^plan-[0-9a-f]{16}$/);
+    expect(planRevision(validPlan())).toMatch(/^rev-[0-9a-f]{16}$/);
+  });
+});
+
+/**
+ * AC-107 operator-review correction 3 — Claude Code allocation.
+ *
+ * The authoritative rule is narrower than "at most one": `domain-model.md`
+ * → AgentRun invariants names the stage — "exactly one `AgentRun` in V1
+ * uses `runtimeType: claude_code` (the `backend_implementation` stage)".
+ */
+describe("BuildPlanSchema — Claude Code allocation boundary", () => {
+  function planWithClaudeCodeOn(...names: (typeof BUILD_STAGE_SEQUENCE)[number][]) {
+    const plan = validPlan();
+    for (const name of names) {
+      const target = plan.stages.find((s) => s.name === name);
+      if (target) target.runtime = "claude_code";
+    }
+    return plan;
+  }
+
+  it("names backend_implementation as the one permitted stage", () => {
+    expect(CLAUDE_CODE_STAGE).toBe("backend_implementation");
+  });
+
+  it("accepts a plan allocating claude_code to backend_implementation", () => {
+    expect(BuildPlanSchema.safeParse(planWithClaudeCodeOn("backend_implementation")).success).toBe(
+      true,
+    );
+  });
+
+  it("accepts a plan allocating no claude_code stage at all", () => {
+    expect(BuildPlanSchema.safeParse(validPlan()).success).toBe(true);
+  });
+
+  it("REFUSES a plan with two Claude Code stages", () => {
+    const parsed = BuildPlanSchema.safeParse(
+      planWithClaudeCodeOn("backend_implementation", "frontend_implementation"),
+    );
+    expect(parsed.success).toBe(false);
+    expect(JSON.stringify(parsed.error?.issues)).toMatch(/at most one stage/i);
+  });
+
+  it("REFUSES a plan with every stage set to Claude Code", () => {
+    const parsed = BuildPlanSchema.safeParse(planWithClaudeCodeOn(...BUILD_STAGE_SEQUENCE));
+    expect(parsed.success).toBe(false);
+    expect(JSON.stringify(parsed.error?.issues)).toMatch(/at most one stage/i);
+  });
+
+  it.each(
+    BUILD_STAGE_SEQUENCE.filter((n) => n !== "backend_implementation").map((n) => [n] as const),
+  )("REFUSES claude_code on `%s`, even as the only such stage", (name) => {
+    const parsed = BuildPlanSchema.safeParse(planWithClaudeCodeOn(name));
+    expect(parsed.success).toBe(false);
+    expect(JSON.stringify(parsed.error?.issues)).toMatch(/may use the `claude_code` runtime/);
+  });
+
+  it("names the offending stage index so a reviewer can find it", () => {
+    const parsed = BuildPlanSchema.safeParse(planWithClaudeCodeOn("qa_validation"));
+    const qaIndex = BUILD_STAGE_SEQUENCE.indexOf("qa_validation");
+    expect(parsed.error?.issues.some((i) => i.path.includes(qaIndex))).toBe(true);
+  });
+
+  it("reports the allocation violation even when the plan is also misordered", () => {
+    const plan = planWithClaudeCodeOn("scaffold");
+    [plan.stages[0], plan.stages[1]] = [plan.stages[1]!, plan.stages[0]!];
+    const parsed = BuildPlanSchema.safeParse(plan);
+    expect(parsed.success).toBe(false);
+    expect(JSON.stringify(parsed.error?.issues)).toMatch(/may use the `claude_code` runtime/);
   });
 });

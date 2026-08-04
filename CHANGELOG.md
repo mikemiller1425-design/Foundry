@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — AC-107 corrections from the operator contract review
+
+Three required corrections. `AC-107` remains **open** pending final review.
+
+**1 — The budget was optional while the contract claimed it could not be.** `maxBudgetUsd` was `.optional()`, yet its own comment asserted that "an unbounded or absent-by-accident budget is not representable". The schema permitted omission, so an authorization with no spend ceiling parsed cleanly — a false claim in a contract whose whole purpose is to be believed. The field is now **required**, positive, finite, and capped at **$25** for V1.1 (was $100). Every document and test claim that said otherwise is corrected, including the test that asserted an omitted budget was *accepted*, which now asserts it is refused.
+
+Incomplete pre-authorizations get a distinct **`ExecutionAuthorizationDraftSchema`** carrying a `kind` discriminator. The two schemas are **mutually exclusive by construction**: a draft lacks `singleUse`/`authorizedBy`/`authorizedAt` and carries a `kind` that `.strict()` refuses on the authorization; an authorization lacks `kind` and carries fields `.strict()` refuses on the draft. A test asserts no object satisfies both, so there is no accidental path from "still deciding" to "authorized".
+
+**2 — The FNV hash is now a revision indicator only, and is not represented as a security boundary.** `fingerprintPlan` is renamed **`planRevision`** (token prefix `rev-`), and its contract documentation states plainly that it detects change and offers nothing against a party that wants two plans to share a value. **`F-113a` is added to `v1.1-acceptance.md`** and the ladder's `AC-110` entry is amended: the authoritative execution binding **must** be a **backend-generated SHA-256 hash of canonical persisted plan content, stored with the `Plan` and compared server-side**, never computed by or accepted from a client. `operator.execution_authorized` gains `planContentHash`, optional only because no producer exists yet — `AC-110` must make it required. **No AC-110 implementation, no real invocation.**
+
+**3 — The Claude Code allocation boundary is now explicit, and it is narrower than "at most one".** Inspecting the authoritative scope found that `domain-model.md` → AgentRun invariants *names the stage*: "exactly one `AgentRun` in V1 uses `runtimeType: claude_code` (**the `backend_implementation` stage**, per `v1-scope.md`)". `v1-scope.md` stage 4 calls it "the one controlled Claude Code stage". So the enforced rule is the exact one: `claude_code` may be allocated **only to `backend_implementation`**, and to **no more than one stage**. A plan allocating it to `scaffold` is refused even as the only such stage. Negative tests cover multiple Claude Code stages, every stage set to Claude Code, and each of the six non-permitted stages individually.
+
+**Verification.** `pnpm typecheck` 8/8 · `pnpm lint` clean · `pnpm build` clean · `pnpm -r run test` → **1121 passed / 91 files / 0 failures** (up from 1098; contracts package 128 → 151).
+
 ### Added — AC-107: Bounded-objective, plan, and authorization contracts
 
 The V1.1 build boundary is now **explicit, typed, and fail-closed before any Architect planning or execution exists**. Contract-only: nothing produces a plan, reviews one, authorizes execution, or runs.

@@ -178,6 +178,15 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **Operator gate:** **Authorize** one controlled execution, having read exactly what will run.
 - **Stop condition:** Authorization gate proven in both directions. **Hard stop** — the real run is a separate rung and a separate authorization.
 
+**Amended requirement — plan binding (added 2026-08-03 at the operator's `AC-107` contract review):**
+
+> The authoritative execution binding **must** be a **backend-generated SHA-256 hash of canonical persisted plan content**, stored with the `Plan` record and compared **server-side** against the authorization before any execution is dispatched.
+
+- The client-computable `planRevision` (a non-cryptographic FNV hash, `packages/contracts/src/plan.ts`) is retained **only** as a revision/change indicator for review-time drift detection. It **may not** be represented as, or relied on as, a security boundary.
+- The hash is computed by the backend over persisted content. A value supplied by a client is **never** accepted as the binding.
+- `AC-110` may not close until this comparison is implemented server-side and proven in both directions.
+- The declared `operator.execution_authorized` payload carries `planContentHash` as optional **only** because no producer exists yet; `AC-110` must make it required.
+
 ### AC-111 — Real controlled Builder execution — [FEAT] — ⬜ Not started
 
 - **Depends on:** AC-110, **and AC-103 closed**.
