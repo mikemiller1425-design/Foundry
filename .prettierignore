@@ -15,3 +15,16 @@ FOUNDATION_VERSION.md
 CHANGELOG.md
 prompts/
 assets/
+
+# AC-119 — the frozen V1 regression baseline is not a formatting target.
+#
+# `v1.1-acceptance.md` § 2 requires `v1-canonical-run.json` to remain
+# **byte-identical**, and every V1.1 rung closure re-verifies that. It was
+# nevertheless in Prettier's dirty list, which made the documented remedy
+# for a failing `pnpm format` -- namely `pnpm format:write` -- a command
+# that would silently rewrite the baseline (measured: 64,759 -> 64,094
+# bytes) and break a mission stop condition.
+#
+# Excluding it removes the hazard at its source rather than relying on
+# nobody running the obvious fix.
+apps/agent-city/src/lib/mock-runtime/__fixtures__/v1-canonical-run.json

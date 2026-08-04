@@ -65,3 +65,18 @@ temp/
 
 # AC-105 local credential handoff (mode 0600, removed on shutdown)
 .foundry/
+
+# AC-119 — evidence must survive a fresh clone (F-134).
+#
+# `*.log` and `test-results/` above are correct for build noise, but they
+# also silently swallowed retained evidence twice: `PV1-043` recorded that
+# Finding 6 had "no reproduction record at all" because `test-results/` is
+# ignored, and at AC-103 the diagnosis logs were dropped from a `git add`
+# for the same reason and had to be renamed to `.txt` to be retained.
+#
+# Evidence a gitignore rule can quietly discard is not retained evidence.
+# These negations make `docs/evidence/` exempt, so an artifact placed there
+# is committed or visibly refused -- never silently absent.
+!docs/evidence/**/*.log
+!docs/evidence/**/logs/
+!docs/evidence/**/test-results/

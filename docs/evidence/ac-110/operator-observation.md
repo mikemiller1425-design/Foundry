@@ -131,3 +131,49 @@ The closed vocabulary grew by exactly one command, at the rung that needed it �
 | Authorization guards answering `200` rather than `403` | Recorded candidate | A later rung owning the API surface |
 
 `AC-111` is **not started** and requires its own explicit operator authorization. It is the first rung at which real money can be spent, and nothing in this approval authorizes that.
+
+---
+
+## Clarification — the closure commit (appended 2026-08-04, AC-119)
+
+**Appended, not edited.** The header above is left exactly as written, including the line this clarifies. Principle 18.
+
+### The header is imprecise
+
+> **Closed at:** commit `b7891b0` (documentation state at closure)
+
+`b7891b0` is **not** the closure. It is the closure commit's **parent** — the documentation state this record was written *against*.
+
+| Commit | What it is |
+| --- | --- |
+| `a82fcf4` | **The implementation** — `feat: execution authorization gate (AC-110)`. What was reviewed and approved. The header states this correctly, and the ladder cites it correctly. |
+| `b7891b0` | **The base** — `docs: correct the basis of the AC-108 and AC-109 approvals`. The tree state this record was authored on top of. |
+| `f955327` | **The closure commit** — `docs: record the AC-110 operator approval and close the rung`. It contains this record, the ladder's `✅ Closed` status, and the CHANGELOG entry. **This is the commit that effected the closure.** |
+
+Verified: `git show -s --format=%p f955327` → `b7891b0`.
+
+### Why the header could not name it
+
+A file cannot contain the hash of the commit that introduces it — the hash is computed over content that would have to include the hash. So a record which is itself part of its closure commit can only name its base, and calling that base "Closed at" was the error.
+
+Nothing was mis-approved and no fact about `AC-110` changes. What changes is that a reader following the header no longer lands one commit short of the closure.
+
+### The convention this record adopts going forward
+
+Rung records should carry:
+
+- **Implemented at** — the commit under review (`a82fcf4` here).
+- **Documentation base** — the parent the record was authored on (`b7891b0` here).
+
+and should **not** claim a "Closed at" commit, because the record cannot know it. The closure commit is discoverable instead by the commit that introduces the record:
+
+```bash
+git log --oneline --diff-filter=A -- docs/evidence/ac-110/operator-observation.md
+```
+
+Applied to this file, that returns `f955327`.
+
+### Scope
+
+This clarification is about **commit provenance in a record header**. It does not touch the approval, the basis of the approval, the evidence, or the rung's closed status — all of which stand exactly as recorded above.
+

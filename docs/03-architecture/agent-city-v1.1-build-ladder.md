@@ -49,7 +49,7 @@ This is the **authoritative V1.1 Build Ladder**. Before this document existed, t
 | AC-116 | HARD | Security and containment hardening | AC-113 | Review | ⬜ Not started |
 | AC-117 | HARD | Accessibility, browser, and performance debt closure | AC-114 | Observe | ⬜ Not started |
 | AC-118 | FEAT | Cohesive low-poly neighborhood pass | AC-113, AC-117 | **Observe** | ⬜ Not started |
-| AC-119 | HARD | Repository, evidence, and CI hygiene | AC-102 | Review | ⬜ Not started |
+| AC-119 | HARD | Repository, evidence, and CI hygiene | AC-102 | Review | 🟡 Partial — 3 items fixed, 2 need an operator decision |
 | AC-120 | — | Complete V1.1 acceptance verification | all | **Sign off** | ⬜ Not started |
 
 **Critical path:** `AC-101 → AC-102 → AC-104 → AC-105 → AC-106 → AC-107 → AC-108 → AC-109 → AC-110 → AC-111 → AC-112 → AC-113 → AC-114 → AC-117 → AC-118 → AC-120`.
@@ -281,11 +281,20 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **Operator gate:** **Observe** and confirm comprehension and responsiveness hold.
 - **Stop condition:** Visual pass accepted with performance proven. **Hard stop.**
 
-### AC-119 — Repository, evidence, and CI hygiene — [HARD] — ⬜ Not started
+### AC-119 — Repository, evidence, and CI hygiene — [HARD] — 🟡 Partial
 
 - **Owns:** N-03 (`pnpm format` fails on 28 files, pre-existing), N-05 (`next-env.d.ts` drift), PV1-024/PV1-044 (evidence retention).
 - **Prohibited shortcut:** Running `prettier --write` across the tree inside an unrelated rung.
 - **Stop condition:** CI green and evidence chain durable.
+
+**Partially delivered 2026-08-04.** Three items fixed; two recorded with a stated reason for not acting. **Not closed.**
+
+- **Fixed — the `AC-110` evidence header** *(operator-requested)*. `b7891b0` is the closure commit's **parent**, not the closure; the actual closure commit is **`f955327`**, verified by `git show -s --format=%p`. A file cannot contain the hash of the commit that introduces it, so the record could only name its base — and labelling that base "Closed at" was the error. Clarification **appended** (46 added, 0 removed). Future records carry "Implemented at" and "Documentation base", and the closure commit is found with `git log --diff-filter=A` on the record itself.
+- **Fixed — a live hazard inside `N-03`.** `pnpm format:write`, the documented remedy for the failing format check, would have **rewritten the frozen `v1-canonical-run.json`** (measured 64,759 → 64,094 bytes) and broken the byte-identity that `v1.1-acceptance.md` § 2 requires and every rung closure re-verifies. The fixture is now excluded in `.prettierignore`.
+- **Fixed — evidence could be silently swallowed by `.gitignore`.** The same mechanism twice: `PV1-043` recorded Finding 6 had "no reproduction record at all" because `test-results/` is ignored, and at `AC-103` the diagnosis logs were dropped from a `git add` because `*.log` is. `.gitignore` now negates those patterns under `docs/evidence/` only. **`F-134` audit: 44 cited artifact paths, 0 missing** — the property currently holds.
+- **Recorded, not acted on — `N-03`'s remaining 39 files.** 27 are pre-existing and untouched since V1. A tree-wide reformat is a large mechanical diff that deserves its own authorization and its own commit; this rung's own prohibition names that shortcut. **Needs an operator decision.**
+- **Recorded, not acted on — `F-133`: no CI exists at all.** No workflow of any kind. Every gate in every evidence record to date was run locally on one machine. A workflow file is not inert — it consumes billable Actions minutes, and this queue's standing instruction is not to spend money. **Needs an operator decision.**
+- **Record:** `docs/evidence/ac-119/hygiene-record.md`.
 
 ### AC-120 — Complete V1.1 acceptance verification — [terminal] — ⬜ Not started
 

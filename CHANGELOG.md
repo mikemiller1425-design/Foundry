@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — AC-119: repository and evidence hygiene (partial; two items need an operator decision)
+
+**The `AC-110` evidence header, verified and clarified** *(operator-requested)*. `b7891b0` is the closure commit's **parent**, not the closure; the actual closure commit is **`f955327`**. A file cannot contain the hash of the commit that introduces it, so the record could only name its base — labelling that base "Closed at" was the error. The clarification is **appended** (46 lines added, 0 removed). Nothing about the approval, its basis, the evidence, or the closed status changes.
+
+**A live hazard was found inside what looked like a cosmetic annoyance.** `N-03` has been carried as "`pnpm format` fails, pre-existing". The documented remedy — `pnpm format:write` — would have **rewritten the frozen `v1-canonical-run.json`** (measured 64,759 → 64,094 bytes) and broken the byte-identity `v1.1-acceptance.md` § 2 requires and every rung closure re-verifies. Silently, because Prettier would have been doing exactly its job. The fixture is now excluded in `.prettierignore`.
+
+**Evidence could be silently swallowed by `.gitignore`** — the same mechanism twice, three months apart. `PV1-043` recorded that Finding 6 had "no reproduction record at all" because `test-results/` is ignored; at `AC-103` the diagnosis logs were dropped from a `git add` because `*.log` is. `.gitignore` now negates those patterns **under `docs/evidence/` only**. An `F-134` audit of all 44 cited artifact paths found **0 missing** — the property holds, and this is what keeps it holding.
+
+**Two items recorded rather than acted on**, each with a stated reason and a recommendation:
+
+- **`N-03`'s remaining 39 files** — 27 pre-existing and untouched since V1. A tree-wide reformat is a large mechanical diff deserving its own authorization and its own commit; this rung's own prohibition names that shortcut.
+- **`F-133`: no CI exists at all.** No workflow of any kind — every gate in every evidence record to date was run locally on one machine. A workflow file is not inert: it consumes billable Actions minutes, and this queue's standing instruction is not to spend money.
+
+`AC-119` is **not closed.** Recorded in `docs/evidence/ac-119/hygiene-record.md`.
+
 ### Reviewed — pre-AC-111 Builder Execution Hardening Review (read-only)
 
 A read-only review of the real-execution path `AC-111` will drive, against `F-113`–`F-117`, `AC-107` Decision 2, and the `AC-110` gate as built. **No code was changed. Nothing was executed, no Claude Code was invoked, and no money was spent.**
