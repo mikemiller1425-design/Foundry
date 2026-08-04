@@ -381,3 +381,52 @@ Every V1 event that mutates visible operational state must have:
 3. visual mapping or explicit “no visual change”  
 4. at least one automated test  
 5. idempotent duplicate handling  
+
+---
+
+## V1.1 amendment — operator decision events (`AC-107`, 2026-08-03)
+
+**Amendment, recorded at the rung that owns it. Foundation 1.0 meaning is otherwise unchanged; no existing event was altered, renamed, or removed.**
+
+The Post-V1 truth audit §17 recorded that "no event exists for plan review, execution authorization, or an operator's decision to proceed after seeing a plan", and that the V1.1 outcome requires at least one new operator event family.
+
+Plan **production** needs nothing new — `build.planned` already covers it. What was missing is the record of a **human deciding**, which is exactly what principle 14 ("Humans govern") requires to be evidence rather than assumption.
+
+### `operator.plan_reviewed`
+
+| | |
+| --- | --- |
+| Meaning | Operator read the structured plan and recorded a decision |
+| Producer | Backend (after an authenticated operator act) |
+| Trigger | Operator resolves plan review |
+| Payload | `planId`, `buildId`, `planFingerprint`, `decision` (`proceed` \| `rejected` \| `revision_requested`), `reviewedBy`, optional `note` |
+| Preconditions | A persisted plan exists for the build |
+| Backend effect | Records the decision. **Reviewing is not authorizing** — `proceed` alone permits no execution |
+| Frontend effect | Plan review panel state; timeline row |
+| Audit | Required — this is a governance act |
+| Idempotency | One decision per plan; a repeat of the same decision is a no-op, a conflicting one is refused |
+
+### `operator.execution_authorized`
+
+| | |
+| --- | --- |
+| Meaning | Operator authorized exactly one stage to execute, once |
+| Producer | Backend (after an authenticated operator act) |
+| Trigger | Operator authorizes execution, having read the plan |
+| Payload | `authorizationId`, `planId`, `buildId`, `planFingerprint`, `stageName`, `riskClass`, `workspace`, optional `maxBudgetUsd`, `authorizedBy` |
+| Preconditions | The named plan exists and its current fingerprint equals `planFingerprint`; the stage is in the plan |
+| Backend effect | Records a **single-use, plan-bound** authorization. A modified plan invalidates it; one authorization never covers a second run (`F-113`) |
+| Frontend effect | Authorization state; timeline row |
+| Audit | Required — this is the gate before anything real runs |
+| Idempotency | Single-use. A second execution under the same authorization is refused |
+
+### Status of these events
+
+**Declared here and typed in `packages/event-types`, but deliberately not yet members of the runtime event vocabulary** (`ALL_EVENT_SCHEMAS` / `FoundryEventSchema` / `EVENT_TYPES`).
+
+Two reasons, both deliberate:
+
+1. **Nothing produces them yet.** `AC-107` is a contract-only rung. An event type in the runtime vocabulary that no code emits and no reducer handles is a claim the system does not honour.
+2. **`EVENT_TYPES` is asserted against the mock runtime's event→world projection map**, which must cover every member. Joining the union now would force changes to the mock runtime, whose canonical fixture is the frozen V1 regression baseline and which this mission may not modify.
+
+They join the union at the rung that produces each — **`AC-108`** for `operator.plan_reviewed`, **`AC-110`** for `operator.execution_authorized` — together with the reducer disposition and projection-map entries each requires.

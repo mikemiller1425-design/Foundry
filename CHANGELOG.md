@@ -6,6 +6,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — AC-107: Bounded-objective, plan, and authorization contracts
+
+The V1.1 build boundary is now **explicit, typed, and fail-closed before any Architect planning or execution exists**. Contract-only: nothing produces a plan, reviews one, authorizes execution, or runs.
+
+**Three properties the mission depends on, made unrepresentable rather than merely rejected.**
+
+- **Workspace.** `OBJECTIVE_WORKSPACES` has one member. An operator-nominated directory cannot be *expressed* (Decision 2: write confinement for a real run is post-hoc detection, not prevention).
+- **Risk.** R0–R2 only; R3–R5 remain unrepresentable (principle 19). The plan and the authorization each **re-state and re-validate** the class rather than inheriting it, so no later step can widen what an earlier one bounded.
+- **Stages.** `BUILD_STAGE_SEQUENCE` is transcribed from `v1-scope.md` § "V1 Build Stages". The enum already made an unknown name unrepresentable; nothing expressed that the seven are *sequential*, so a plan listing five of them, or listing them in any order, was previously representable. `BuildPlanSchema` now requires exactly those seven, once each, in order, and names the offending stage index when it refuses.
+
+**New contracts.** `BuildPlanSchema` (stages, requirements, acceptance criteria, workspace, risk class) and `ExecutionAuthorizationSchema` — single-use and plan-bound per `F-113`. `singleUse` is a literal `true`, so a multi-use authorization is unrepresentable; `stageName` is one named stage, so a build-wide authorization is too. `fingerprintPlan()` makes "a modified plan invalidates it" checkable rather than aspirational, and `authorizesPlan()` returns **every** mismatch at once. The fingerprint is a change detector, not a security primitive, and says so.
+
+**Per-command parameter schemas** for `Project.Create`, `Build.Create`, and `Build.Plan` — three commands specifically. `commands.ts` recorded that envelope-only validation was correct "until there is real enforcement logic to consume those parameters"; there is now. Every other command stays envelope-only, because `domain-model.md` still does not specify its fields.
+
+**No frontend-only value can widen authority.** The objective form held its own `["R0","R1","R2"]` literal and its own `"foundry_managed"` string. Two lists that must agree and are maintained apart eventually disagree, and the direction that matters is a frontend quietly offering what the contract forbids. Both now come from the contract, tested three ways: the offered options equal the contract's list exactly, every offered option is accepted by the schema, and the submission the form produces parses against `ObjectiveSubmissionSchema`.
+
+**Two deliberate restraints**, both places where doing more would have been easy and wrong:
+
+- **The new events are declared but not in the runtime vocabulary.** `EVENT_TYPES` is asserted against the mock runtime's event→world projection map, so joining the union now would force changes to the mock runtime, whose canonical fixture is the frozen V1 regression baseline. More fundamentally, nothing produces them — an event type the system cannot emit is a claim it does not honour. They join at `AC-108` and `AC-110`.
+- **The parameter schemas are declared but not wired into `CommandRequestSchema`.** Moving them there would convert handler-level refusals (HTTP 200 with a reason) into transport rejections (HTTP 400) — a behaviour change, in a rung whose stop condition is "hard stop before any consumer is written". `parseCommandParams` is the seam `AC-108` wires in.
+
+**Specification amendments**, each recorded at the rung that owns it: `domain-model.md` → Build ("demo objective fixed" superseded; `currentStageId` nullable confirmed from `AC-103P`); `domain-model.md` → new per-command parameter section; `event-model.md` → `operator.plan_reviewed` and `operator.execution_authorized` declared with their status; `principles.md` 3a → status statement only, no meaning change, mock retained as a selectable mode. **Not amended:** `v1-scope.md` § "V1 Build Stages", `exclusions.md`, `v1-acceptance.md`.
+
+**Verification.** `pnpm typecheck` 8/8 · `pnpm lint` clean · `pnpm build` clean · `pnpm -r run test` → **1098 passed / 91 files / 0 failures** (up from 1033). Live at the API boundary: too-short, over-long, disallowed workspace, R3, R5, unknown field, and multi-line objectives each refused with the offending field named, a valid submission accepted — and **seven rejections produced zero events**.
+
+Record: `docs/evidence/ac-107/contract-boundary.md`, including the `AC-103P` residue this rung clears and what remains for `AC-108` and `AC-110`.
+
+**`AC-107` is implemented but not closed** — it closes on the operator's contract review. No Architect step, no plan behaviour, no plan review UI, no orchestration, no execution, no real Claude Code. No Finding 6 work, no baseline work, no NAS District file touched.
+
 ### Observed — AC-106 closed: operator confirmed every backend-mode control is truthful (documentation only)
 
 The operator exercised the backend-mode controls against `ceca998` and reported **six PASS items**: demo controls, missing credential giving **Not authorized**, *Use this session's credential* restoring access, a too-short objective giving field validation, building selection being immediate without duplicating its timeline event, and mock mode retaining working demo controls with no credential panel. The stop condition — *"Zero silent no-ops; F-07 holds in both modes"* — is satisfied, so **`AC-106` is closed.**

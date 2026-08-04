@@ -5,6 +5,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { ObjectiveForm } from "./ObjectiveForm";
+import {
+  DEFAULT_OBJECTIVE_WORKSPACE,
+  ObjectiveSubmissionSchema,
+  V1RiskClassSchema,
+  V1_RISK_CLASSES,
+} from "@foundry/contracts";
 
 const OBJECTIVE = "Add a JSON task store module with a test suite";
 
@@ -211,5 +217,56 @@ describe("ObjectiveForm — the credential can actually be supplied", () => {
   it("does not offer a credential field while disconnected, where it would not help", () => {
     renderForm({ mutationsEnabled: false, operatorCredentialRequired: true });
     expect(screen.queryByTestId("objective-operator-credential-input")).toBeNull();
+  });
+});
+
+/**
+ * AC-107 — the form is a reader of the contract, not a second declaration
+ * of it. No frontend-only value may widen workspace, risk, or stage
+ * authority.
+ */
+describe("ObjectiveForm — bounded by the contract, not by local literals", () => {
+  it("offers exactly the risk classes the contract permits", () => {
+    renderForm();
+    const options = Array.from(screen.getByLabelText<HTMLSelectElement>("Risk class").options).map(
+      (option) => option.value,
+    );
+    expect(options).toEqual([...V1_RISK_CLASSES]);
+  });
+
+  it("every offered risk class is accepted by the contract schema", () => {
+    renderForm();
+    for (const option of Array.from(
+      screen.getByLabelText<HTMLSelectElement>("Risk class").options,
+    )) {
+      expect(V1RiskClassSchema.safeParse(option.value).success, option.value).toBe(true);
+    }
+  });
+
+  it("offers no R3+ option, so an out-of-ceiling risk cannot be selected at all", () => {
+    renderForm();
+    const options = Array.from(screen.getByLabelText<HTMLSelectElement>("Risk class").options).map(
+      (o) => o.value,
+    );
+    for (const forbidden of ["R3", "R4", "R5"]) {
+      expect(options).not.toContain(forbidden);
+    }
+  });
+
+  it("submits the contract's workspace value, not a local string", () => {
+    const { submitObjective } = renderForm();
+    fireEvent.change(screen.getByLabelText("Objective"), { target: { value: OBJECTIVE } });
+    fireEvent.click(screen.getByRole("button", { name: /submit objective/i }));
+    expect(submitObjective).toHaveBeenCalledWith(
+      expect.objectContaining({ workspace: DEFAULT_OBJECTIVE_WORKSPACE }),
+    );
+  });
+
+  it("produces a submission the contract schema accepts", () => {
+    const { submitObjective } = renderForm();
+    fireEvent.change(screen.getByLabelText("Objective"), { target: { value: OBJECTIVE } });
+    fireEvent.click(screen.getByRole("button", { name: /submit objective/i }));
+    const submitted = submitObjective.mock.calls[0]![0];
+    expect(ObjectiveSubmissionSchema.safeParse(submitted).success).toBe(true);
   });
 });

@@ -81,3 +81,22 @@ export const ObjectiveSubmissionSchema = z
   })
   .strict();
 export type ObjectiveSubmission = z.infer<typeof ObjectiveSubmissionSchema>;
+
+/**
+ * The permitted risk classes, as a value (AC-107).
+ *
+ * `V1RiskClassSchema` already makes R3–R5 unrepresentable, but a *UI* has
+ * to render a list of choices, and until now the objective form held its
+ * own literal `["R0", "R1", "R2"]`. Two lists that must agree and are
+ * maintained apart eventually disagree — and the direction that matters is
+ * a frontend list quietly offering something the contract forbids.
+ *
+ * Exporting the option list from the contract makes the form a *reader* of
+ * the boundary rather than a second declaration of it. Same reason
+ * `OBJECTIVE_WORKSPACES` is exported: no frontend-only value can widen
+ * workspace, risk, or stage authority.
+ */
+export const V1_RISK_CLASSES = ["R0", "R1", "R2"] as const;
+
+/** The single permitted workspace, as a value, for the same reason. */
+export const DEFAULT_OBJECTIVE_WORKSPACE = OBJECTIVE_WORKSPACES[0];

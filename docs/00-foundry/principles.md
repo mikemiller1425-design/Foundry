@@ -10,6 +10,8 @@
 3. If frontend and backend disagree, backend wins and the discrepancy is visible as a synchronization or stale-state error.
 3a. **Until a persisted backend exists, the deterministic mock engine (ADR-001) is the stand-in operational authority** behind the same contracts: its emitted events, not frontend logic, are the sole source of completion, transfer, approval, and upgrade outcomes during that phase. This does not relax principle 2 — frontend logic must still never locally forge completion, transfer, approval, or upgrade outcomes; it must wait for the mock engine's events exactly as it will later wait for the backend's. (Resolves audit finding M-05.)
 
+   **V1.1 status statement (`AC-107`, 2026-08-03).** A persisted backend now exists, so this principle’s stated condition — “until a persisted backend exists” — has lapsed. **No meaning changes.** The deterministic mock engine is retained as a *selectable operating mode* and remains the regression baseline; where it is selected it is still the stand-in operational authority under exactly the terms above, and principle 2 is still not relaxed. Where the backend is selected, the backend is the authority. Recorded as a status statement at the rung that owns it, not a rewrite.
+
 ## World fidelity
 
 4. **Meaningful animations require declared operational events.**

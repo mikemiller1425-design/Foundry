@@ -1,6 +1,11 @@
 "use client";
 
-import { OBJECTIVE_MAX_LENGTH, type V1RiskClass } from "@foundry/contracts";
+import {
+  DEFAULT_OBJECTIVE_WORKSPACE,
+  OBJECTIVE_MAX_LENGTH,
+  V1_RISK_CLASSES,
+  type V1RiskClass,
+} from "@foundry/contracts";
 import { useRuntime } from "@/lib/mock-runtime";
 import type { ObjectiveSubmissionResult } from "@/lib/backend/objectiveSubmission";
 import { useState } from "react";
@@ -30,7 +35,16 @@ import { OperatorCredentialEntry } from "./OperatorCredentialEntry";
  *   rather than present-and-inert.
  */
 
-const RISK_CLASSES: readonly V1RiskClass[] = ["R0", "R1", "R2"];
+/**
+ * Read from the contract, never declared here (AC-107).
+ *
+ * This list used to be a local literal. Two lists that must agree and are
+ * maintained apart eventually disagree, and the direction that matters is
+ * a frontend quietly offering a value the contract forbids. The form is
+ * now a reader of the boundary rather than a second declaration of it —
+ * no frontend-only value can widen workspace, risk, or stage authority.
+ */
+const RISK_CLASSES: readonly V1RiskClass[] = V1_RISK_CLASSES;
 
 export function ObjectiveForm() {
   const { submitObjective, mutationsEnabled, operatorCredentialRequired } = useRuntime();
@@ -55,7 +69,8 @@ export function ObjectiveForm() {
     try {
       const outcome = await submitObjective({
         objective,
-        workspace: "foundry_managed",
+        // From the contract, not a local literal — see RISK_CLASSES above.
+        workspace: DEFAULT_OBJECTIVE_WORKSPACE,
         riskClass,
       });
       setResult(outcome);

@@ -87,6 +87,7 @@
 | Commands | Create, Plan, Start, Pause, Resume, Cancel, Fail, Complete |
 | Emitted events | `build.created`, `build.planned`, `build.ready`, `build.started`, `build.paused`, `build.resumed`, `build.completed`, `build.failed`, `build.cancelled` |
 | V1 limits | One active build; demo objective fixed |
+| V1.1 amendment (`AC-107`, 2026-08-03) | **The demo objective is no longer fixed.** A Build's `objectiveSnapshot` now carries an operator-submitted objective, bounded by `ObjectiveSubmissionSchema` in `packages/contracts` (12–500 printable single-line characters, one permitted workspace, risk class R0–R2). "One active build" is **unchanged** and enforced. `currentStageId` is `IdSchema.nullable()`: it remains a required field — always present — and `null` expresses a Build created before any stage exists, a state that always occurred and was previously unrepresentable. Amendment confirmed at `AC-107`; originally made at `AC-103P`. |
 
 ## BuildStage
 
@@ -281,3 +282,27 @@ The Warehouse begins the V1 demonstration with a deterministic **seeded history 
 | Commands | ReconcileFromSnapshot, ApplyEvent (idempotent) |
 | Emitted events | None directly |
 | V1 limits | Single-neighborhood projection |
+
+---
+
+## V1.1 amendment — per-command parameter schemas (`AC-107`, 2026-08-03)
+
+**Amendment, recorded at the rung that owns it. Foundation 1.0 meaning is otherwise unchanged.**
+
+This document names each entity's commands but has never specified their parameter fields. `packages/contracts/src/commands.ts` therefore validated the command *envelope* only — a known `commandType`, an optional `entityId`, a `params` object — and recorded that per-command validation belonged to the rung where "there is real enforcement logic to consume those parameters".
+
+V1.1 reaches that point. `COMMAND_PARAM_SCHEMAS` declares parameter shapes for **three commands specifically**:
+
+| Command | Parameters | Produces |
+| --- | --- | --- |
+| `Project.Create` | `objective` (bounded envelope), `projectId` | `operator.objective_submitted` |
+| `Build.Create` | `projectId`, `buildId`, `objective` | `build.created` |
+| `Build.Plan` | `planId`, `planArtifactId`, `stageIds` (exactly seven), `requirementCount` | `build.planned` |
+
+Every **other** command keeps envelope-only validation. This document still does not specify their fields, and inventing them would be undocumented policy rather than contract-first implementation.
+
+**Scope of this amendment:**
+
+- The **closed command vocabulary is unchanged.** No command type was added, removed, or renamed. `Build.Plan` was already declared, so plan production needs no new command.
+- **Execution authorization has no command type.** Its contract (`ExecutionAuthorizationSchema`) is declared in `packages/contracts`, but introducing a command to carry it is an amendment owned by the rung that builds the gate (`AC-110`), not this one.
+- The schemas are **declared, not yet enforced at the transport**. `CommandRequestSchema` is unchanged: moving them into it would convert handler-level refusals (HTTP 200 with a stated reason) into transport-level rejections (HTTP 400), which is a behaviour change. `AC-107` is contract-only. `parseCommandParams` is the seam the consuming rung wires in.

@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { IdSchema } from "./common";
+import { BUILD_STAGE_SEQUENCE } from "./entities/buildStage";
+import { ObjectiveTextSchema } from "./objective";
 
 // docs/02-specification/domain-model.md → each entity's "Commands" row.
 // This is the closed, authoritative V1 command vocabulary a backend API
@@ -136,3 +138,94 @@ export const CommandRequestSchema = z.object({
   actor: CommandActorSchema.optional(),
 });
 export type CommandRequest = z.infer<typeof CommandRequestSchema>;
+
+/**
+ * Per-command parameter schemas (AC-107).
+ *
+ * The comment above records that envelope-only validation was correct
+ * "until there is real enforcement logic to consume those parameters".
+ * There is now, so the shapes are declared here — for the objective, plan,
+ * and authorization commands **specifically**, not for the whole
+ * vocabulary. Every other command keeps envelope-only validation, because
+ * `domain-model.md` still does not specify its fields and inventing them
+ * would be undocumented policy.
+ *
+ * **Declared, not yet enforced at the transport.** `CommandRequestSchema`
+ * is deliberately unchanged: moving these into it would turn handler-level
+ * refusals (HTTP 200 with a stated reason) into transport-level rejections
+ * (HTTP 400), which is a behaviour change, and `AC-107` is a contract-only
+ * rung whose stop condition is "hard stop before any consumer is written".
+ * `parseCommandParams` is the seam `AC-108` wires in.
+ *
+ * `Build.Plan` is already in the closed vocabulary, so plan production
+ * needs no new command type. Execution authorization has no declared
+ * command; introducing one is a `domain-model.md` amendment owned by the
+ * rung that builds the gate (`AC-110`), not this one.
+ */
+export const COMMAND_PARAM_SCHEMAS = {
+  /** Produces `operator.objective_submitted`. */
+  "Project.Create": z
+    .object({
+      objective: ObjectiveTextSchema,
+      projectId: IdSchema,
+    })
+    .strict(),
+
+  /**
+   * Produces `build.created`. `buildId` must equal the command's
+   * `entityId` — the projection keys the Build by `params.buildId` while
+   * the create/exists check keys it by `entityId`, so a mismatch writes a
+   * Build the handler cannot see. That coherence rule lives in
+   * `CommandHandler`, which has both values; this shape pins the fields.
+   */
+  "Build.Create": z
+    .object({
+      projectId: IdSchema,
+      buildId: IdSchema,
+      objective: ObjectiveTextSchema,
+    })
+    .strict(),
+
+  /** Produces `build.planned`. Shapes only; no planner exists yet. */
+  "Build.Plan": z
+    .object({
+      planId: IdSchema,
+      planArtifactId: IdSchema,
+      stageIds: z.array(IdSchema).length(BUILD_STAGE_SEQUENCE.length),
+      requirementCount: z.number().int().nonnegative(),
+    })
+    .strict(),
+} as const satisfies Partial<Record<CommandType, z.ZodType>>;
+
+export type ParameterisedCommandType = keyof typeof COMMAND_PARAM_SCHEMAS;
+
+/** True when this rung declares a parameter shape for the command. */
+export function hasCommandParamSchema(
+  commandType: CommandType,
+): commandType is ParameterisedCommandType {
+  return commandType in COMMAND_PARAM_SCHEMAS;
+}
+
+/**
+ * Validates a command's parameters when a shape is declared for it.
+ *
+ * Returns `{ ok: true }` for commands with no declared shape, rather than
+ * refusing them: the vocabulary is closed but most of it is still
+ * envelope-only by design, and treating "no schema" as "invalid" would
+ * reject the majority of legitimate commands.
+ */
+export function parseCommandParams(
+  commandType: CommandType,
+  params: unknown,
+): { ok: true; params: unknown } | { ok: false; issues: { field: string; message: string }[] } {
+  if (!hasCommandParamSchema(commandType)) return { ok: true, params };
+  const parsed = COMMAND_PARAM_SCHEMAS[commandType].safeParse(params);
+  if (parsed.success) return { ok: true, params: parsed.data };
+  return {
+    ok: false,
+    issues: parsed.error.issues.map((issue) => ({
+      field: issue.path.join("."),
+      message: issue.message,
+    })),
+  };
+}

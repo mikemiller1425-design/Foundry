@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_OBJECTIVE_WORKSPACE,
   OBJECTIVE_MAX_LENGTH,
   OBJECTIVE_MIN_LENGTH,
   OBJECTIVE_WORKSPACES,
   ObjectiveSubmissionSchema,
+  ObjectiveWorkspaceSchema,
+  V1_RISK_CLASSES,
 } from "./objective";
+import { V1RiskClassSchema } from "./common";
 
 const VALID = {
   objective: "Add a JSON task store module with a test suite",
@@ -118,6 +122,32 @@ describe("ObjectiveSubmissionSchema — no silent acceptance", () => {
       const input: Record<string, unknown> = { ...VALID };
       delete input[omitted];
       expect(ObjectiveSubmissionSchema.safeParse(input).success, omitted).toBe(false);
+    }
+  });
+});
+
+/**
+ * AC-107 — the exported option lists must agree with the schemas, so a UI
+ * that reads them cannot offer something the contract forbids.
+ */
+describe("exported option lists match the schemas they describe", () => {
+  it("V1_RISK_CLASSES contains exactly what V1RiskClassSchema accepts", () => {
+    for (const riskClass of V1_RISK_CLASSES) {
+      expect(V1RiskClassSchema.safeParse(riskClass).success, riskClass).toBe(true);
+    }
+    for (const rejected of ["R3", "R4", "R5"]) {
+      expect((V1_RISK_CLASSES as readonly string[]).includes(rejected), rejected).toBe(false);
+    }
+    expect(V1_RISK_CLASSES).toHaveLength(3);
+  });
+
+  it("DEFAULT_OBJECTIVE_WORKSPACE is a permitted workspace", () => {
+    expect(ObjectiveWorkspaceSchema.safeParse(DEFAULT_OBJECTIVE_WORKSPACE).success).toBe(true);
+  });
+
+  it("every listed workspace is accepted by the schema", () => {
+    for (const workspace of OBJECTIVE_WORKSPACES) {
+      expect(ObjectiveWorkspaceSchema.safeParse(workspace).success, workspace).toBe(true);
     }
   });
 });
