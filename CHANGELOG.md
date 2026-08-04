@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — AC-103 closed: Finding 6 resolved with diagnosis (documentation only)
+
+The operator accepted closure. The stop condition — *"Finding 6 closed with diagnosis, or explicitly re-accepted with an artifact"* — is satisfied by the **first** branch, so **`AC-103` is closed**.
+
+**The basis, stated precisely.** The operator accepted on a **review of the retained evidence** — their words: *"the retained evidence supports the diagnosis."* That is exactly the standard Decision 5 set for this rung, which is why the evidence had to exist before the gate could be offered. It is not a claim that they personally re-ran the WebKit suite.
+
+They affirmed each of the rung's four prohibited shortcuts **separately**: the remediation pins workers in configuration **without raising timeouts, adding retries, skipping tests, or weakening assertions**. Checked one at a time rather than waved through.
+
+**Closed with diagnosis, not by re-acceptance.** The cause is unpinned WebKit worker contention, reproduced in both directions: at the cap 375/3 with all six Finding 6 instances green; at the default 6 workers a **fourth failure of the same class** appears. Contention moving the failure to a different member of the same family is what a load race does and what a real defect would not.
+
+**Not claimed:** WebKit automation is **not** 100% green. Three `shell-panels.spec.ts:20` failures remain — Finding 3a, classified at `FBL-035` and not reopened. `F-131` is **advanced, not satisfied**; full satisfaction belongs to `AC-117`.
+
+**Gates at closure:** typecheck 8/8 · lint clean · **1324 passed / 92 files / 0 failures** · `v1-canonical-run.json` byte-identical. Browser suites measured during the queue: Chromium 378/0, WebKit 375/3 (improved from `FBL-035`'s 372/6).
+
+**Ladder effect:** `AC-111`'s dependency on `AC-103` being closed is now satisfied — but `AC-111` remains **not startable**. `M-1`, `M-2`, and `M-3` would each make an operator-facing guarantee false if a real run proceeded without them, and `M-4` is an operator decision. `AC-111` is not started and requires its own explicit authorization.
+
+Recorded in `docs/evidence/ac-103/operator-acceptance.md`.
+
 ### Proposed — AC-111 run manifest (read-only preflight)
 
 What a real controlled run *would* be, so the operator can decide whether to authorize one. **Nothing was executed: no Claude Code invoked, no process spawned, no model called, no money spent.** It authorizes nothing.

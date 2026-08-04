@@ -33,7 +33,7 @@ This is the **authoritative V1.1 Build Ladder**. Before this document existed, t
 | AC-101 | DOC | Post-V1 truth reconciliation | — | Review | ✅ **Closed** (`c717fc6`, `ebedc9e`) |
 | AC-102 | DOC | V1.1 mission baseline ratification | AC-101 | **Ratify** | ✅ **Closed** — this ratification |
 | **AC-103P** | — | **Pre-ladder proof — objective submission** | — | Verified | ⚠️ **Preserved, not a rung.** See §3 |
-| AC-103 | FIX | Finding 6 resolution | AC-102 | **Accept closure** | 🟡 Diagnosed — awaiting operator acceptance |
+| AC-103 | FIX | Finding 6 resolution | AC-102 | **Accept closure** | ✅ **Closed** (`0ec8e2a`) |
 | AC-104 | HARD | One-command local operation | AC-102 | **Launch it** | ✅ **Closed** (`4e7d0f6`) |
 | AC-105 | FIX | Runtime-mode and credential handoff at runtime | AC-104 | Observe | ✅ **Closed** (`573b1d1`, `3e76c70`) |
 | AC-106 | FIX | Backend-mode command honesty | AC-105 | Observe | ✅ **Closed** (`ceca998`) |
@@ -88,7 +88,7 @@ Corrected twelve entry-point and specification documents that were materially fa
 
 Established the V1.1 mission, scope, exclusions, decision record, acceptance specification, and this ladder as tracked authority; corrected both priority-1 documents; recorded `AC-103P`. Documentation only. Closed by this ratification.
 
-### AC-103 — Finding 6 resolution — [FIX] — 🟡 Diagnosed, awaiting operator acceptance
+### AC-103 — Finding 6 resolution — [FIX] — ✅ Closed
 
 - **Objective:** Diagnose the three unclassified Playwright-WebKit failures and either repair them or classify them with a retained, reproducible artifact.
 - **Depends on:** AC-102.
@@ -97,14 +97,16 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **Stop condition:** Finding 6 closed with diagnosis, or explicitly re-accepted with an artifact. **Must close before AC-111.**
 - **Note:** Evidence belongs in `docs/evidence/ac-103/`, which is currently absent — the earlier directory of that name was renamed to `ac-103p` at ratification.
 
-**Diagnosed and remediated 2026-08-04.** Awaiting the operator's acceptance; **not closed**.
+**Closed 2026-08-04** against commit `0ec8e2a`, on the operator's acceptance.
 
 - **Diagnosis:** the three failures are **worker-contention artifacts of an unpinned worker count**, not product defects. `FBL-034`'s GPU request repaired this class for Chromium, but those are Chromium switches — WebKit ignores them, so a WebKit run is always software-rasterized, the regime where `FBL-034` measured 1 worker ~12 s against 8 workers ~42 s. The `--workers=3` cap existed only as prose in the README, so the `FBL-035` WebKit run used the default (half the cores).
 - **Reproduced in both directions.** At the cap: 375 passed / 3 failed, all six Finding 6 test-instances green. At the default 6 workers: a **fourth failure of the same class** appears (`shell-v1-primary-journey.spec.ts:28`, the ten-second-comprehension spec) — contention moving the failure to another member of the same family, which is what a load race does and a camera or timeline defect would not.
 - **Remediation:** `workers: 3` pinned in **both** `playwright.webkit.config.ts` and `playwright.config.ts`. **No timeout raised, no test skipped, deleted, retried, or reclassified**; `retries: 0` unchanged. `F-131` requires reliability to be a property of the suite rather than of the machine, and a cap in prose was a property of whoever remembered to type it. Resolves `PV1-041`.
 - **Retained evidence:** three full run logs in `docs/evidence/ac-103/runs/`, closing `PV1-043`'s specific complaint that no reproduction record existed anywhere in the repository.
 - **Not claimed:** WebKit is not 100% green. Three `shell-panels.spec.ts:20` failures remain — **Finding 3a**, classified at `FBL-035` as Safari configuration-dependent on the strength of the operator's real-Safari observation, and **not reopened here**.
-- **Record:** `docs/evidence/ac-103/finding-6-diagnosis.md`.
+- **Records:** `docs/evidence/ac-103/finding-6-diagnosis.md` (the diagnosis) and `docs/evidence/ac-103/operator-acceptance.md` (the acceptance).
+- **Acceptance, stated precisely:** the operator accepted on a **review of the retained evidence** — their words, *"the retained evidence supports the diagnosis"* — which is exactly the standard Decision 5 set. They affirmed each of the rung's four prohibited shortcuts separately: no timeouts raised, no retries added, no tests skipped, no assertions weakened. This is not a claim that the operator personally re-ran the WebKit suite.
+- **Ladder effect:** `AC-111`'s dependency on `AC-103` being closed is now **satisfied**. `AC-111` remains **not startable** for independent reasons — `M-1`/`M-2`/`M-3` in `docs/audits/ac-111-run-manifest-preflight.md` would each make an operator-facing guarantee false if a real run proceeded without them, and `M-4` is an operator decision.
 
 ### AC-104 — One-command local operation — [HARD] — ✅ Closed
 
@@ -307,7 +309,7 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 | --- | --- |
 | AC-101 | Read the corrected entry-point documents ✅ |
 | AC-102 | **Ratify or decline** the V1.1 baseline ✅ |
-| AC-103 | **Accept** Finding 6's closure against the chosen standard |
+| AC-103 | **Accept** Finding 6's closure against the chosen standard ✅ |
 | AC-104 | **Launch** Foundry from a clean clone with one command ✅ |
 | AC-106 | Press every backend-mode control and see a truthful result ✅ |
 | AC-107 | **Review** the objective envelope and confirm it bounds what was intended ✅ |
