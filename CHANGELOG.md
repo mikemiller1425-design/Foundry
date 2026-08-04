@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Corrected — the basis of the AC-108 and AC-109 approvals (documentation only, append-only)
+
+At the `AC-110` hand-off the assistant reported that the observation environment's database held **only `building.selected` events** — no objective, build, or plan — and said it did not know why. The operator answered:
+
+> My approvals were based on your implementation reports, automated verification, and live-verification summaries — not on my personally completing every listed UI checklist item in the recorded environment.
+
+**Both observation records claimed the operator "ran the observation environment … against the checklist."** That sentence is wrong, and the assistant wrote it. The operator never said it; it was an inference from an approval message, stated as fact in records whose whole purpose is to distinguish what was witnessed from what was not.
+
+Corrections are **appended** to `docs/evidence/ac-108/operator-observation.md` and `docs/evidence/ac-109/operator-observation.md`. Nothing was erased or rewritten — the superseded sentences remain in place, as principle 18 requires.
+
+**What is unchanged:** both approvals stand and both rungs remain closed. Deciding what evidence is sufficient is the operator's call (principle 14), and they made it on a basis they have now stated precisely. Every test named in those records still passes at the recorded commits.
+
+**What is corrected:** where those records cite "Operator observation" as evidence for a functional requirement, the operative evidence is the **named automated test and the assistant's recorded live-verification run**. The operator's contribution is a reviewed approval of that evidence, not an independent observation of the behaviour. The ladder's "Gate, stated precisely" lines for both rungs now say so.
+
+**The obligation this does not discharge:** `v1.1-acceptance.md` § 7 item 8 — *"the operator personally performs the § 3 journey, unassisted, end to end, in one session"* — **remains outstanding** and is owed at `AC-120`. No rung-level approval contributes to it. `docs/evidence/ac-103p/operator-verification.md` records a genuine personal verification of objective submission; the rest of the journey has not been personally performed end to end.
+
+**The `building.selected`-only database is explained**, not an anomaly: the environment was opened and interacted with, but the objective-and-run journey was not driven through the UI. Nothing was lost.
+
+`AC-110` remains **open**, awaiting the operator's review.
+
 ### Added — AC-110: the execution authorization gate
 
 An authenticated operator can now grant **one single-use permission** for **one stage** to execute for real, bound to a **backend-generated SHA-256 over the plan's persisted content**. A gate reads that permission and decides, in both directions, whether a real execution would be allowed.

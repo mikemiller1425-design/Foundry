@@ -104,3 +104,51 @@ The pre-`AC-108` database remains preserved by rename at `apps/api/data/foundry.
 | Authorization guards answering `200` rather than `403` | Recorded candidate | A later rung owning the API surface |
 
 `AC-110` is **not started** and requires its own explicit operator authorization.
+
+
+---
+
+## Correction — basis of approval (appended 2026-08-04)
+
+**Appended, not edited.** Everything above is left exactly as written, including the sentences this correction supersedes. Principle 18: a record is corrected by adding to it, never by rewriting what it said.
+
+### What prompted this
+
+At the `AC-110` hand-off the assistant reported that the database behind this environment contained **only `building.selected` events** — no objective, no build, and no plan — and said it did not know why. The operator answered:
+
+> My approvals were based on your implementation reports, automated verification, and live-verification summaries — not on my personally completing every listed UI checklist item in the recorded environment.
+
+### What is corrected
+
+The section above states that the operator **"ran the observation environment … against the checklist supplied at hand-off."** That sentence is **wrong**, and the assistant wrote it. The operator never said it; it was the assistant's inference from an approval message, stated as fact in a record whose whole purpose is to distinguish what was witnessed from what was not.
+
+The accurate statement of the basis is:
+
+| The approval rests on | Standing |
+| --- | --- |
+| The assistant's implementation report for this rung | Assistant-authored |
+| Automated verification — the named tests, run at the recorded commit | Machine-checkable, independently reproducible |
+| The assistant's **live-verification summary** — the recorded backend-mode run | Assistant-performed and assistant-reported, **not** operator-witnessed |
+| The operator's review of all of the above, and their decision to approve | **Operator governance act** |
+
+### What is unchanged
+
+- **The approval stands, and the rung remains closed.** Deciding what evidence is sufficient is the operator's call to make (principle 14). They made it, on a basis they have now stated precisely. Nothing here reopens the rung.
+- **The technical evidence is unchanged and independently reproducible.** Every test named above still passes at the recorded commit, and the live-verification results were recorded as the assistant's own observations at the time.
+
+### What this correction changes
+
+- Wherever this record cites **"Operator observation"** as evidence for a functional requirement, the operative evidence is the **named automated test and the recorded live-verification run**. The operator's contribution is a reviewed approval of that evidence, not an independent observation of the behaviour.
+- The record's claim that individual checklist items were **"separately carried"** by tests remains true; what was wrong was the implication that the operator had *also* exercised them.
+
+### The obligation this does not discharge
+
+`docs/02-specification/v1.1-acceptance.md` § 7 "Definition of done", item 8:
+
+> **The operator personally performs the §3 journey**, unassisted, end to end, in one session.
+
+**That remains outstanding**, and no approval recorded in this file contributes to it. It is owed at `AC-120` and is not satisfied by any rung-level approval, including this one. `docs/evidence/ac-103p/operator-verification.md` records a genuine personal verification of objective submission; the rest of the §3 journey has not been personally performed end to end.
+
+### A related fact, now explained
+
+The section "A fact recorded rather than smoothed over" above declined to guess why the database held only `building.selected` events. The operator's statement is the explanation: the environment was opened and interacted with — the `building.selected` events are that interaction's footprint — but the objective, run, and approval-gate journey was not driven through the UI. Nothing was lost, and there was no anomaly to investigate.
