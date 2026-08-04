@@ -2,6 +2,7 @@ import { z } from "zod";
 import { IdSchema, TimestampSchema, V1RiskClassSchema } from "./common";
 import { BuildStageNameSchema } from "./entities/buildStage";
 import { ObjectiveWorkspaceSchema } from "./objective";
+import { SupportedObjectiveIdSchema } from "./supportedObjective";
 
 /**
  * The operator's authorization to execute one stage, once (AC-107).
@@ -103,6 +104,19 @@ export const ExecutionAuthorizationSchema = z
     riskClass: V1RiskClassSchema,
     /** Required. See `BudgetUsdSchema` — an unbudgeted authorization is unrepresentable. */
     maxBudgetUsd: BudgetUsdSchema,
+    /**
+     * The supported objective template this authorization was matched to
+     * (AC-111).
+     *
+     * Recorded on the authorization so the operator's permission names
+     * *what would run*, not merely which stage. The dispatcher re-derives
+     * it from the persisted plan and refuses on disagreement, so this is a
+     * record rather than an input.
+     *
+     * Optional only so authorizations issued before AC-111 stay parseable;
+     * the dispatcher requires it.
+     */
+    supportedObjectiveId: SupportedObjectiveIdSchema.optional(),
     /** The authenticated operator, recorded from the credential, never the payload. */
     authorizedBy: IdSchema,
     authorizedAt: TimestampSchema,

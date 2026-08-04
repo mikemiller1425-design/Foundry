@@ -110,6 +110,12 @@ export const OperatorExecutionAuthorizedEvent = defineEvent(
     workspace: z.string().min(1),
     /** Required — every issued authorization is budgeted. */
     maxBudgetUsd: z.number().positive(),
+    /**
+     * The supported objective template this authorization was matched to
+     * (AC-111). Optional in the declared shape so events written before
+     * AC-111 stay parseable; the dispatcher requires it.
+     */
+    supportedObjectiveId: z.string().min(1).optional(),
     authorizedBy: IdSchema,
   }),
 );

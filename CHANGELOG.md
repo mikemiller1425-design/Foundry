@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — AC-111 offline construction and pre-run hardening (no run dispatched)
+
+The real-execution dispatch path, built and proven **entirely offline**. **No Claude Code was invoked — not even `--version`. No process was spawned, no model called, no authorization consumed, no money spent.** Every test supplies a substituted execution backend; the real adapter is never constructed.
+
+**H-1 — operational persistence.** `ExecutionDispatcher` uses the same `PersistenceService` and `CommandHandler` the `AC-110` gate reads. `AgentRun.Start` is submitted **before any workspace exists and before any backend is touched**, so a crash after reservation leaves the authorization **spent** — proven by closing and reopening the database mid-run. Duplicate and concurrent dispatch are refused at two independent layers; the concurrency test asserts exactly one execution and exactly one `claude_code` `AgentRun`.
+
+**H-2 — actual spend.** The cost is parsed from the structured result and **fails closed** on absent, non-finite, negative, and non-JSON output — recorded as `null`, never `0`, because *"cost nothing"* and *"cost unknown"* are opposite statements. Over-ceiling is a **containment failure**, recorded as a failed run rather than a success with a footnote. One honest gap: the exact cost field name is unverified because verifying it needs a real invocation, so three candidates are accepted and an unrecognised shape fails the run.
+
+**H-3 — authorized budget.** Read **only** from the persisted `ExecutionAuthorization` and passed unmodified; authorization, profile, and evidence are asserted equal. **The hard-coded `$2` is gone** — the historical `FBL-028` entrypoint now refuses without an explicit ceiling.
+
+**The V1.1 objective decision.** Exactly one declared template, `task-store-module-v1`, matched by a **deterministic keyword conjunction over normalised text** — no model, no fuzzy matching, no synonyms, no scoring. Unsupported objectives are refused at `Plan.Authorize`, **before an authorization can exist**, with the rule stated and the reason given. General objective-to-test generation is deferred beyond V1.1 because a generated objective needs a generated test suite and the Builder must never write its own validation.
+
+**Also:** binary identity (path, byte SHA-256, size, package version read from disk — never executed) as a **pre-dispatch refusal**, including refusing a *missing* pin; write paths derived from the template rather than a caller argument; workspace destruction verified and disposition recorded honestly; network stated as declared-and-recorded, **not** OS-enforced.
+
+**Two defects found by test before commit.** Workspace disposal ran in a `finally` block, which executes after the return value is built — so every destroyed workspace reported `retained`. And terminal `AgentRun` events omitted the required `evidenceIds`, so failed runs stayed `running` forever; the cost check would have failed a run that still looked live in the projection.
+
+**Gates:** typecheck 8/8 · lint clean · build clean · **1368 passed / 94 files / 0 failures** (up from 1324) · `v1-canonical-run.json` byte-identical. `F-114`'s unauthorized-dispatch half is complete offline with the whole store asserted byte-equal before and after.
+
+**`AC-111` is not closed and no run has been dispatched.** Recorded in `docs/evidence/ac-111/construction-record.md`; the updated manifest and the before-run operator gate are in `docs/audits/ac-111-run-manifest.md`.
+
 ### Observed — AC-103 closed: Finding 6 resolved with diagnosis (documentation only)
 
 The operator accepted closure. The stop condition — *"Finding 6 closed with diagnosis, or explicitly re-accepted with an artifact"* — is satisfied by the **first** branch, so **`AC-103` is closed**.

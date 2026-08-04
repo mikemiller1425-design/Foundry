@@ -37,6 +37,27 @@ const DB_PATH = process.env.FOUNDRY_DB_PATH ?? path.join(EVIDENCE_DIR, "agentrun
 /** Kept when set, so the operator can inspect the repository afterwards. */
 const KEEP_FIXTURE = process.env.FOUNDRY_KEEP_FIXTURE === "1";
 
+
+/**
+ * The spend ceiling for this historical entrypoint (AC-111, H-3).
+ *
+ * There is no default. A budget nobody chose is exactly the defect H-3
+ * recorded, and the fix is not a better constant — it is refusing to run
+ * without an explicit one. The AC-111 dispatcher does not use this path at
+ * all; it reads the ceiling from the persisted `ExecutionAuthorization`.
+ */
+function requiredBudgetUsd(): number {
+  const raw = process.env.FOUNDRY_MAX_BUDGET_USD;
+  const value = raw === undefined ? Number.NaN : Number(raw);
+  if (!Number.isFinite(value) || value <= 0 || value > 25) {
+    throw new Error(
+      "FOUNDRY_MAX_BUDGET_USD must be set to a positive finite number of dollars, at most 25. " +
+        "This entrypoint no longer carries a default budget: a ceiling nobody chose is not a ceiling.",
+    );
+  }
+  return value;
+}
+
 async function main(): Promise<void> {
   mkdirSync(EVIDENCE_DIR, { recursive: true });
 
@@ -51,7 +72,12 @@ async function main(): Promise<void> {
     maxStdoutBytes: 1024 * 1024,
     maxStderrBytes: 1024 * 1024,
     maxEvidenceBytes: 8 * 1024 * 1024,
-    maxBudgetUsd: 2,
+    // AC-111 (H-3): the hard-coded $2 is gone. This historical FBL-028
+    // entrypoint now requires an explicit ceiling and refuses without one,
+    // so no path in the repository carries a budget nobody chose. The
+    // AC-111 dispatcher reads its ceiling from the persisted
+    // ExecutionAuthorization instead, which is the only correct source.
+    maxBudgetUsd: requiredBudgetUsd(),
     // The empirically minimal set: Claude Code resolves its credentials
     // from the macOS Keychain, which needs the account name (`USER`),
     // and locates its own configuration via `HOME`. Notably *not* PATH.

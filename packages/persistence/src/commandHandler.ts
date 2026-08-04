@@ -5,6 +5,7 @@ import {
   BUILD_STAGE_SEQUENCE,
   CLAUDE_CODE_STAGE,
   ObjectiveTextSchema,
+  matchSupportedObjective,
   WAREHOUSE_LEVEL_2_MIN_PASS_RATE,
   WAREHOUSE_LEVEL_2_REQUIRED_PACKAGE_COUNT,
   parseCommandParams,
@@ -1054,6 +1055,30 @@ export class CommandHandler {
       );
     }
 
+    /**
+     * AC-111 — the objective must match a supported execution template.
+     *
+     * Refused **here**, before an authorization exists, rather than at
+     * dispatch. An authorization for an objective that can never be
+     * executed is a permission the system cannot honour, and issuing one
+     * would move the operator's disappointment from the moment they ask
+     * to the moment they run.
+     *
+     * The rule is a deterministic keyword conjunction over normalised
+     * text (`matchSupportedObjective`) — no model, no fuzzy matching, no
+     * scoring. The refusal states the rule so the operator learns what a
+     * supported objective must contain.
+     */
+    const objectiveMatch = matchSupportedObjective(persisted.plan.objective);
+    if (!objectiveMatch.supported) {
+      return this.deny(
+        commandType,
+        planId,
+        objectiveMatch.reason,
+        objectiveMatch.correctiveAction,
+      );
+    }
+
     // Recomputed from persisted content — the binding, and the only value
     // this command will write.
     const currentContentHash = planContentHash(persisted.plan);
@@ -1084,6 +1109,7 @@ export class CommandHandler {
     params.workspace = persisted.plan.workspace;
     params.riskClass = persisted.plan.riskClass;
     params.authorizedBy = actor.actorId;
+    params.supportedObjectiveId = objectiveMatch.template.id;
     delete params.acknowledgedContentHash;
 
     return undefined;

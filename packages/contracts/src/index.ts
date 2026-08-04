@@ -5,3 +5,4 @@ export * from "./objective";
 export * from "./plan";
 export * from "./authorization";
 export * from "./authorizationCheck";
+export * from "./supportedObjective";

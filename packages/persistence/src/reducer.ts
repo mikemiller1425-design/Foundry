@@ -17,6 +17,7 @@ import type {
   Vehicle,
   PersistedPlan,
   BuildPlan,
+  SupportedObjectiveId,
 } from "@foundry/contracts";
 import {
   CAPACITY_CAPABILITY_PREFIX,
@@ -812,6 +813,9 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
           workspace: existing.plan.workspace,
           riskClass: existing.plan.riskClass,
           maxBudgetUsd: event.payload.maxBudgetUsd,
+          ...(event.payload.supportedObjectiveId
+            ? { supportedObjectiveId: event.payload.supportedObjectiveId as SupportedObjectiveId }
+            : {}),
           authorizedBy: event.payload.authorizedBy,
           authorizedAt: event.occurredAt,
           singleUse: true,
