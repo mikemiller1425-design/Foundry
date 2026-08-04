@@ -18,6 +18,7 @@ import type {
   PersistedPlan,
   BuildPlan,
   SupportedObjectiveId,
+  PersistedRunEvidence,
 } from "@foundry/contracts";
 import {
   CAPACITY_CAPABILITY_PREFIX,
@@ -160,6 +161,8 @@ export interface EntityState {
   vehicles: Record<string, Vehicle>;
   /** AC-108: persisted BuildPlans, keyed by plan id. */
   plans: Record<string, PersistedPlan>;
+  /** AC-111: durable run evidence, keyed by evidence id. */
+  agentRunEvidence: Record<string, PersistedRunEvidence>;
   /** FBL-029 Inspector decision history, keyed by stage id. */
   stageValidations: Record<string, StageValidationHistory>;
   inventoryCounts: Record<string, number>;
@@ -196,6 +199,7 @@ export const ENTITY_TYPES: readonly EntityType[] = [
   "approvals",
   "revisions",
   "plans",
+  "agentRunEvidence",
   "upgrades",
   "agents",
   "buildings",
@@ -228,6 +232,7 @@ export function createInitialEntityState(): EntityState {
     approvals: {},
     revisions: {},
     plans: {},
+    agentRunEvidence: {},
     upgrades: {},
     stageValidations: {},
     agents: Object.fromEntries(
@@ -327,6 +332,7 @@ export function reduceEntities(prev: EntityState, event: FoundryEvent): ReduceRe
     approvals: { ...prev.approvals },
     revisions: { ...prev.revisions },
     plans: { ...prev.plans },
+    agentRunEvidence: { ...prev.agentRunEvidence },
     upgrades: { ...prev.upgrades },
     agents: { ...prev.agents },
     buildings: { ...prev.buildings },
@@ -662,6 +668,20 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
           status: task?.status === "queued" ? "running" : task?.status,
         },
       );
+      return;
+    }
+    /**
+     * AC-111 — durable evidence becomes backend truth.
+     *
+     * Recorded before the terminal event that cites it, so a completion
+     * can never reference an evidence id no record exists for. Idempotent:
+     * a replayed event must not overwrite the record it already produced.
+     */
+    case "agentrun.evidence_recorded": {
+      const id = event.payload.evidenceId;
+      if (state.agentRunEvidence[id]) return;
+      state.agentRunEvidence[id] = event.payload.evidence as unknown as PersistedRunEvidence;
+      touch(touched, "agentRunEvidence", id);
       return;
     }
     case "agentrun.completed": {

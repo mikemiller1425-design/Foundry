@@ -344,6 +344,30 @@ V1.1 persists a plan as a first-class record keyed by `planId`, rather than as a
 
 ---
 
+## V1.1 amendment — durable run evidence (`AC-111`, 2026-08-04)
+
+**Amendment, recorded at the rung that owns it. Foundation 1.0 meaning is otherwise unchanged; no existing command was altered, renamed, or removed.**
+
+### `AgentRun.RecordEvidence` added to the command vocabulary
+
+| Command | Parameters | Produces | Authorization |
+| --- | --- | --- | --- |
+| `AgentRun.RecordEvidence` | `evidenceId`, `agentRunId`, `evidence` (a full `PersistedRunEvidence`) | `agentrun.evidence_recorded` | Backend (the dispatcher carrying out a recorded operator authorization) |
+
+A **creation** command: a second record for the same evidence id is refused rather than overwriting the first.
+
+### `RunEvidence` as a persisted record
+
+| Section | Content |
+| --- | --- |
+| Purpose | The durable, queryable account of one real controlled run |
+| Key | `evidenceId` |
+| Required fields | `evidenceId`, `agentRunId`, `buildId`, `planId`, `supportedObjectiveId`, `authorizationId`, `stageName`, `riskClass`, `authorizedCeilingUsd`, `ceilingPassedToRuntimeUsd`, `actualCostUsd` (**nullable — `null` means unknown, never zero**), `budgetOutcome` (nullable), `binaryIdentity`, `writeScope`, `independentTest`, `workspaceRoot`, `workspaceDisposition`, `workspaceDestructionVerified`, `outcome`, `exitCode`, `verdict`, `startedAt`, `completedAt`, `networkEnforcement`, `stdoutTruncated`, `stderrTruncated`, `redactionApplied` |
+| Invariants | **Recorded before the terminal `AgentRun` event that cites it**, and read back before that event is emitted. A terminal event never references an evidence id with no record behind it. One record per evidence id |
+| V1.1 limits | Written only by the real-execution dispatcher. The mock orchestration produces no evidence records, and its terminal events legitimately carry no budget summary |
+
+**Not a log file.** Evidence is persisted through the declared architecture — command, declared event, reducer disposition, entity projection — so it replays deterministically, survives restart, and is queryable like every other fact. A file beside the database would be a second source of truth no replay reconstructs.
+
 ## V1.1 amendment — `Plan.Authorize` and the execution binding (`AC-110`, 2026-08-04)
 
 **Amendment, recorded at the rung that owns it. Foundation 1.0 meaning is otherwise unchanged; no existing command was altered, renamed, or removed.**

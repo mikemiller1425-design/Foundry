@@ -61,11 +61,12 @@ describe("CommandRequestSchema", () => {
  * plan, and authorization commands specifically.
  */
 describe("COMMAND_PARAM_SCHEMAS (AC-107)", () => {
-  it("declares shapes only for the objective, plan, review, and authorize commands", () => {
-    // AC-107 declared three; AC-108 added `Plan.Review` and AC-110 added
-    // `Plan.Authorize`, each when it introduced the command. Everything
-    // else stays envelope-only.
+  it("declares shapes only for the objective, plan, review, authorize, and evidence commands", () => {
+    // AC-107 declared three; AC-108 added `Plan.Review`, AC-110 added
+    // `Plan.Authorize`, and AC-111 added `AgentRun.RecordEvidence` — each
+    // when it introduced the command. Everything else stays envelope-only.
     expect(Object.keys(COMMAND_PARAM_SCHEMAS).sort()).toEqual([
+      "AgentRun.RecordEvidence",
       "Build.Create",
       "Build.Plan",
       "Plan.Authorize",

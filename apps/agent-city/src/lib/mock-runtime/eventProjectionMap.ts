@@ -32,7 +32,8 @@ const GLOBAL_TEXT = "describeEvent() renders a dedicated template for this event
 export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionEntry> = {
   "system.started": {
     producer: "Backend (mock runtime)",
-    reducerEffect: "No WorldState field mutation — health starts healthy from createInitialWorldState()",
+    reducerEffect:
+      "No WorldState field mutation — health starts healthy from createInitialWorldState()",
     representation2D: "Timeline row; top system bar implicitly reflects a servable connection",
     representation3D: "No visual change: nothing observable changes before any build/health event",
     textualEquivalent: GLOBAL_TEXT,
@@ -42,16 +43,20 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend (mock runtime)",
     reducerEffect: "worldState.health = {status: newHealth, reasons}",
     representation2D: "Top system bar connection/health label; live-intelligence health section",
-    representation3D: "Lighthouse state (computeLighthouseState — degraded/critical/disconnected outrank routine states); every operational building's status (computeOperationalBuildingState — degraded/disconnected outrank routine activity)",
+    representation3D:
+      "Lighthouse state (computeLighthouseState — degraded/critical/disconnected outrank routine states); every operational building's status (computeOperationalBuildingState — degraded/disconnected outrank routine activity)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
 
   "operator.objective_submitted": {
     producer: "Backend (after accept)",
-    reducerEffect: "No WorldState field mutation — Project/objective text is read from build.created's payload once it follows",
-    representation2D: "Timeline row; StageAgentPanel's 'Current build' objective text (once build.created follows)",
-    representation3D: "No visual change: Construction Site activates on build.created specifically, not this event",
+    reducerEffect:
+      "No WorldState field mutation — Project/objective text is read from build.created's payload once it follows",
+    representation2D:
+      "Timeline row; StageAgentPanel's 'Current build' objective text (once build.created follows)",
+    representation3D:
+      "No visual change: Construction Site activates on build.created specifically, not this event",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -63,7 +68,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
       "Plan review panel status line; timeline row. Backend mode only — the mock runtime never produces this event",
     representation3D:
       "No visual change: a recorded decision about a proposal is not work in the world. The Construction Site activates when work begins, which is AC-109",
-    textualEquivalent: 'describeEvent → "Operator reviewed plan: proceed — review recorded, no execution authorized"',
+    textualEquivalent:
+      'describeEvent → "Operator reviewed plan: proceed — review recorded, no execution authorized"',
     idempotency:
       "Re-submitting the same decision is an accepted no-op that appends nothing; a conflicting decision is refused by the command handler",
   },
@@ -84,13 +90,15 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Frontend → mock runtime",
     reducerEffect: "No WorldState mutation — command flow only (runtime.ts submitCommand)",
     representation2D: "CommandBar pending/feedback indicator; timeline row",
-    representation3D: "No visual change: demo control commands (start/pause/resume/speed/reset/replay) affect emission timing, never entity state directly",
+    representation3D:
+      "No visual change: demo control commands (start/pause/resume/speed/reset/replay) affect emission timing, never entity state directly",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "operator.command_accepted": {
     producer: "Backend (mock runtime)",
-    reducerEffect: "No WorldState field mutation — the command's own side effect (e.g. runtime.start()) is what changes state, applied directly by runtime.ts",
+    reducerEffect:
+      "No WorldState field mutation — the command's own side effect (e.g. runtime.start()) is what changes state, applied directly by runtime.ts",
     representation2D: "CommandBar feedback ('Running'/'Paused'/etc.)",
     representation3D: "No visual change: no world object represents demo-control state",
     textualEquivalent: GLOBAL_TEXT,
@@ -107,9 +115,11 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
 
   "agent.registered": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation — agents are seeded idle-at-home by createInitialWorldState() already",
+    reducerEffect:
+      "No WorldState field mutation — agents are seeded idle-at-home by createInitialWorldState() already",
     representation2D: "Agents list shows the agent from world init",
-    representation3D: "Residence occupied/idle (computeResidenceState default); Agent object idle at its residence",
+    representation3D:
+      "Residence occupied/idle (computeResidenceState default); Agent object idle at its residence",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -117,7 +127,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "agents[id].status = 'assigned'; currentTaskId = payload.taskId",
     representation2D: "Agents list status; SelectedObjectDetail current task",
-    representation3D: "Residence vacant/assigned (computeResidenceState reads agent.status !== idle implicitly via currentBuildingId divergence once departed); Agent indicator (agentVisuals 'assigned')",
+    representation3D:
+      "Residence vacant/assigned (computeResidenceState reads agent.status !== idle implicitly via currentBuildingId divergence once departed); Agent indicator (agentVisuals 'assigned')",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -125,7 +136,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Agent (mock)",
     reducerEffect: "agents[id].status = 'traveling'",
     representation2D: "Agents list status 'traveling'",
-    representation3D: "Agent indicator (agentVisuals 'traveling'); residence goes vacant (computeResidenceState: currentBuildingId still equals homeBuildingId until agent.arrived, so residence stays occupied through departure — arrival is what moves it, matching event-model.md 'Does not complete arrival')",
+    representation3D:
+      "Agent indicator (agentVisuals 'traveling'); residence goes vacant (computeResidenceState: currentBuildingId still equals homeBuildingId until agent.arrived, so residence stays occupied through departure — arrival is what moves it, matching event-model.md 'Does not complete arrival')",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -133,16 +145,19 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Agent (mock)",
     reducerEffect: "agents[id].currentBuildingId = payload.destinationBuildingId",
     representation2D: "Agents list / SelectedObjectDetail 'current building'",
-    representation3D: "Agent object position snaps to the new building (computeAgentPosition); residence becomes vacant/assigned (computeResidenceState: currentBuildingId !== homeBuildingId)",
+    representation3D:
+      "Agent object position snaps to the new building (computeAgentPosition); residence becomes vacant/assigned (computeResidenceState: currentBuildingId !== homeBuildingId)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
-    reducedMotion: "Position change is a discrete snap regardless of motion preference — nothing to reduce",
+    reducedMotion:
+      "Position change is a discrete snap regardless of motion preference — nothing to reduce",
   },
   "agent.started_work": {
     producer: "Agent (mock)",
     reducerEffect: "agents[id].status = 'working'",
     representation2D: "Agents list status 'working'",
-    representation3D: "Agent indicator (agentVisuals 'working'); the workplace building shows active (computeOperationalBuildingStatus via the concurrently-started stage.started at the same building)",
+    representation3D:
+      "Agent indicator (agentVisuals 'working'); the workplace building shows active (computeOperationalBuildingStatus via the concurrently-started stage.started at the same building)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -174,32 +189,50 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Agent (mock)",
     reducerEffect: "agents[id].status = 'waiting'; currentTaskId cleared",
     representation2D: "Agents list status 'waiting'",
-    representation3D: "Agent indicator (agentVisuals 'waiting'); work animation stops (there is none to stop — no continuous work animation exists, per this rung's scope decision to use discrete state snaps only)",
+    representation3D:
+      "Agent indicator (agentVisuals 'waiting'); work animation stops (there is none to stop — no continuous work animation exists, per this rung's scope decision to use discrete state snaps only)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "agent.returned_home": {
     producer: "Agent (mock)",
-    reducerEffect: "agents[id].status = 'idle'; currentBuildingId = payload.homeBuildingId; currentTaskId cleared",
+    reducerEffect:
+      "agents[id].status = 'idle'; currentBuildingId = payload.homeBuildingId; currentTaskId cleared",
     representation2D: "Agents list status 'idle'",
-    representation3D: "Agent position snaps back to its residence; residence returns to occupied/idle (computeResidenceState)",
+    representation3D:
+      "Agent position snaps back to its residence; residence returns to occupied/idle (computeResidenceState)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
-    reducedMotion: "Position change is a discrete snap regardless of motion preference — nothing to reduce",
+    reducedMotion:
+      "Position change is a discrete snap regardless of motion preference — nothing to reduce",
   },
 
   "agentrun.started": {
     producer: "Runtime Adapter (mock)",
     reducerEffect: "No WorldState field mutation — AgentRun has no WorldState projection in V1",
     representation2D: "Timeline row only",
-    representation3D: "No visual change: no dedicated AgentRun world object exists; the owning workplace's active state already comes from stage.started/agent.started_work",
+    representation3D:
+      "No visual change: no dedicated AgentRun world object exists; the owning workplace's active state already comes from stage.started/agent.started_work",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
+  },
+  "agentrun.evidence_recorded": {
+    producer: "Backend, after a real controlled run and before its terminal event (AC-111)",
+    reducerEffect:
+      "No frontend WorldState mutation. The backend has already created the durable RunEvidence record keyed by evidence id; replaying this event never overwrites that record",
+    representation2D:
+      "Timeline row and payload inspector. The ambient summary confirms evidence exists without exposing evidence fields; the terminal AgentRun row carries the budget summary a timeline reader needs",
+    representation3D:
+      "No visual change: recording evidence about a run that already finished is not itself work in the world",
+    textualEquivalent: 'describeEvent → "Run evidence recorded"',
+    idempotency:
+      "One record per evidence id. AgentRun.RecordEvidence is a creation command, so a second record for the same id is refused rather than overwriting the first",
   },
   "agentrun.completed": {
     producer: "Runtime Adapter (mock)",
     reducerEffect: "No WorldState field mutation",
-    representation2D: "Timeline row; evidence becomes inspectable per event-model.md (via artifact.* events that follow)",
+    representation2D:
+      "Timeline row; evidence becomes inspectable per event-model.md (via artifact.* events that follow)",
     representation3D: "No visual change: see agentrun.started",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
@@ -208,7 +241,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Runtime Adapter (mock)",
     reducerEffect: "No WorldState field mutation",
     representation2D: "Timeline row; evidence link",
-    representation3D: "No visual change: the owning Agent's own agent.failed event (if any) is what drives the red Agent indicator, not this one directly",
+    representation3D:
+      "No visual change: the owning Agent's own agent.failed event (if any) is what drives the red Agent indicator, not this one directly",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -216,7 +250,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Runtime Adapter (mock)",
     reducerEffect: "No WorldState field mutation",
     representation2D: "Timeline row, distinguished from a policy-violation failure",
-    representation3D: "No visual change: not reached by the V1 canonical script (no timeout occurs); reserved for a future real-adapter failure mode",
+    representation3D:
+      "No visual change: not reached by the V1 canonical script (no timeout occurs); reserved for a future real-adapter failure mode",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -225,13 +260,15 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "worldState.currentBuild = { status: 'planned', ... }",
     representation2D: "StageAgentPanel 'Current build' section populates",
-    representation3D: "Construction Site activates (computeConstructionSitePhase — 'foundation', 0 stages completed)",
+    representation3D:
+      "Construction Site activates (computeConstructionSitePhase — 'foundation', 0 stages completed)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "build.planned": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation — stage-level detail is derived from stage.* events directly (selectStages), not stored on WorldState",
+    reducerEffect:
+      "No WorldState field mutation — stage-level detail is derived from stage.* events directly (selectStages), not stored on WorldState",
     representation2D: "Stages list becomes populated as stage.created events follow",
     representation3D: "No visual change beyond what stage.created/stage.ready already drive",
     textualEquivalent: GLOBAL_TEXT,
@@ -241,7 +278,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "currentBuild.status = 'ready'",
     representation2D: "Current build status field",
-    representation3D: "No distinct visual beyond Construction Site's stage-derived phase (still 'foundation' — no stage has completed yet)",
+    representation3D:
+      "No distinct visual beyond Construction Site's stage-derived phase (still 'foundation' — no stage has completed yet)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -257,7 +295,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "currentBuild.status = 'paused'",
     representation2D: "Current build status field; CommandBar feedback",
-    representation3D: "No visual change: progress animations stop because no further events are emitted while paused, not because of a dedicated pause visual",
+    representation3D:
+      "No visual change: progress animations stop because no further events are emitted while paused, not because of a dedicated pause visual",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -265,15 +304,18 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "currentBuild.status = 'running'",
     representation2D: "Current build status field",
-    representation3D: "No visual change beyond whatever the next real event drives — resumption never replays or re-derives stage state",
+    representation3D:
+      "No visual change beyond whatever the next real event drives — resumption never replays or re-derives stage state",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "build.completed": {
     producer: "Backend",
-    reducerEffect: "currentBuild.status = 'completed'; completedAt set; inventoryCounts.successfulPackages += 1",
+    reducerEffect:
+      "currentBuild.status = 'completed'; completedAt set; inventoryCounts.successfulPackages += 1",
     representation2D: "Current build status field; StageAgentPanel",
-    representation3D: "Construction Site 'completed' phase (computeConstructionSitePhase, all 7 stages done); Cargo 'received' (computeCargoState); Deployment Dock reflects completion via its own operational-building status",
+    representation3D:
+      "Construction Site 'completed' phase (computeConstructionSitePhase, all 7 stages done); Cargo 'received' (computeCargoState); Deployment Dock reflects completion via its own operational-building status",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -281,7 +323,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "currentBuild.status = 'failed'; failureReason set",
     representation2D: "Current build status field",
-    representation3D: "Lighthouse degraded/critical by severity (computeLighthouseState reads worldState.health, not build status directly — a real build.failed in V1 would also carry a system.health_changed alongside it in a full backend; not reached by the canonical script)",
+    representation3D:
+      "Lighthouse degraded/critical by severity (computeLighthouseState reads worldState.health, not build status directly — a real build.failed in V1 would also carry a system.health_changed alongside it in a full backend; not reached by the canonical script)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -289,16 +332,19 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "currentBuild.status = 'cancelled'",
     representation2D: "Current build status field",
-    representation3D: "No visual change beyond the generic build status — motion stops because no further events are emitted, history is retained by the append-only event log",
+    representation3D:
+      "No visual change beyond the generic build status — motion stops because no further events are emitted, history is retained by the append-only event log",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
 
   "stage.created": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation — selectStages(events) derives the stage record from this event directly",
+    reducerEffect:
+      "No WorldState field mutation — selectStages(events) derives the stage record from this event directly",
     representation2D: "Stages list gains a new 'planned' row",
-    representation3D: "No visual change: the stage has no assigned building yet (sourceBuildingId is only known from stage.started)",
+    representation3D:
+      "No visual change: the stage has no assigned building yet (sourceBuildingId is only known from stage.started)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -306,23 +352,28 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "No WorldState field mutation — selectStages status 'ready'",
     representation2D: "Stages list status 'ready' ('queued to start')",
-    representation3D: "The stage's eventual building shows 'waiting' once sourceBuildingId is known (computeOperationalBuildingState) — for qa_validation specifically, QA does not yet show 'waiting' from this alone, since sourceBuildingId is only set at stage.started",
+    representation3D:
+      "The stage's eventual building shows 'waiting' once sourceBuildingId is known (computeOperationalBuildingState) — for qa_validation specifically, QA does not yet show 'waiting' from this alone, since sourceBuildingId is only set at stage.started",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "stage.started": {
     producer: "Backend",
-    reducerEffect: "currentBuild.currentStageId = entityId; status recovers from 'blocked' to 'running' if applicable; selectStages records status 'running' + sourceBuildingId from payload",
+    reducerEffect:
+      "currentBuild.currentStageId = entityId; status recovers from 'blocked' to 'running' if applicable; selectStages records status 'running' + sourceBuildingId from payload",
     representation2D: "Stages list status 'running'",
-    representation3D: "The named building (sourceBuildingId) shows 'active' (computeOperationalBuildingState); the assigned agent(s) show 'working' once agent.started_work follows",
+    representation3D:
+      "The named building (sourceBuildingId) shows 'active' (computeOperationalBuildingState); the assigned agent(s) show 'working' once agent.started_work follows",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "stage.blocked": {
     producer: "Backend",
     reducerEffect: "currentBuild.status = 'blocked'; selectStages status 'blocked' + blockedReason",
-    representation2D: "Stages list status 'blocked' with reason; SelectedObjectDetail blocked reason",
-    representation3D: "The stage's building shows 'blocked' (computeOperationalBuildingState); Cargo shows 'blocked' (computeCargoState) — this is the intentional mandatory-requirement-failure path (V-04)",
+    representation2D:
+      "Stages list status 'blocked' with reason; SelectedObjectDetail blocked reason",
+    representation3D:
+      "The stage's building shows 'blocked' (computeOperationalBuildingState); Cargo shows 'blocked' (computeCargoState) — this is the intentional mandatory-requirement-failure path (V-04)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -330,64 +381,80 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Agent (Inspector, mock)",
     reducerEffect: "No WorldState field mutation — selectStages status 'validating'",
     representation2D: "Stages list status 'validating'",
-    representation3D: "QA building shows 'active' (computeOperationalBuildingState, stage status validating); Cargo shows 'validating' (computeCargoState)",
+    representation3D:
+      "QA building shows 'active' (computeOperationalBuildingState, stage status validating); Cargo shows 'validating' (computeCargoState)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "stage.validation_passed": {
     producer: "Agent (Inspector, mock)",
-    reducerEffect: "No WorldState field mutation — invariant: never producible by the Builder (F-05)",
-    representation2D: "Requirement checklist reflects passedRequirementIds via requirement.passed events emitted alongside it",
-    representation3D: "No distinct visual beyond the stage.completed that follows immediately after",
+    reducerEffect:
+      "No WorldState field mutation — invariant: never producible by the Builder (F-05)",
+    representation2D:
+      "Requirement checklist reflects passedRequirementIds via requirement.passed events emitted alongside it",
+    representation3D:
+      "No distinct visual beyond the stage.completed that follows immediately after",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "stage.validation_failed": {
     producer: "Agent (Inspector, mock)",
-    reducerEffect: "No WorldState field mutation — selectStages maps this to the closest allowed BuildStageStatus, 'blocked' (no dedicated status exists)",
+    reducerEffect:
+      "No WorldState field mutation — selectStages maps this to the closest allowed BuildStageStatus, 'blocked' (no dedicated status exists)",
     representation2D: "Stages list status 'blocked'; failed requirement ids",
-    representation3D: "QA building shows 'blocked' (computeOperationalBuildingState); vehicle stays parked (event-model.md 'QA red; vehicle parked') — not reached by the canonical script (validation always passes), reachable via a hand-authored fixture",
+    representation3D:
+      "QA building shows 'blocked' (computeOperationalBuildingState); vehicle stays parked (event-model.md 'QA red; vehicle parked') — not reached by the canonical script (validation always passes), reachable via a hand-authored fixture",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "stage.completed": {
     producer: "Backend",
-    reducerEffect: "currentBuild.status recovers to 'running' if it was 'blocked'; selectStages status 'completed'",
+    reducerEffect:
+      "currentBuild.status recovers to 'running' if it was 'blocked'; selectStages status 'completed'",
     representation2D: "Stages list status 'completed'",
-    representation3D: "Construction Site phase advances (computeConstructionSitePhase, completed-stage count); Cargo recovers from 'blocked' to 'open_incomplete' if this was the blocked stage's own completion",
+    representation3D:
+      "Construction Site phase advances (computeConstructionSitePhase, completed-stage count); Cargo recovers from 'blocked' to 'open_incomplete' if this was the blocked stage's own completion",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "stage.failed": {
     producer: "Backend",
-    reducerEffect: "No currentBuild field mutation beyond what a following build.failed would drive; selectStages status 'failed'",
+    reducerEffect:
+      "No currentBuild field mutation beyond what a following build.failed would drive; selectStages status 'failed'",
     representation2D: "Stages list status 'failed'",
-    representation3D: "The stage's building shows 'failed' (computeOperationalBuildingState) — not reached by the canonical script (terminal only absent a Revision); reachable via a hand-authored fixture",
+    representation3D:
+      "The stage's building shows 'failed' (computeOperationalBuildingState) — not reached by the canonical script (terminal only absent a Revision); reachable via a hand-authored fixture",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
 
   "revision.requested": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation — selectStages (keyed via payload.stageId) sets that stage's status to 'revision_required'",
+    reducerEffect:
+      "No WorldState field mutation — selectStages (keyed via payload.stageId) sets that stage's status to 'revision_required'",
     representation2D: "Stages list status 'revision_required' (revision badge)",
-    representation3D: "The stage's building shows 'waiting' (computeOperationalBuildingState, revision_required)",
+    representation3D:
+      "The stage's building shows 'waiting' (computeOperationalBuildingState, revision_required)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "revision.started": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation — selectStages (resolved back to a stage via the matching revision.requested's stageId) sets status back to 'running'",
-    representation2D: "Stages list status 'running'; revision badge implicitly active (workplace reopened)",
+    reducerEffect:
+      "No WorldState field mutation — selectStages (resolved back to a stage via the matching revision.requested's stageId) sets status back to 'running'",
+    representation2D:
+      "Stages list status 'running'; revision badge implicitly active (workplace reopened)",
     representation3D: "The stage's building shows 'active' again (computeOperationalBuildingState)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "revision.completed": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation — the stage proceeds through its normal lifecycle from 'running' already set by revision.started",
+    reducerEffect:
+      "No WorldState field mutation — the stage proceeds through its normal lifecycle from 'running' already set by revision.started",
     representation2D: "Revision badge clears",
-    representation3D: "No visual change beyond what the stage's own next real transition (e.g. stage.completed) drives",
+    representation3D:
+      "No visual change beyond what the stage's own next real transition (e.g. stage.completed) drives",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -396,7 +463,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Agent (mock)",
     reducerEffect: "No WorldState field mutation — selectRequirementsByStage status 'running'",
     representation2D: "Requirement checklist row status 'running'",
-    representation3D: "No dedicated 3D representation: requirements are 2D-only detail (Principle 23 — critical facts available outside the 3D world); the owning stage/building's own active state already reflects work in progress",
+    representation3D:
+      "No dedicated 3D representation: requirements are 2D-only detail (Principle 23 — critical facts available outside the 3D world); the owning stage/building's own active state already reflects work in progress",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -410,15 +478,18 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
   },
   "requirement.failed": {
     producer: "Agent (mock)",
-    reducerEffect: "No WorldState field mutation — selectRequirementsByStage status 'failed' + message; this is the sole mandatory-requirement failure (V-04) and causationId-links the stage.blocked that follows",
+    reducerEffect:
+      "No WorldState field mutation — selectRequirementsByStage status 'failed' + message; this is the sole mandatory-requirement failure (V-04) and causationId-links the stage.blocked that follows",
     representation2D: "Requirement checklist row status 'failed' (✗) with evidence message",
-    representation3D: "No distinct visual of its own: the stage.blocked/currentBuild.status='blocked' that follows is what drives Cargo/building visuals — kept as its own row so the exact failed requirement remains inspectable (Principle 17)",
+    representation3D:
+      "No distinct visual of its own: the stage.blocked/currentBuild.status='blocked' that follows is what drives Cargo/building visuals — kept as its own row so the exact failed requirement remains inspectable (Principle 17)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "requirement.retried": {
     producer: "Agent (mock)",
-    reducerEffect: "No WorldState field mutation — selectRequirementsByStage status 'running' again",
+    reducerEffect:
+      "No WorldState field mutation — selectRequirementsByStage status 'running' again",
     representation2D: "Requirement checklist row returns to 'running'",
     representation3D: "No visual change: see requirement.started",
     textualEquivalent: GLOBAL_TEXT,
@@ -427,9 +498,11 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
 
   "artifact.created": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation — Artifact has no standalone WorldState projection in V1",
+    reducerEffect:
+      "No WorldState field mutation — Artifact has no standalone WorldState projection in V1",
     representation2D: "Timeline row",
-    representation3D: "No visual change: Cargo (cargoState.ts) is derived from Build/Transfer/stage state, not individual Artifact records — one cargo representation type covers the whole build's output (v1-scope.md/world-model.md)",
+    representation3D:
+      "No visual change: Cargo (cargoState.ts) is derived from Build/Transfer/stage state, not individual Artifact records — one cargo representation type covers the whole build's output (v1-scope.md/world-model.md)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -445,16 +518,20 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "No WorldState field mutation",
     representation2D: "Timeline row",
-    representation3D: "No visual change of its own: Cargo's 'sealed_ready' is keyed to the Transfer's own transfer.ready status, which has artifact readiness as one of its real preconditions (event-model.md) — this event is the precondition being satisfied, not an independent visual trigger",
+    representation3D:
+      "No visual change of its own: Cargo's 'sealed_ready' is keyed to the Transfer's own transfer.ready status, which has artifact readiness as one of its real preconditions (event-model.md) — this event is the precondition being satisfied, not an independent visual trigger",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
 
   "transfer.created": {
     producer: "Backend",
-    reducerEffect: "activeTransfers gains a new Transfer, status 'created', source/destination empty until transfer.started",
-    representation2D: "No dedicated transfer list in V1 (Principle 23 scope) — reflected via the owning stage",
-    representation3D: "No visual change: Cargo stays 'open_incomplete' until the transfer is ready; the vehicle stays at home (no real source/destination known yet — Required behaviors 7/8)",
+    reducerEffect:
+      "activeTransfers gains a new Transfer, status 'created', source/destination empty until transfer.started",
+    representation2D:
+      "No dedicated transfer list in V1 (Principle 23 scope) — reflected via the owning stage",
+    representation3D:
+      "No visual change: Cargo stays 'open_incomplete' until the transfer is ready; the vehicle stays at home (no real source/destination known yet — Required behaviors 7/8)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -462,7 +539,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "activeTransfers[i].status = 'blocked'; blockerIds set",
     representation2D: "No dedicated transfer list in V1 — reflected via Cargo/building state",
-    representation3D: "Cargo shows 'blocked' (computeCargoState); the transfer's touching building shows 'blocked' (computeOperationalBuildingState); road segment does not highlight (event-model.md)",
+    representation3D:
+      "Cargo shows 'blocked' (computeCargoState); the transfer's touching building shows 'blocked' (computeOperationalBuildingState); road segment does not highlight (event-model.md)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -470,42 +548,53 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "activeTransfers[i].status = 'ready'",
     representation2D: "No dedicated transfer list in V1",
-    representation3D: "Cargo seals (computeCargoState 'sealed_ready'); vehicle status 'waiting' (computeVehicleState) — position stays at home until transfer.started (Required behavior 7)",
+    representation3D:
+      "Cargo seals (computeCargoState 'sealed_ready'); vehicle status 'waiting' (computeVehicleState) — position stays at home until transfer.started (Required behavior 7)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "transfer.started": {
     producer: "Backend",
-    reducerEffect: "activeTransfers[i].status = 'in_transit'; sourceBuildingId/destinationBuildingId/artifactIds populated from payload",
+    reducerEffect:
+      "activeTransfers[i].status = 'in_transit'; sourceBuildingId/destinationBuildingId/artifactIds populated from payload",
     representation2D: "No dedicated transfer list in V1 — Cargo/vehicle detail reflect it",
-    representation3D: "Vehicle moves to the midpoint (computeVehiclePosition — Required behavior 8, the only event that can ever move it); road segment highlights (computeActiveRoadSegmentId); Cargo shows 'in_transit'",
+    representation3D:
+      "Vehicle moves to the midpoint (computeVehiclePosition — Required behavior 8, the only event that can ever move it); road segment highlights (computeActiveRoadSegmentId); Cargo shows 'in_transit'",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
-    reducedMotion: "Vehicle position is a discrete snap to the midpoint regardless of motion preference — no travel flourish exists to replace",
+    reducedMotion:
+      "Vehicle position is a discrete snap to the midpoint regardless of motion preference — no travel flourish exists to replace",
   },
   "transfer.arrived": {
     producer: "Backend",
-    reducerEffect: "activeTransfers[i].status = 'unloading' (FBL-021 addition — previously unhandled)",
+    reducerEffect:
+      "activeTransfers[i].status = 'unloading' (FBL-021 addition — previously unhandled)",
     representation2D: "No dedicated transfer list in V1",
-    representation3D: "Vehicle snaps to the destination (computeVehiclePosition); road segment stays highlighted (still not yet transfer.completed)",
+    representation3D:
+      "Vehicle snaps to the destination (computeVehiclePosition); road segment stays highlighted (still not yet transfer.completed)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
     reducedMotion: "Discrete snap regardless of motion preference",
   },
   "transfer.completed": {
     producer: "Backend",
-    reducerEffect: "Transfer removed from activeTransfers (terminal status filtered by ACTIVE_TRANSFER_STATUSES)",
-    representation2D: "No dedicated transfer list in V1 — destination building/inventory reflect it",
-    representation3D: "Vehicle returns to parked at home (computeVehiclePosition — no active transfer); road segment stops highlighting; destination building/Cargo update via the stage.started/build.completed that typically follows immediately",
+    reducerEffect:
+      "Transfer removed from activeTransfers (terminal status filtered by ACTIVE_TRANSFER_STATUSES)",
+    representation2D:
+      "No dedicated transfer list in V1 — destination building/inventory reflect it",
+    representation3D:
+      "Vehicle returns to parked at home (computeVehiclePosition — no active transfer); road segment stops highlighting; destination building/Cargo update via the stage.started/build.completed that typically follows immediately",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
     reducedMotion: "Discrete snap regardless of motion preference",
   },
   "transfer.failed": {
     producer: "Backend",
-    reducerEffect: "activeTransfers[i].status = 'failed'; failureReason set (filtered out of activeTransfers on the next read since 'failed' is a terminal status)",
+    reducerEffect:
+      "activeTransfers[i].status = 'failed'; failureReason set (filtered out of activeTransfers on the next read since 'failed' is a terminal status)",
     representation2D: "No dedicated transfer list in V1",
-    representation3D: "Vehicle status 'failed' briefly (computeVehicleState reads the Transfer while it's still present in the same tick); Cargo does not have a dedicated 'failed' state distinct from 'blocked' — not reached by the canonical script",
+    representation3D:
+      "Vehicle status 'failed' briefly (computeVehicleState reads the Transfer while it's still present in the same tick); Cargo does not have a dedicated 'failed' state distinct from 'blocked' — not reached by the canonical script",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -514,7 +603,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Backend",
     reducerEffect: "approvals gains a new Approval, status 'pending'",
     representation2D: "ApprovalCard becomes visible with evidence/risk/recommended action",
-    representation3D: "Lighthouse shows 'attention_required' (computeLighthouseState); QA shows 'waiting' (computeOperationalBuildingState — pending approval)",
+    representation3D:
+      "Lighthouse shows 'attention_required' (computeLighthouseState); QA shows 'waiting' (computeOperationalBuildingState — pending approval)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -522,7 +612,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Operator",
     reducerEffect: "approvals[i].status = 'approved'; resolvedAt/resolvedBy/resolutionNote set",
     representation2D: "ApprovalCard closes; timeline row",
-    representation3D: "Lighthouse leaves 'attention_required' (computeLighthouseState); QA leaves 'waiting' (no more pending approval); gated transition (QA→Dock transfer) may now proceed via its own events",
+    representation3D:
+      "Lighthouse leaves 'attention_required' (computeLighthouseState); QA leaves 'waiting' (no more pending approval); gated transition (QA→Dock transfer) may now proceed via its own events",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -530,41 +621,51 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Operator",
     reducerEffect: "approvals[i].status = 'rejected'; resolvedAt/resolvedBy set",
     representation2D: "ApprovalCard closes; timeline row",
-    representation3D: "Cargo shows 'rejected' (computeCargoState, outranks all other states); no transfer on the rejected protected path (event-model.md)",
+    representation3D:
+      "Cargo shows 'rejected' (computeCargoState, outranks all other states); no transfer on the rejected protected path (event-model.md)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "approval.revision_requested": {
     producer: "Operator",
     reducerEffect: "approvals[i].status = 'revision_requested'; resolvedAt/resolvedBy set",
-    representation2D: "ApprovalCard closes; a Revision record follows (revision.requested) reopening the stage",
-    representation3D: "The stage's building shows 'waiting' via the accompanying revision.requested (computeOperationalBuildingState)",
+    representation2D:
+      "ApprovalCard closes; a Revision record follows (revision.requested) reopening the stage",
+    representation3D:
+      "The stage's building shows 'waiting' via the accompanying revision.requested (computeOperationalBuildingState)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
 
   "building.selected": {
     producer: "Frontend (recorded)",
-    reducerEffect: "No WorldState/operational-truth mutation (event-model.md: 'None on operational truth — selection is UI')",
+    reducerEffect:
+      "No WorldState/operational-truth mutation (event-model.md: 'None on operational truth — selection is UI')",
     representation2D: "Detail panel + navigator sync (FBL-015)",
     representation3D: "Selection ring on the selected building/Lighthouse (FBL-015 SelectionRing)",
     textualEquivalent: GLOBAL_TEXT,
-    idempotency: "Re-selecting the already-selected object emits nothing further (runtime.ts selectBuilding dedup guard) — UI-safe",
+    idempotency:
+      "Re-selecting the already-selected object emits nothing further (runtime.ts selectBuilding dedup guard) — UI-safe",
   },
   "building.state_changed": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation in this mock runtime — the canonical script never emits this event; FBL-021 instead derives operational-building status directly from stage.started/transfer/health/upgrade state already in WorldState/the event log (computeOperationalBuildingState), achieving the same visual requirement without this event ever firing",
+    reducerEffect:
+      "No WorldState field mutation in this mock runtime — the canonical script never emits this event; FBL-021 instead derives operational-building status directly from stage.started/transfer/health/upgrade state already in WorldState/the event log (computeOperationalBuildingState), achieving the same visual requirement without this event ever firing",
     representation2D: "Would update the relevant building's status field",
-    representation3D: "No visual change from this event specifically: no visual mapping keys off building.state_changed's own payload in this rung; the achieved visual is equivalent, keyed off the underlying stage/transfer/health events directly",
+    representation3D:
+      "No visual change from this event specifically: no visual mapping keys off building.state_changed's own payload in this rung; the achieved visual is equivalent, keyed off the underlying stage/transfer/health events directly",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
 
   "upgrade.eligible": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation — badge-only per event-model.md ('no level change')",
-    representation2D: "Would show an eligibility badge on the Warehouse detail (not built as a distinct UI element in V1 — no test requires it; Warehouse level/status already visible)",
-    representation3D: "No visual change: Warehouse geometry/level are unaffected until upgrade.completed",
+    reducerEffect:
+      "No WorldState field mutation — badge-only per event-model.md ('no level change')",
+    representation2D:
+      "Would show an eligibility badge on the Warehouse detail (not built as a distinct UI element in V1 — no test requires it; Warehouse level/status already visible)",
+    representation3D:
+      "No visual change: Warehouse geometry/level are unaffected until upgrade.completed",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -572,7 +673,8 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     producer: "Operator",
     reducerEffect: "No WorldState field mutation",
     representation2D: "Timeline row",
-    representation3D: "No visual change: capability remains old until upgrade.completed (event-model.md)",
+    representation3D:
+      "No visual change: capability remains old until upgrade.completed (event-model.md)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
@@ -586,25 +688,31 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
   },
   "upgrade.started": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation — selectUpgradeInProgress(events) becomes true (FBL-021 addition)",
+    reducerEffect:
+      "No WorldState field mutation — selectUpgradeInProgress(events) becomes true (FBL-021 addition)",
     representation2D: "Timeline row",
-    representation3D: "Warehouse shows 'upgrading' (computeOperationalBuildingState) — 'restrained upgrading visual', capability/level unchanged until completion (event-model.md)",
+    representation3D:
+      "Warehouse shows 'upgrading' (computeOperationalBuildingState) — 'restrained upgrading visual', capability/level unchanged until completion (event-model.md)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "upgrade.completed": {
     producer: "Backend",
-    reducerEffect: "buildings[warehouse].level = payload.toLevel; selectUpgradeInProgress(events) becomes false",
+    reducerEffect:
+      "buildings[warehouse].level = payload.toLevel; selectUpgradeInProgress(events) becomes false",
     representation2D: "Warehouse capacity/level in detail panel",
-    representation3D: "Warehouse Level 2 geometry variant renders (OperationalBuilding.tsx — strictly gated on level >= 2, which only this event ever sets); visual + capability change atomically (V-07)",
+    representation3D:
+      "Warehouse Level 2 geometry variant renders (OperationalBuilding.tsx — strictly gated on level >= 2, which only this event ever sets); visual + capability change atomically (V-07)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
   "upgrade.failed": {
     producer: "Backend",
-    reducerEffect: "No WorldState field mutation — level intentionally NOT changed, retaining prior capability (event-model.md); selectUpgradeInProgress(events) becomes false",
+    reducerEffect:
+      "No WorldState field mutation — level intentionally NOT changed, retaining prior capability (event-model.md); selectUpgradeInProgress(events) becomes false",
     representation2D: "Timeline row with evidence",
-    representation3D: "Warehouse returns to its pre-upgrade status (computeOperationalBuildingState, upgradeInProgress false); Level 2 geometry never renders (level unchanged)",
+    representation3D:
+      "Warehouse returns to its pre-upgrade status (computeOperationalBuildingState, upgradeInProgress false); Level 2 geometry never renders (level unchanged)",
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },

@@ -60,8 +60,18 @@ export function describeEvent(event: FoundryEvent): string {
       return "Agent returned home";
     case "agentrun.started":
       return `Run started (${p.runtimeType}, risk ${p.riskClass})`;
-    case "agentrun.completed":
-      return `Run completed (exit ${p.exitCode})`;
+    case "agentrun.evidence_recorded":
+      return "Run evidence recorded";
+    case "agentrun.completed": {
+      // A real run carries its budget; a mock run never will. Saying what
+      // it cost on the row that reports completion is the difference
+      // between an audit trail and a claim.
+      const budget = p.budget as
+        { actualCostUsd: number | null; authorizedCeilingUsd: number } | undefined;
+      if (!budget) return `Run completed (exit ${String(p.exitCode)})`;
+      const spent = budget.actualCostUsd === null ? "cost UNKNOWN" : `$${budget.actualCostUsd}`;
+      return `Run completed (exit ${String(p.exitCode)}) — ${spent} of $${budget.authorizedCeilingUsd} ceiling`;
+    }
     case "agentrun.failed":
       return `Run failed: ${p.failureMessage}`;
     case "agentrun.timed_out":

@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — the first real run's evidence was never persisted (AC-111 audit and correction)
+
+**The first real controlled Claude Code run succeeded.** It also demonstrated that almost nothing about it survived.
+
+`agentrun.completed` carried three fields, and its `evidenceIds` pointed at an id **no record existed for**. A read of the database found `deb0a728-…` in exactly two places: the completion event citing it, and the `AgentRun` entity projected from that event. **Records keyed by it: zero.** The authorized ceiling, the actual cost ($0.0790585), the containment verdict, the binary identity, the write-scope result, the independent-test result, and the workspace disposition were all computed, printed to a terminal, and lost when the process exited. **A reference to evidence that does not exist is worse than no reference, because it reads like an audit trail.**
+
+**History is intact.** Events 133 and 134 were not edited, deleted, recreated, or backfilled, and the dangling id remains dangling permanently, because that is what happened. Writing a record for it now would fabricate an audit trail — worse than the gap. The operator's database measured **135 events / 39 entities before and after** every step of this work.
+
+**Durable evidence for future runs**, through the declared architecture rather than a log file: a `PersistedRunEvidence` contract (26 fields), the `agentrun.evidence_recorded` event, the `AgentRun.RecordEvidence` creation command, an `agentRunEvidence` entity type keyed by evidence id, and an optional `budget` summary on every terminal `AgentRun` event.
+
+**Ordering is the substance.** Evidence is persisted **before** the terminal event and **read back** before that event is emitted — an accepted command is not proof a record is queryable, which is exactly the assumption that produced the dangling id. If evidence cannot be made durable the run is recorded as `agentrun.failed` with `failureCode: "evidence_persistence_failed"` and an empty `evidenceIds`, never as an ordinary completion, and the message preserves that **money may already have been spent**.
+
+`actualCostUsd` is nullable throughout: **`null` means unknown and must never be recorded as `0`.** The `budget` summary is optional so every historical mock event, including the frozen canonical run, stays valid.
+
+**A defect found while building the fix:** the evidence record was constructed *before* the workspace was disposed, so every record would have claimed `retained` even when the workspace had just been destroyed — the same class of mistake as the `finally`-after-return defect found earlier in this rung. Evidence about a thing must be written after that thing's fate is settled.
+
+**Gates:** typecheck 8/8 · lint clean · build clean · **1462 passed / 0 failures** (up from 1430) · `v1-canonical-run.json` byte-identical. Eleven new offline tests, substituted backends and temporary databases throughout; no real model call occurs.
+
+Recorded in `docs/evidence/ac-111/first-real-run-observation.md`. **`AC-111` is not closed** — its stop condition is one successful real stage *with reviewed evidence*, and the evidence for this run does not durably exist.
+
 ### Fixed — the documented AC-111 command did not work
 
 The operator followed the manifest and could not reach a dry run. `pnpm --filter @foundry/api ac-111:dispatch **--** …` forwards the separator to the script as a **literal argument**, and the entrypoint refused it: `REFUSED: Unrecognised argument \`--\``.

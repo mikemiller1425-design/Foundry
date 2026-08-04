@@ -4,6 +4,7 @@ import { BUILD_STAGE_SEQUENCE, BuildStageNameSchema } from "./entities/buildStag
 import { ObjectiveTextSchema } from "./objective";
 import { BuildPlanSchema, PlanReviewDecisionSchema } from "./plan";
 import { BudgetUsdSchema } from "./authorization";
+import { PersistedRunEvidenceSchema } from "./runEvidence";
 
 // docs/02-specification/domain-model.md → each entity's "Commands" row.
 // This is the closed, authoritative V1 command vocabulary a backend API
@@ -74,6 +75,10 @@ export const COMMAND_TYPES = [
   "Task.Fail",
   "Task.Cancel",
   "AgentRun.Start",
+  // V1.1 amendment (AC-111): durable evidence for one run, recorded
+  // before its terminal event so a completion can never cite an evidence
+  // id no record exists for. Recorded in domain-model.md.
+  "AgentRun.RecordEvidence",
   "AgentRun.Complete",
   "AgentRun.Fail",
   "AgentRun.Timeout",
@@ -249,6 +254,21 @@ export const COMMAND_PARAM_SCHEMAS = {
    * accepted as the binding (`F-113a`), only ever used to detect that the
    * operator was reading something stale.
    */
+  /**
+   * Produces `agentrun.evidence_recorded` (AC-111).
+   *
+   * The evidence itself is validated here, in full, before the event is
+   * built — so a malformed record is refused rather than persisted as a
+   * plausible-looking one.
+   */
+  "AgentRun.RecordEvidence": z
+    .object({
+      evidenceId: IdSchema,
+      agentRunId: IdSchema,
+      evidence: PersistedRunEvidenceSchema,
+    })
+    .strict(),
+
   "Plan.Authorize": z
     .object({
       planId: IdSchema,

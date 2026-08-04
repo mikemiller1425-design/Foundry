@@ -919,3 +919,253 @@ describe("AC-111 — zero real model calls", () => {
     expect(realModelCalls).toBe(0);
   });
 });
+
+describe("AC-111 durable evidence — the first real run's gap, closed", () => {
+  const evidenceOf = (evidenceId: string) =>
+    persistence.getEntity<Record<string, unknown>>("agentRunEvidence", evidenceId);
+
+  it("persists a complete evidence record for a SUCCESSFUL run", async () => {
+    const plan = await seedOrchestratedBuild();
+    expect(authorize(plan, 5).accepted).toBe(true);
+
+    const result = await new ExecutionDispatcher(persistence, handler, config()).dispatch(
+      plan.buildId,
+      OPERATOR,
+      {
+        adapter: fakeAdapter({}, {
+          writes: { "src/taskStore.js": "x" },
+          stdout: JSON.stringify({ total_cost_usd: 0.079 }),
+        }),
+        validationBackend: fakeValidationBackend(),
+      },
+    );
+
+    expect(result.outcome).toBe("succeeded");
+    const record = evidenceOf(result.evidenceId as string);
+    expect(record).toBeDefined();
+
+    // Every field the first real run lost.
+    expect(record).toMatchObject({
+      agentRunId: result.agentRunId,
+      buildId: plan.buildId,
+      planId: plan.planId,
+      supportedObjectiveId: "task-store-module-v1",
+      authorizedCeilingUsd: 5,
+      ceilingPassedToRuntimeUsd: 5,
+      actualCostUsd: 0.079,
+      workspaceDisposition: "destroyed",
+      workspaceDestructionVerified: true,
+      networkEnforcement: "declared_and_recorded_not_enforced",
+      outcome: "succeeded",
+    });
+    expect(record?.authorizationId).toBeDefined();
+    expect(record?.binaryIdentity).not.toBeNull();
+    expect(record?.writeScope).not.toBeNull();
+    expect(record?.independentTest).not.toBeNull();
+    expect(record?.verdict).toBeTruthy();
+  });
+
+  it.each([
+    ["failed validation", { testsPass: false }, "failed_validation"],
+    ["failed write scope", { changed: ["src/taskStore.js", "test/taskStore.test.js"] }, "failed_write_scope"],
+  ])("persists evidence for a %s run", async (_label, backendOptions, expected) => {
+    const plan = await seedOrchestratedBuild();
+    expect(authorize(plan).accepted).toBe(true);
+    const result = await new ExecutionDispatcher(persistence, handler, config()).dispatch(
+      plan.buildId,
+      OPERATOR,
+      {
+        adapter: fakeAdapter({}, { writes: { "src/taskStore.js": "x" } }),
+        validationBackend: fakeValidationBackend(backendOptions as never),
+      },
+    );
+    expect(result.outcome).toBe(expected);
+    expect(evidenceOf(result.evidenceId as string)).toBeDefined();
+  });
+
+  it("persists evidence for a TIMED-OUT run", async () => {
+    const plan = await seedOrchestratedBuild();
+    expect(authorize(plan).accepted).toBe(true);
+    const result = await new ExecutionDispatcher(persistence, handler, config()).dispatch(
+      plan.buildId,
+      OPERATOR,
+      {
+        adapter: fakeAdapter({}, { status: "timed_out", exitCode: null, stdout: JSON.stringify({ total_cost_usd: 0.4 }) }),
+        validationBackend: fakeValidationBackend(),
+      },
+    );
+    expect(result.outcome).toBe("timed_out");
+    expect(evidenceOf(result.evidenceId as string)?.outcome).toBe("timed_out");
+  });
+
+  it("persists evidence for an UNKNOWN-COST run, with null and a stated reason", async () => {
+    const plan = await seedOrchestratedBuild();
+    expect(authorize(plan).accepted).toBe(true);
+    const result = await new ExecutionDispatcher(persistence, handler, config()).dispatch(
+      plan.buildId,
+      OPERATOR,
+      {
+        adapter: fakeAdapter({}, { writes: { "src/taskStore.js": "x" }, stdout: "not json" }),
+        validationBackend: fakeValidationBackend(),
+      },
+    );
+
+    expect(result.outcome).toBe("failed_cost_unknown");
+    const record = evidenceOf(result.evidenceId as string);
+    expect(record?.actualCostUsd).toBeNull();
+    // Explicitly not zero. "cost nothing" and "cost unknown" are opposites.
+    expect(record?.actualCostUsd).not.toBe(0);
+    expect(record?.budgetOutcome).toBeNull();
+    expect(String(record?.costUnknownReason)).toMatch(/not valid JSON/i);
+  });
+
+  it("persists evidence for an OVER-BUDGET run, with the containment outcome", async () => {
+    const plan = await seedOrchestratedBuild();
+    expect(authorize(plan, 2).accepted).toBe(true);
+    const result = await new ExecutionDispatcher(persistence, handler, config()).dispatch(
+      plan.buildId,
+      OPERATOR,
+      {
+        adapter: fakeAdapter({}, { writes: { "src/taskStore.js": "x" }, stdout: JSON.stringify({ total_cost_usd: 9.99 }) }),
+        validationBackend: fakeValidationBackend(),
+      },
+    );
+
+    expect(result.outcome).toBe("failed_over_budget");
+    const record = evidenceOf(result.evidenceId as string);
+    expect(record?.actualCostUsd).toBe(9.99);
+    expect(record?.budgetOutcome).toMatchObject({
+      authorizedCeilingUsd: 2,
+      actualCostUsd: 9.99,
+      withinCeiling: false,
+    });
+  });
+
+  it("a terminal event NEVER cites an evidence id with no record behind it", async () => {
+    const plan = await seedOrchestratedBuild();
+    expect(authorize(plan).accepted).toBe(true);
+    await new ExecutionDispatcher(persistence, handler, config()).dispatch(plan.buildId, OPERATOR, {
+      adapter: fakeAdapter({}, { writes: { "src/taskStore.js": "x" } }),
+      validationBackend: fakeValidationBackend(),
+    });
+
+    // The exact defect the first real run had: a dangling pointer.
+    for (const event of persistence.getAllEvents()) {
+      if (!event.type.startsWith("agentrun.")) continue;
+      const cited = (event.payload as { evidenceIds?: string[] }).evidenceIds ?? [];
+      for (const id of cited) {
+        expect(evidenceOf(id), `event ${event.type} cites ${id}`).toBeDefined();
+      }
+    }
+  });
+
+  it("the terminal event carries the budget summary", async () => {
+    const plan = await seedOrchestratedBuild();
+    expect(authorize(plan, 5).accepted).toBe(true);
+    await new ExecutionDispatcher(persistence, handler, config()).dispatch(plan.buildId, OPERATOR, {
+      adapter: fakeAdapter({}, { writes: { "src/taskStore.js": "x" }, stdout: JSON.stringify({ total_cost_usd: 1.5 }) }),
+      validationBackend: fakeValidationBackend(),
+    });
+
+    // Scoped to the real run: the mock orchestration produced six
+    // completions of its own, and those legitimately carry no budget.
+    const completed = persistence
+      .getAllEvents()
+      .find((e) => e.type === "agentrun.completed" && e.entityId.endsWith("--real-run"));
+    expect(completed?.payload).toMatchObject({
+      budget: { authorizedCeilingUsd: 5, actualCostUsd: 1.5, withinCeiling: true },
+    });
+  });
+
+  it("durable evidence survives closing and reopening SQLite", async () => {
+    const plan = await seedOrchestratedBuild();
+    expect(authorize(plan).accepted).toBe(true);
+    const result = await new ExecutionDispatcher(persistence, handler, config()).dispatch(
+      plan.buildId,
+      OPERATOR,
+      {
+        adapter: fakeAdapter({}, { writes: { "src/taskStore.js": "x" } }),
+        validationBackend: fakeValidationBackend(),
+      },
+    );
+    const before = evidenceOf(result.evidenceId as string);
+
+    persistence.close();
+    const reopened = new PersistenceService(join(dir, "foundry.sqlite"));
+    try {
+      const after = reopened.getEntity("agentRunEvidence", result.evidenceId as string);
+      expect(after).toEqual(before);
+      expect(after).toBeDefined();
+    } finally {
+      reopened.close();
+      persistence = new PersistenceService(join(dir, "foundry.sqlite"));
+    }
+  });
+
+  it("an evidence-persistence FAILURE cannot produce a false successful completion", async () => {
+    const plan = await seedOrchestratedBuild();
+    expect(authorize(plan).accepted).toBe(true);
+
+    // A handler that accepts everything except the evidence record — the
+    // failure mode that would otherwise yield a completion citing nothing.
+    const real = new CommandHandler(persistence);
+    const sabotaged = {
+      submit: (request: Parameters<CommandHandler["submit"]>[0], actor: CommandActor) =>
+        request.commandType === "AgentRun.RecordEvidence"
+          ? { accepted: false as const, commandType: request.commandType, reason: "disk full" }
+          : real.submit(request, actor),
+    } as unknown as CommandHandler;
+
+    const result = await new ExecutionDispatcher(persistence, sabotaged, config()).dispatch(
+      plan.buildId,
+      OPERATOR,
+      {
+        adapter: fakeAdapter({}, { writes: { "src/taskStore.js": "x" }, stdout: JSON.stringify({ total_cost_usd: 3 }) }),
+        validationBackend: fakeValidationBackend(),
+      },
+    );
+
+    // The run itself succeeded, and the dispatch still refuses to say so.
+    expect(result.outcome).toBe("failed_evidence_persistence");
+    expect(result.evidenceId).toBeNull();
+    expect(result.verdict).toMatch(/MONEY MAY ALREADY HAVE BEEN SPENT/);
+    expect(result.verdict).toContain("$3");
+
+    // No completion event, and nothing cites a nonexistent record.
+    const events = persistence.getAllEvents().filter((e) => e.entityId.endsWith("--real-run"));
+    expect(events.some((e) => e.type === "agentrun.completed")).toBe(false);
+    const failed = events.find((e) => e.type === "agentrun.failed");
+    expect((failed?.payload as { failureCode: string }).failureCode).toBe(
+      "evidence_persistence_failed",
+    );
+    expect((failed?.payload as { evidenceIds: string[] }).evidenceIds).toEqual([]);
+  });
+
+  it("a second record for the same evidence id is refused, not overwritten", async () => {
+    const plan = await seedOrchestratedBuild();
+    expect(authorize(plan).accepted).toBe(true);
+    const result = await new ExecutionDispatcher(persistence, handler, config()).dispatch(
+      plan.buildId,
+      OPERATOR,
+      {
+        adapter: fakeAdapter({}, { writes: { "src/taskStore.js": "x" } }),
+        validationBackend: fakeValidationBackend(),
+      },
+    );
+
+    const second = handler.submit(
+      {
+        commandType: "AgentRun.RecordEvidence",
+        entityId: result.evidenceId as string,
+        params: {
+          evidenceId: result.evidenceId,
+          agentRunId: result.agentRunId,
+          evidence: evidenceOf(result.evidenceId as string),
+        },
+      },
+      OPERATOR,
+    );
+    expect(second.accepted).toBe(false);
+    expect(second.reason).toMatch(/already exists/i);
+  });
+});

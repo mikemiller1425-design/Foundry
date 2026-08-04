@@ -10,6 +10,7 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
   requirements: "Requirement",
   tasks: "Task",
   agentRuns: "AgentRun",
+  agentRunEvidence: "RunEvidence",
   artifacts: "Artifact",
   transfers: "Transfer",
   approvals: "Approval",
@@ -208,6 +209,14 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
   "Task.Cancel": { entityType: "tasks", ...TASK_DENY },
 
   "AgentRun.Start": { entityType: "agentRuns", eventType: "agentrun.started", isCreate: true },
+  // AC-111: durable evidence, keyed by its own id. A creation command, so
+  // a second record for the same evidence id is refused rather than
+  // overwriting the first.
+  "AgentRun.RecordEvidence": {
+    entityType: "agentRunEvidence",
+    eventType: "agentrun.evidence_recorded",
+    isCreate: true,
+  },
   "AgentRun.Complete": {
     entityType: "agentRuns",
     eventType: "agentrun.completed",

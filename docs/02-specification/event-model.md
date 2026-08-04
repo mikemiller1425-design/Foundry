@@ -442,6 +442,16 @@ Plan **production** needs nothing new — `build.planned` already covers it. Wha
 
 **`operator.plan_reviewed` is now a member of the runtime event vocabulary.** It joined `OPERATOR_EVENTS` at the rung that produces it, together with its reducer disposition (records the review on the persisted Plan; creates nothing) and its event→world projection-map entry (no visual change — a decision about a proposal is not work in the world).
 
+### Status update (`AC-111`, 2026-08-04) — durable run evidence
+
+**`agentrun.evidence_recorded` joins the runtime event vocabulary**, with its reducer disposition (creates a `RunEvidence` record keyed by evidence id; idempotent, so a replay never overwrites the record it produced) and its event→world projection-map entry (no visual change — recording evidence about a finished run is not itself work in the world).
+
+**Why it exists.** The first real controlled run succeeded and almost nothing about it survived. `agentrun.completed` carried `exitCode`, `outputArtifactIds`, and `evidenceIds` — and that last one pointed at an evidence id **no record existed for**. A read of the database found the id in exactly two places: the completion event citing it, and the `AgentRun` entity projected from that event. Zero records were keyed by it. The authorized ceiling, actual cost, containment verdict, binary identity, write-scope result, independent-test result, and workspace disposition were computed, printed to a terminal, and lost when the process exited.
+
+**Ordering is the substance.** Evidence is recorded **before** the terminal event that cites it, and the writer reads the record back before emitting that event. A terminal event may only reference evidence that has been retrieved. If evidence cannot be made durable, the run is recorded as `agentrun.failed` with `failureCode: "evidence_persistence_failed"` and **no** `evidenceIds` — never as an ordinary completion — and the failure message preserves that money may already have been spent.
+
+**`agentrun.completed`, `agentrun.failed`, and `agentrun.timed_out` gained an optional `budget` summary** carrying `authorizedCeilingUsd`, `actualCostUsd` (**nullable — `null` means unknown, never zero**), `withinCeiling`, and `evidenceId`. Optional deliberately: every historical mock `agentrun.*` event, including the frozen canonical run, carries none, and requiring one would invalidate `v1-canonical-run.json`. A real run always supplies it; a mock run never will, and the absence is meaningful rather than missing data.
+
 ### Status update (`AC-110`, 2026-08-04)
 
 **`operator.execution_authorized` is now a member of the runtime event vocabulary.** It joined `OPERATOR_EVENTS` at the rung that produces it, together with its reducer disposition (records the single-use authorization on the persisted `Plan`; creates nothing else) and its event→world projection-map entry (no visual change — permission to run is not running).

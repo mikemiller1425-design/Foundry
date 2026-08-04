@@ -4,6 +4,7 @@ import {
   matchSupportedObjective,
   type ExecutionAuthorization,
   type PersistedPlan,
+  type PersistedRunEvidence,
   type SupportedObjectiveTemplate,
 } from "@foundry/contracts";
 import {
@@ -93,6 +94,7 @@ export type DispatchOutcome =
   | "failed_validation"
   | "failed_cost_unknown"
   | "failed_over_budget"
+  | "failed_evidence_persistence"
   | "timed_out";
 
 /** Outcomes that mean nothing was dispatched and nothing was consumed. */
@@ -138,6 +140,8 @@ export interface DispatchEvidence {
   networkEnforcement: "declared_and_recorded_not_enforced";
   gateRefusals: readonly ExecutionRefusal[];
   stageEvidence: ControlledStageEvidence | null;
+  /** The durable evidence record this dispatch persisted, when it did. */
+  evidenceId: string | null;
   startedAt: string;
   completedAt: string;
 }
@@ -223,6 +227,7 @@ export class ExecutionDispatcher {
       workspaceDestructionVerified: false,
       gateRefusals: [],
       stageEvidence: null,
+      evidenceId: null,
       completedAt: now().toISOString(),
       ...extra,
     });
@@ -459,56 +464,190 @@ export class ExecutionDispatcher {
     let verdict: string;
     let actualCostUsd: number | null = null;
     let budgetOutcome: BudgetOutcome | null = null;
+    let costUnknownReason: string | undefined;
 
     if (!cost.ok) {
       outcome = "failed_cost_unknown";
       verdict = cost.reason;
-      this.recordTerminal(agentRunId, "fail", actor, {
-        failureCode: "cost_unknown",
-        failureMessage: cost.reason,
-        evidenceIds: [stageEvidence.runEvidence?.evidenceId ?? "unknown"],
-      });
+      costUnknownReason = cost.reason;
     } else {
       actualCostUsd = cost.costUsd;
       budgetOutcome = evaluateBudget(authorizedCeilingUsd, cost.costUsd);
-
       if (!budgetOutcome.withinCeiling) {
         outcome = "failed_over_budget";
         verdict = `Containment failure: the run cost $${cost.costUsd} against an authorized ceiling of $${authorizedCeilingUsd}. The money is already spent — this is detection, not prevention — but an overspend is recorded as a failed run rather than a success with a footnote.`;
-        this.recordTerminal(agentRunId, "fail", actor, {
-          failureCode: "over_budget",
-          failureMessage: verdict,
-          evidenceIds: [stageEvidence.runEvidence?.evidenceId ?? "unknown"],
-        });
       } else {
-        // ---- 8. Terminal state, through the ordinary command path -------
         outcome = mapStageOutcome(stageEvidence.outcome);
         verdict = stageEvidence.verdict;
-
-        if (outcome === "succeeded") {
-          this.recordTerminal(agentRunId, "complete", actor, {
-            exitCode: stageEvidence.runEvidence?.commands[0]?.exitCode ?? 0,
-            outputArtifactIds: [],
-            evidenceIds: [stageEvidence.runEvidence?.evidenceId ?? "unknown"],
-          });
-        } else if (outcome === "timed_out") {
-          this.recordTerminal(agentRunId, "timeout", actor, {
-            evidenceIds: [stageEvidence.runEvidence?.evidenceId ?? "unknown"],
-            logRef: agentRunId,
-          });
-        } else {
-          this.recordTerminal(agentRunId, "fail", actor, {
-            failureCode: stageEvidence.outcome,
-            failureMessage: stageEvidence.verdict,
-            evidenceIds: [stageEvidence.runEvidence?.evidenceId ?? "unknown"],
-          });
-        }
       }
     }
 
-    // ---- 9. Destroy the workspace, and verify it is gone ------------------
+    /**
+     * ---- 8a. DURABLE EVIDENCE, before any terminal event ----------------
+     *
+     * The first real run cited an evidence id that no record existed for.
+     * Everything below — ceiling, cost, containment verdict, binary
+     * identity, write scope, test result, workspace disposition — was
+     * computed, printed, and lost when the process exited.
+     *
+     * So the record is persisted **first**, and read back, and only then
+     * may a terminal event reference it. A reference to evidence that does
+     * not exist is worse than no reference: it reads like an audit trail.
+     */
+    const evidenceId = stageEvidence.runEvidence?.evidenceId ?? `${agentRunId}--evidence`;
+    const runCommand = stageEvidence.runEvidence?.commands[0];
+
+    /**
+     * Dispose **before** the record is built.
+     *
+     * The first version built the evidence first and disposed afterwards,
+     * so every record claimed `workspaceDisposition: "retained"` and
+     * `workspaceDestructionVerified: false` even when the workspace had
+     * been destroyed moments later — the same class of mistake as the
+     * `finally`-after-return defect found earlier in this rung. Evidence
+     * about a workspace must be written after the workspace's fate is
+     * settled, not before. Caught by test.
+     */
     disposeWorkspace();
 
+    const durable: PersistedRunEvidence = {
+      evidenceId,
+      agentRunId,
+      buildId,
+      planId: persisted.plan.planId,
+      supportedObjectiveId: template.id,
+      authorizationId: authorization.authorizationId,
+      stageName: CLAUDE_CODE_STAGE,
+      riskClass: persisted.plan.riskClass,
+      authorizedCeilingUsd,
+      ceilingPassedToRuntimeUsd: claudeProfile.maxBudgetUsd,
+      actualCostUsd,
+      budgetOutcome,
+      ...(costUnknownReason ? { costUnknownReason } : {}),
+      binaryIdentity,
+      writeScope: stageEvidence.writeScope
+        ? {
+            allowedWritePaths: [...template.allowedWritePaths],
+            changedPaths: [...stageEvidence.writeScope.changedPaths],
+            unauthorizedPaths: [...stageEvidence.writeScope.unauthorizedPaths],
+            withinScope: stageEvidence.writeScope.withinScope,
+          }
+        : null,
+      independentTest: stageEvidence.tests
+        ? {
+            testTarget: template.independentTestPath,
+            passed: stageEvidence.tests.passed,
+            exitCode: stageEvidence.tests.exitCode,
+            timedOut: stageEvidence.tests.timedOut,
+          }
+        : null,
+      workspaceRoot: fixture.root,
+      workspaceDisposition,
+      workspaceDestructionVerified,
+      outcome,
+      exitCode: runCommand?.exitCode ?? null,
+      verdict,
+      startedAt,
+      completedAt: now().toISOString(),
+      networkEnforcement: "declared_and_recorded_not_enforced",
+      stdoutTruncated: runCommand?.output.stdoutTruncated ?? false,
+      stderrTruncated: runCommand?.output.stderrTruncated ?? false,
+      // The boundary redacts every retained capture before it is returned.
+      redactionApplied: true,
+    };
+
+    const evidencePersisted = this.persistEvidence(evidenceId, agentRunId, durable, actor);
+
+    const budgetSummary = {
+      authorizedCeilingUsd,
+      actualCostUsd,
+      withinCeiling: budgetOutcome ? budgetOutcome.withinCeiling : null,
+      evidenceId,
+    };
+
+    if (!evidencePersisted.ok) {
+      /**
+       * Evidence could not be made durable. **Do not report an ordinary
+       * successful completion**, whatever the run itself did.
+       *
+       * Money may already have been spent — the run happened — and that
+       * fact is preserved in the failure message rather than hidden by it.
+       * A completion citing evidence that does not exist is precisely the
+       * defect this rung is correcting; producing another one here would
+       * be worse than failing loudly.
+       */
+      const failure = `Evidence could not be persisted (${evidencePersisted.reason}). The run itself completed as \`${outcome}\`, so MONEY MAY ALREADY HAVE BEEN SPENT${
+        actualCostUsd === null ? " (cost unknown)" : ` ($${actualCostUsd})`
+      } — but no durable record exists, so this is reported as an audit failure rather than a completion.`;
+
+      this.recordTerminal(agentRunId, "fail", actor, {
+        failureCode: "evidence_persistence_failed",
+        failureMessage: failure,
+        // Deliberately empty: citing an id with no record behind it is the
+        // exact defect being corrected.
+        evidenceIds: [],
+      });
+
+      return {
+        ...reserved,
+        outcome: "failed_evidence_persistence",
+        verdict: failure,
+        dispatched: true,
+        budget: {
+          fromAuthorization: authorizedCeilingUsd,
+          passedToRuntime: claudeProfile.maxBudgetUsd,
+          actualCostUsd,
+          outcome: budgetOutcome,
+        },
+        workspaceRoot: fixture.root,
+        workspaceDisposition,
+        workspaceDestructionVerified,
+        stageEvidence,
+        evidenceId: null,
+        completedAt: now().toISOString(),
+      };
+    }
+
+    // ---- 8b. Terminal state, now that its evidence demonstrably exists ---
+
+    if (outcome === "failed_cost_unknown") {
+      this.recordTerminal(agentRunId, "fail", actor, {
+        failureCode: "cost_unknown",
+        failureMessage: verdict,
+        evidenceIds: [evidenceId],
+        budget: budgetSummary,
+      });
+    } else if (outcome === "failed_over_budget") {
+      this.recordTerminal(agentRunId, "fail", actor, {
+        failureCode: "over_budget",
+        failureMessage: verdict,
+        evidenceIds: [evidenceId],
+        budget: budgetSummary,
+      });
+    } else if (outcome === "succeeded") {
+      this.recordTerminal(agentRunId, "complete", actor, {
+        exitCode: runCommand?.exitCode ?? 0,
+        outputArtifactIds: [],
+        evidenceIds: [evidenceId],
+        budget: budgetSummary,
+      });
+    } else if (outcome === "timed_out") {
+      this.recordTerminal(agentRunId, "timeout", actor, {
+        evidenceIds: [evidenceId],
+        logRef: evidenceId,
+        budget: budgetSummary,
+      });
+    } else {
+      this.recordTerminal(agentRunId, "fail", actor, {
+        failureCode: stageEvidence.outcome,
+        failureMessage: stageEvidence.verdict,
+        evidenceIds: [evidenceId],
+        budget: budgetSummary,
+      });
+    }
+
+    // The workspace was destroyed and verified above, before the evidence
+    // record was written, so the record states its actual fate.
     return {
       ...reserved,
       outcome,
@@ -524,8 +663,48 @@ export class ExecutionDispatcher {
       workspaceDisposition,
       workspaceDestructionVerified,
       stageEvidence,
+      evidenceId,
       completedAt: now().toISOString(),
     };
+  }
+
+  /**
+   * Persists the evidence record and **reads it back**.
+   *
+   * The read-back is the whole point. An accepted command is not proof the
+   * record is queryable — that is exactly the assumption that produced a
+   * dangling evidence id the first time. A terminal event may only cite
+   * evidence this method has actually retrieved.
+   */
+  private persistEvidence(
+    evidenceId: string,
+    agentRunId: string,
+    evidence: PersistedRunEvidence,
+    actor: CommandActor,
+  ): { ok: true } | { ok: false; reason: string } {
+    const outcome = this.commands.submit(
+      {
+        commandType: "AgentRun.RecordEvidence",
+        entityId: evidenceId,
+        params: { evidenceId, agentRunId, evidence },
+      },
+      actor,
+    );
+    if (!outcome.accepted) {
+      return { ok: false, reason: outcome.reason ?? "AgentRun.RecordEvidence was refused" };
+    }
+
+    const readBack = this.persistence.getEntity<PersistedRunEvidence>(
+      "agentRunEvidence",
+      evidenceId,
+    );
+    if (!readBack) {
+      return {
+        ok: false,
+        reason: `the command was accepted but no record is readable at agentRunEvidence/${evidenceId}`,
+      };
+    }
+    return { ok: true };
   }
 
   /** Records the terminal `AgentRun` state through `CommandHandler`. */
