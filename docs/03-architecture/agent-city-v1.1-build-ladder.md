@@ -40,7 +40,7 @@ This is the **authoritative V1.1 Build Ladder**. Before this document existed, t
 | AC-107 | FEAT | Bounded-objective contract | AC-106 | Review contract | ✅ **Closed** (`1a184f1`, `29dbcbc`) |
 | AC-108 | FEAT | Objective submission and plan review | AC-107 | **Submit + review plan** | ✅ **Closed** (`2843b53`) |
 | AC-109 | FEAT | Backend orchestration of a build (mock executor) | AC-108 | Observe | ✅ **Closed** (`ae0b762`) |
-| AC-110 | FEAT | Execution authorization gate | AC-109 | **Authorize** | ⬜ Not started |
+| AC-110 | FEAT | Execution authorization gate | AC-109 | **Authorize** | ✅ **Closed** (`a82fcf4`) |
 | AC-111 | FEAT | Real controlled Builder execution | AC-110 | **Authorize the run** | ⬜ Not started |
 | AC-112 | FEAT | Independent Inspector validation of real output | AC-111 | Observe rejection + pass | ⬜ Not started |
 | AC-113 | FEAT | Approval, transfer, and completion on the real path | AC-112 | **Approve and reject** | ⬜ Not started |
@@ -206,7 +206,7 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **PV1-052 fully resolved** — the world now shows *running* work, every visual change driven by a declared backend event.
 - **Hard stop reached.** `AC-110` is not started and requires its own explicit operator authorization. No execution authorization exists; no Claude Code was invoked.
 
-### AC-110 — Execution authorization gate — [FEAT] — ⬜ Not started
+### AC-110 — Execution authorization gate — [FEAT] — ✅ Closed
 
 - **Operator gate:** **Authorize** one controlled execution, having read exactly what will run.
 - **Stop condition:** Authorization gate proven in both directions. **Hard stop** — the real run is a separate rung and a separate authorization.
@@ -219,6 +219,18 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - The hash is computed by the backend over persisted content. A value supplied by a client is **never** accepted as the binding.
 - `AC-110` may not close until this comparison is implemented server-side and proven in both directions.
 - The declared `operator.execution_authorized` payload carries `planContentHash` as optional **only** because no producer exists yet; `AC-110` must make it required.
+
+**Closed 2026-08-04** against commit `a82fcf4`, on the operator's approval.
+
+- **Decision 9 / `F-113a` discharged in full.** The binding is a backend-generated SHA-256 over canonical plan content: persisted on the `Plan`, **required** on the authorization and on the event payload, and compared **server-side** against a hash recomputed from persisted content — never against the stored field, so a record whose hash and content ever disagreed fails closed. The producer imports `node:crypto` and is unreachable from the browser bundle, so "backend-generated" is a module boundary rather than a convention. A client-supplied value is never accepted as the binding.
+- **Single-use enforced twice:** a second `Plan.Authorize` is refused by name, and spend is derived from persisted truth (a real `AgentRun` for the stage) rather than a mutable flag.
+- **Delivered:** `Plan.Authorize` (closed vocabulary +1); `operator.execution_authorized` joined the runtime vocabulary; `planContentHash` made required; the pure `evaluateExecutionGate` with fourteen named refusals; `GET /builds/{id}/execution-authorization`; the `ExecutionAuthorizationPanel`.
+- **Basis of approval, by standing:** the operator **personally observed** the visible binding, refusal-before-authorization, the $26 refusal, the $5 single authorization, and that nothing started. They **accepted from recorded automated and live evidence** the hash-tampering invalidation and single-use enforcement — neither of which is reachable through the product's own surface at this rung. Recorded in `docs/evidence/ac-110/operator-observation.md`.
+- **`F-114` is a known partial.** There is no real invocation for this gate to prevent yet; the "unauthorized real invocation refused" half carries forward to `AC-111`. Recorded as partial rather than counted as complete.
+- **Evidence:** `docs/evidence/ac-110/operator-observation.md` and `docs/evidence/ac-110/authorization-gate-record.md`. typecheck 8/8, lint clean, **1324 tests / 0 failures**.
+- **Two defects found before commit:** the `F-113a` boundary assertion was defeated by the comment documenting that boundary (now asserted over import statements), and a test helper's default parameter meant the uncredentialed-caller case silently sent a credential.
+- **Amendments:** `domain-model.md` (`Plan.Authorize`, the binding, the `Plan` record's new fields); `event-model.md` (`operator.execution_authorized` in the runtime vocabulary, `planContentHash` required).
+- **Hard stop reached.** No real execution occurred, no runtime is wired, no money was spent. `AC-111` is not started and requires its own explicit operator authorization — it is the first rung at which real money can be spent, and nothing in this approval authorizes that.
 
 ### AC-111 — Real controlled Builder execution — [FEAT] — ⬜ Not started
 
@@ -283,7 +295,7 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 | AC-107 | **Review** the objective envelope and confirm it bounds what was intended ✅ |
 | AC-108 | **Submit** a real objective and **review** the plan unassisted ✅ |
 | AC-109 | **Observe** an orchestrated build reach the approval gate, and that nothing real ran ✅ |
-| AC-110 | **Authorize** one controlled execution |
+| AC-110 | **Authorize** one controlled execution ✅ |
 | AC-111 | **Authorize the real run**, watch it, review its evidence |
 | AC-113 | **Approve** one real artifact, and separately **reject** one |
 | AC-118 | **Observe** the visual pass |

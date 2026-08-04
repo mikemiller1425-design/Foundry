@@ -6,6 +6,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — AC-110 closed: the execution authorization gate (documentation only)
+
+The operator approved the rung and stated the basis themselves, item by item. The stop condition — *"authorization gate proven in both directions, hard stop before the real run"* — is satisfied, so **`AC-110` is closed.**
+
+**The basis, separated by standing** — the distinction the `AC-108`/`AC-109` records got wrong and were corrected for yesterday, stated up front here instead:
+
+- **Personally observed** in the running application: the visible binding, refusal-before-authorization, the $26 refusal, the $5 single authorization, and confirmation that nothing started.
+- **Accepted from recorded automated and live evidence:** hash-tampering invalidation and single-use enforcement. Neither is reachable through the product's own surface at this rung — there is no re-plan command, and spend cannot be shown without a real run — so both were performed and recorded by the assistant. This record does not present them as operator observations.
+
+**`AC-107` Decision 9 is discharged in full.** The ladder recorded that `AC-110` may not close until the backend-generated SHA-256 binding existed, was persisted, was required on the authorization, and was compared server-side. All four hold, and the comparison is against a hash recomputed from persisted content rather than the stored field, so a record whose hash and content ever disagreed fails closed.
+
+**`F-114` is recorded as a known partial, not counted as complete.** There is no real invocation for this gate to prevent yet; that half carries forward to `AC-111`.
+
+**Gates at closure:** typecheck 8/8 · lint clean · **1324 passed / 92 files / 0 failures**. `v1-canonical-run.json` re-checked **byte-identical to `HEAD`**. `pnpm build` was verified clean at `a82fcf4` before push and deliberately not re-run, because the operator's session was still using the same `.next` directory.
+
+Definition-of-done § 7.8 — *"the operator personally performs the § 3 journey, unassisted, end to end, in one session"* — **remains outstanding** and is owed at `AC-120`. The five observed items are a real part of § 3 step 6 but are not the whole journey.
+
+`AC-111` is not started and requires its own explicit operator authorization. **It is the first rung at which real money can be spent, and nothing in this approval authorizes that.** Finding 6 (`AC-103`), D-8, N-03, N-05, and N-06 are unchanged.
+
 ### Corrected — the basis of the AC-108 and AC-109 approvals (documentation only, append-only)
 
 At the `AC-110` hand-off the assistant reported that the observation environment's database held **only `building.selected` events** — no objective, build, or plan — and said it did not know why. The operator answered:
