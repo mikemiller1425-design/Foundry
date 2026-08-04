@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Reviewed — pre-AC-111 Builder Execution Hardening Review (read-only)
+
+A read-only review of the real-execution path `AC-111` will drive, against `F-113`–`F-117`, `AC-107` Decision 2, and the `AC-110` gate as built. **No code was changed. Nothing was executed, no Claude Code was invoked, and no money was spent.**
+
+**The invocation boundary is strong** — no shell ever, argv as data, deny-by-default allowlist with no regex matcher, environment built from empty, symlink-resolving path containment, process-group termination, byte-bounded capture, and a verdict from a git diff plus a pre-written suite the runtime could neither write nor run. This review proposes weakening none of it.
+
+**The gap is in the wiring `AC-111` still has to do.** Three findings would, if carried into `AC-111` unchanged, make an operator-facing guarantee **false** rather than merely incomplete:
+
+- **H-1 (HIGH)** — the spend marker and the gate read **different databases**. The `FBL-028` runner opens its own SQLite under `docs/evidence/fbl-028/`, so the `AgentRun` that marks an authorization spent lands where the gate never looks. `F-113`'s "one authorization cannot cover a second run" would be false in the running system while every test still passed.
+- **H-2 (HIGH)** — actual spend is never read back, recorded, or compared. `--max-budget-usd` is passed to Claude Code and that is the whole enforcement; nothing parses the cost, records it, or notices if the flag were ever ignored. It is the one control delegated wholly to the subject of the control.
+- **H-3 (HIGH)** — the authorization's budget does not reach the profile. `maxBudgetUsd: 2` is hard-coded, so the operator's chosen ceiling is recorded, displayed, and ignored.
+
+**H-4 (MEDIUM)** is an operator decision that should be made before `AC-111` begins: the real stage implements a **hard-coded demo task**, not the submitted objective. Generalizing it collides with the mission's load-bearing guarantee — the Builder must not write its own validation — so the options and their costs are laid out rather than chosen unilaterally.
+
+Also recorded: H-5 executable path environment-controlled and its identity unrecorded; H-6 write-scope allowlist caller-supplied; H-7 workspace destruction unasserted; H-8 `allowNetwork` declarative rather than enforced; H-9 `unref`'d timeout timers, verified benign.
+
+Recorded in `docs/audits/pre-ac-111-builder-execution-hardening-review.md`.
+
 ### Fixed — AC-103: Finding 6 diagnosed and remediated (awaiting operator acceptance)
 
 The three Playwright-WebKit failures accepted at `FBL-035` without diagnosis are **worker-contention artifacts of an unpinned worker count**, not product defects.
