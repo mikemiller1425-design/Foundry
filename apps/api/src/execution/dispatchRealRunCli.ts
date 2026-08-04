@@ -39,11 +39,18 @@ import { REAL_RUN_ACTOR, runEntrypoint } from "./dispatchRealRun";
  * ## The canonical invocation
  *
  *   # dry run (default — reads only, changes nothing)
- *   pnpm --filter @foundry/api ac-111:dispatch -- \
+ *   pnpm --filter @foundry/api ac-111:dispatch \
  *     --build-id <buildId> --pin-sha256 <sha256>
  *
  *   # one real run (spends money, consumes the authorization)
  *   … same flags … --execute-real-run
+ *
+ * **No `--` separator.** pnpm forwards it as a literal argument, which
+ * this entrypoint then correctly refuses as unrecognised. The refusal was
+ * the right behaviour — an argument parser that silently skipped tokens it
+ * did not understand would be the actual defect — but the documented
+ * command was wrong, and an operator following it could not run a dry run
+ * at all.
  *
  * The package script builds immediately before running, so the reviewed
  * source and the executed bundle cannot drift apart by operator memory.

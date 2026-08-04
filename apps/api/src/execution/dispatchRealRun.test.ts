@@ -389,7 +389,8 @@ describe("AC-111 entrypoint — dry run is the default", () => {
     expect(output).toContain(fakeBinarySha);
     expect(output).toContain("src/taskStore.js");
     expect(output).toContain("test/taskStore.test.js");
-    expect(output).toContain("not writable, not runnable");
+    expect(output).toContain("not writable or runnable by the Builder");
+    expect(output).toContain("executed independently by Foundry");
     expect(output).toContain("600000 ms");
     expect(output).toContain("NOT OS-enforced");
     // The exact vector, including the authorized ceiling.

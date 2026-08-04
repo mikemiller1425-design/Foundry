@@ -6,6 +6,32 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — the documented AC-111 command did not work
+
+The operator followed the manifest and could not reach a dry run. `pnpm --filter @foundry/api ac-111:dispatch **--** …` forwards the separator to the script as a **literal argument**, and the entrypoint refused it: `REFUSED: Unrecognised argument \`--\``.
+
+**The refusal was correct behaviour; the documentation was wrong.** A parser that silently skipped tokens it did not recognise would be the actual defect — that is how `--budget 50` gets ignored while the operator believes it took effect. What failed is that no operator following the manifest could run a dry run at all.
+
+**The corrected canonical form omits the separator:**
+
+```bash
+pnpm --filter @foundry/api ac-111:dispatch \
+  --build-id <BUILD_ID> \
+  --pin-sha256 <SHA256>
+```
+
+**Why fifteen CLI-shell tests missed it.** They spawned `node dist/ac111-dispatch-real-run.js` directly, and the bundle's argument handling was never the problem. The defect lived one layer further out — in how pnpm passes arguments to a script — and only running the documented string through the documented tool could catch it. A command is documentation *and* an interface, and testing the thing beneath it is not testing it.
+
+**Added:** a subprocess test invoking `pnpm --filter @foundry/api ac-111:dispatch …` exactly as documented, asserting it reaches the dry run and **measuring the operational database's row counts before and after to prove zero persisted mutation**; a companion test pinning the `--` form as a refusal so the defect cannot silently return; and a third asserting the corrected block carries no separator. That third test immediately caught its own first version, which scanned the whole appendix and tripped on the historical command retained there deliberately.
+
+**Preflight wording corrected.** `test/taskStore.test.js (not writable, not runnable)` read as though nobody runs the tests, inverting the point — **Foundry runs them**, and that is the entire basis of the verdict. It now reads *"not writable or runnable by the Builder; executed independently by Foundry."*
+
+Manifest updated **append-only**: Appendices A and B are untouched and their commands retained as historical text.
+
+**Gates:** typecheck 8/8 · lint clean · build clean · **1430 passed / 0 failures** · `v1-canonical-run.json` byte-identical. The operator's live database measured **131 events / 38 entities before and after the full suite — unchanged**.
+
+**`AC-111` is not closed and no run has been dispatched.**
+
 ### Fixed — three AC-111 entrypoint defects, corrected before any paid run
 
 The operator reviewed the entrypoint at `0b418d7` and found three defects. **All were real**, and none had been caught by the 25 existing tests — two lived in the shell (`dispatchRealRunCli.ts`) rather than in `runEntrypoint`, and the third was in documentation. **No run has been dispatched.**

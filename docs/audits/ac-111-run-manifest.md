@@ -264,3 +264,72 @@ One further fragility was found and fixed while verifying: the first version of 
 
 **No run has been dispatched. `AC-111` is not closed.** The before-run review gate in § 7 stands, and authorizing a run still requires a fresh, explicit instruction naming the ceiling and confirming the pin.
 
+---
+
+## Appendix C — the documented command did not work (appended 2026-08-04)
+
+**Appended, not edited.** Appendices A and B, and everything above them, are left exactly as written. The commands they contain are **retained as historical text** and are superseded by this appendix. Principle 18.
+
+### C.1 What the operator observed
+
+Appendix B § B.3 documented the canonical command with a `--` separator:
+
+```bash
+# SUPERSEDED — retained as the record of what was documented
+pnpm --filter @foundry/api ac-111:dispatch -- \
+  --build-id <BUILD_ID> \
+  --pin-sha256 <SHA256>
+```
+
+pnpm forwards that separator to the script as a **literal argument**, and the entrypoint refused it:
+
+```
+REFUSED: Unrecognised argument `--`. This entrypoint accepts only
+--build-id, --pin-sha256, and --execute-real-run.
+```
+
+Reproduced directly before writing this appendix.
+
+### C.2 The corrected canonical commands
+
+```bash
+# dry run (default — reads only, changes nothing)
+pnpm --filter @foundry/api ac-111:dispatch \
+  --build-id <BUILD_ID> \
+  --pin-sha256 7a181f36ed0fc4fbac6cee4ecf2b615eff93d8b434221fff5d7c878dc5ebf380
+
+# one real run (spends money, consumes the authorization)
+pnpm --filter @foundry/api ac-111:dispatch \
+  --build-id <BUILD_ID> \
+  --pin-sha256 7a181f36ed0fc4fbac6cee4ecf2b615eff93d8b434221fff5d7c878dc5ebf380 \
+  --execute-real-run
+```
+
+**No `--`.** Verified reaching the preflight, printing the database path, the build, and the gate's refusal for an unknown build.
+
+### C.3 Which part was wrong
+
+**The refusal was correct behaviour; the documentation was wrong.** An argument parser that silently skipped tokens it did not recognise would be the actual defect — that is how `--budget 50` gets ignored while the operator believes it took effect. The parser did exactly the right thing. What failed is that **no operator following the manifest could reach a dry run at all**.
+
+### C.4 Why the existing tests did not catch it
+
+Fifteen CLI-shell tests spawned `node dist/ac111-dispatch-real-run.js` directly. Every one passed, because the bundle's argument handling was never the problem. The defect lived one layer further out — in **how pnpm passes arguments to the script** — and could only be caught by running the documented string through the documented tool.
+
+**Corrected:** a subprocess test now invokes `pnpm --filter @foundry/api ac-111:dispatch …` exactly as documented, asserts it reaches the dry run, and measures the operational database's row counts before and after to prove **zero persisted mutation**. A companion test pins the `--` form as a refusal, so the defect cannot silently return. A third asserts this appendix's canonical block carries no separator.
+
+This is the general lesson worth carrying: a command is documentation *and* an interface, and testing the thing beneath it is not testing it.
+
+### C.5 Preflight wording corrected
+
+The preflight described the independent test file as:
+
+> `test/taskStore.test.js` (not writable, not runnable)
+
+That read as though nobody runs the tests, which inverts the point. **Foundry runs them** — that is the entire basis of the verdict. What the *Builder* cannot do is modify or execute them, because it has no Bash. Now:
+
+> `test/taskStore.test.js` (not writable or runnable by the Builder; executed independently by Foundry)
+
+### C.6 Status, unchanged
+
+**No run has been dispatched. `AC-111` is not closed.** The before-run review gate in § 7 stands. Authorizing a run still requires a fresh, explicit instruction naming the ceiling and confirming the pin.
+

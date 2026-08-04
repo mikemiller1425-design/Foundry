@@ -383,7 +383,14 @@ export function renderPreflight(report: PreflightReport, executeRequested: boole
   row("pin matches", report.binaryPinMatches === null ? null : report.binaryPinMatches ? "yes" : "NO");
   lines.push("");
   row("writable", report.allowedWritePaths.join(", ") || "—");
-  row("independent tests", `${report.independentTestPath ?? "—"} (not writable, not runnable)`);
+  row(
+    "independent tests",
+    // Precise about *who* cannot run it. The Builder has no Bash, so
+    // it can neither modify nor execute this file — but Foundry does
+    // run it, and that is the whole basis of the verdict. "Not
+    // runnable" alone read as though nobody ran the tests at all.
+    `${report.independentTestPath ?? "—"} (not writable or runnable by the Builder; executed independently by Foundry)`,
+  );
   row("timeout", `${report.timeoutMs} ms, then process-group SIGTERM → SIGKILL`);
   row("network", "declared and recorded, NOT OS-enforced");
   row("workspace", "fresh mkdtemp, destroyed and verified after the run");
