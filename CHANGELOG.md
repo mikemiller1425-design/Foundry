@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — AC-106: Backend-mode command honesty
+
+Every control in backend mode now either performs its declared action or states, specifically, why it cannot.
+
+**Five situations that looked identical are now distinct (F-105).** `AC-103P` removed the *silence* — before it, every command-bar control in backend mode failed with no feedback (PV1-012). It did not remove the *sameness*: one undifferentiated "Rejected: …" line covered problems with five different fixes. `commandFeedback.ts` classifies them as `unsupported`, `validation`, `unauthorized`, `blocked`, `unreachable`, and `server_error`, each with its own title, the backend's own reason verbatim, and a corrective action. The action is rendered in the 2D command strip and no longer clears itself after four seconds — a refusal used to vanish before it could be read.
+
+**A classification error, found by live verification and corrected before commit.** The first implementation classified purely on HTTP status. Measured against a running backend, `Approval.Approve` with no credential returns **HTTP 200 with `accepted: false`**, not 403 — `CommandHandler`'s authorization guards refuse like any other command. A status-only rule therefore filed the single most important credential failure under "Blocked by current state", telling the operator to satisfy a prerequisite when the fix was to supply a credential. Recognising the guards' phrasing is now a deliberate, documented exception confined to one function, `isAuthorizationRefusal` — kept distinct from `isAuthFailure`, which drives the credential panel, so the Inspector-only guard (F-05) categorises a command as unauthorized **without** implying the operator's own credential is wrong. Having those guards answer `403` would remove the exception; that is a backend change and out of scope here, and is recorded as a candidate for a later rung.
+
+**Demo controls: disabled in backend mode, with the reason stated.** The six `demo.*` controls were *enabled* and posted an unknown command type on every press. They control the deterministic mock runtime — its cursor, its speed, its replay — and in backend mode there is nothing to start, pause, or replay. Backing them with a declared command was rejected on the merits as well as being prohibited work: it would have required inventing a domain concept `domain-model.md` does not have. They are now disabled, the explanation is rendered as **text** associated via `aria-describedby` rather than a tooltip, and `send()` refuses to submit so "no unknown command type is ever posted" holds by construction — a disabled `<select>` still dispatches `change` programmatically, which is how that gap was found. **Mock mode is untouched.**
+
+**`building.selected` now reaches the timeline in backend mode (PV1-013).** The callback was empty, so a declared event had no producer. `world-model.md` says selection "emits UI-facing `building.selected` … without mutating operational truth" and `event-model.md` names the producer as "Frontend (recorded) / backend optional ack". Selection now submits the already-declared `Building.Select` command — no specification change, no new command, no orchestration, and no status transition. Selection visuals stay in local React state and are never undone by a refusal, and a repeat selection is not resubmitted.
+
+**The runtime is now stated, not inferred.** `runtimeMode` is on the context because the mock runtime is permanently "connected" (ADR-001), so connection status cannot tell the two apart. A test asserts backend mode never falls back to mock behaviour — no scripted events, no `demo.*` posts.
+
+**Decision record:** `docs/evidence/ac-106/control-dispositions.md`, covering both dispositions the ladder assigned and the classification exception above.
+
+**Verification.** `pnpm typecheck` 8/8 · `pnpm lint` clean · `pnpm build` clean · `pnpm -r run test` → **1033 passed / 85 files / 0 failures** (up from 988; 45 new tests). Live against a running backend, all six cases classified as expected: unsupported, unauthorized (no credential), unauthorized (Inspector guard), blocked (state guard), blocked (no backing event), and an accepted `Building.Select` that appears in `/events`.
+
+No backend file changed — backend authority, `PrincipalRegistry`, and approval semantics are untouched. No baseline work, no Finding 6 change, no real Claude Code, no NAS District file touched, `AC-107` not begun.
+
 ### Observed — AC-105 closed: operator confirmed the credential handoff and its recovery paths (documentation only)
 
 The operator verified, against `573b1d1`: **automatic local credential handoff without copying a terminal token**, **Clear**, **Use this session's credential**, **recovery from an invalid credential with a readable rejection**, and a **clear corrective error on an occupied API port**. The rung's stop condition — *"Both modes reachable from one artifact and the credential step is automatic"* — is satisfied, so **`AC-105` is closed.**

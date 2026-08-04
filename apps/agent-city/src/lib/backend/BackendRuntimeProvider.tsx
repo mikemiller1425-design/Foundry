@@ -5,7 +5,13 @@ import type { FoundryEvent } from "@foundry/event-types";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RuntimeContext, type RuntimeContextValue } from "@/lib/mock-runtime/RuntimeProvider";
 import { BackendClient } from "./backendClient";
-import { interpretCommandResponse, requestedCommandType } from "./commandFeedback";
+import {
+  interpretCommandResponse,
+  isKnownCommandType,
+  requestedCommandType,
+  unreachableBackend,
+  unsupportedCommand,
+} from "./commandFeedback";
 import { applyConnectionStatus, areMutationsAllowed } from "./connectionState";
 import { postObjective, type ObjectiveInput } from "./objectiveSubmission";
 import { deriveCredentialState, isAuthFailure } from "./credentialState";
@@ -69,16 +75,26 @@ export function BackendRuntimeProvider({
     async (body: unknown) => {
       const commandType = requestedCommandType(body);
 
+      // AC-106: a control the backend has no command for is answered here,
+      // truthfully, instead of being sent to collect a 400 that would read
+      // as "your input was invalid". The vocabulary is closed and the
+      // client validates against the same list the backend does.
+      if (!isKnownCommandType(commandType)) {
+        setLastRejection(unsupportedCommand(commandType));
+        return;
+      }
+
       // Never send a mutation while disconnected — the backend is the
       // authority and we cannot know current state (F-10). Saying so is
       // part of the contract: refusing to send is still a refusal, and it
       // must read as one rather than as a button that did nothing.
       if (!mutationsEnabled) {
-        setLastRejection({
-          commandType,
-          reason:
-            "Not sent — the backend is not connected, so its current state is unknown. Commands resume when the connection is restored.",
-        });
+        setLastRejection(
+          unreachableBackend(
+            commandType,
+            "Not sent — the backend is not connected, so its current state is unknown.",
+          ),
+        );
         return;
       }
 
@@ -101,10 +117,9 @@ export function BackendRuntimeProvider({
         if (isAuthFailure(res.status, outcome)) setCredentialRejected(true);
         setLastRejection(interpretCommandResponse(res.status, outcome, commandType));
       } catch (err) {
-        setLastRejection({
-          commandType,
-          reason: err instanceof Error ? err.message : "Command failed to reach the backend",
-        });
+        setLastRejection(
+          unreachableBackend(commandType, err instanceof Error ? err.message : undefined),
+        );
       }
     },
     [baseUrl, mutationsEnabled],
@@ -181,11 +196,53 @@ export function BackendRuntimeProvider({
     [baseUrl, client, mutationsEnabled],
   );
 
-  // Selection is a UI-only concern with no operational authority
-  // (world-model.md → Object selection), so it stays local and remains
-  // available while disconnected.
-  const selectBuilding = useCallback(() => {}, []);
-  const clearSelection = useCallback(() => {}, []);
+  /**
+   * AC-106 / PV1-013 — `building.selected` now reaches the timeline in
+   * backend mode.
+   *
+   * `world-model.md` § "Object selection": selection "emits UI-facing
+   * `building.selected` … without mutating operational truth", and
+   * `event-model.md` names the producer as "Frontend (recorded) / backend
+   * optional ack". In backend mode this callback was empty, so the
+   * declared event had no producer and the timeline was less complete
+   * than the mock's.
+   *
+   * `Building.Select` is already in the closed command vocabulary and its
+   * definition carries no `toStatus`, so submitting it appends the
+   * declared event and changes no entity status. No specification
+   * amendment, no new command, no orchestration.
+   *
+   * Two deliberate properties:
+   *
+   * - **Selection visuals never depend on this.** `AppShell` holds
+   *   selection in local React state, which is correct — selection carries
+   *   no operational authority — so a refusal is reported but never undoes
+   *   what the operator selected.
+   * - **Repeat selection is not resubmitted.** The mock runtime dedupes
+   *   re-selection for the same reason: a click that changes nothing
+   *   should not append an event that says something changed.
+   */
+  const lastSelectedRef = useRef<string | null>(null);
+
+  const selectBuilding = useCallback(
+    (buildingId: string) => {
+      if (lastSelectedRef.current === buildingId) return;
+      lastSelectedRef.current = buildingId;
+      void postCommand({
+        commandType: "Building.Select",
+        entityId: buildingId,
+        params: { buildingId },
+      });
+    },
+    [postCommand],
+  );
+
+  // Clearing selection has no declared event — `event-model.md` defines
+  // `building.selected` and no deselection counterpart — so there is
+  // nothing to record. It resets the dedup guard and nothing else.
+  const clearSelection = useCallback(() => {
+    lastSelectedRef.current = null;
+  }, []);
 
   // ---- Operator credential (AC-105) --------------------------------------
 
@@ -259,6 +316,11 @@ export function BackendRuntimeProvider({
   return (
     <RuntimeContext.Provider
       value={{
+        // AC-106: stated, never inferred. A control that needs to know
+        // which runtime it is attached to must not guess from a proxy
+        // like connection status — the mock runtime is permanently
+        // "connected" and would read as a live backend.
+        runtimeMode: "backend",
         events,
         worldState,
         isRunning: connectionStatus === "connected",

@@ -144,3 +144,28 @@ export function isAuthFailure(status: number, body: unknown): boolean {
   if (error === "unauthorized" || error === "actor_mismatch") return true;
   return typeof reason === "string" && /authenticated operator/i.test(reason);
 }
+
+/**
+ * True when a response was refused on authorization grounds **of any
+ * kind** — deliberately broader than `isAuthFailure` (AC-106).
+ *
+ * The two must stay separate. `isAuthFailure` answers "was *my operator
+ * credential* refused?", and drives the credential panel; the Inspector
+ * guard (F-05) must not make it true, because the frontend holds an
+ * operator credential and is not an agent — it can never satisfy that
+ * guard, and marking the operator's credential "rejected" would send them
+ * to replace a token that is entirely correct.
+ *
+ * This one answers "was this an authorization decision?", and drives how a
+ * command failure is *categorised*. Both guards belong here: an operator
+ * told "Blocked by current state" for an Inspector-only command would go
+ * looking for a prerequisite that does not exist.
+ */
+export function isAuthorizationRefusal(status: number, body: unknown): boolean {
+  if (isAuthFailure(status, body)) return true;
+  if (typeof body !== "object" || body === null) return false;
+  const { reason } = body as { reason?: unknown };
+  // F-05's Inspector-only validation guard, whose refusal is a 200 with
+  // `accepted: false` like every other `CommandHandler` denial.
+  return typeof reason === "string" && /\bInspector-role agent\b/i.test(reason);
+}

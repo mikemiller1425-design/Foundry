@@ -82,6 +82,10 @@ let log: FoundryEvent[];
 let objectivePosts: unknown[];
 let worldStateReads: number;
 let sources: FakeEventSource[];
+/** Bodies POSTed to /commands, for the AC-106 checks. */
+let commandPosts: unknown[];
+/** The live context, captured by the AC-106 probe component. */
+let probe: ReturnType<typeof useRuntime> | null = null;
 
 class FakeEventSource {
   onerror: ((this: unknown, ev: unknown) => unknown) | null = null;
@@ -115,6 +119,8 @@ beforeEach(() => {
   objectivePosts = [];
   worldStateReads = 0;
   sources = [];
+  commandPosts = [];
+  probe = null;
 
   vi.stubGlobal(
     "EventSource",
@@ -127,8 +133,16 @@ beforeEach(() => {
 
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (input: RequestInfo | URL) => {
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      if (url.endsWith("/commands")) {
+        commandPosts.push(JSON.parse(String(init?.body ?? "{}")));
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ accepted: true }),
+        } as Response;
+      }
       if (url.endsWith("/world-state")) {
         worldStateReads += 1;
         const body = world;
@@ -252,5 +266,107 @@ describe("BackendRuntimeProvider — a successful submission updates the world (
     });
 
     await waitFor(() => expect(screen.getByText(new RegExp(OBJECTIVE))).toBeInTheDocument());
+  });
+});
+
+/**
+ * AC-106 — backend-mode command honesty at the provider level.
+ */
+describe("BackendRuntimeProvider — command honesty (AC-106)", () => {
+  function Probe() {
+    const runtime = useRuntime();
+    probe = runtime;
+    return <StageAgentPanel selection={null} onSelect={() => {}} />;
+  }
+
+  function renderProbe() {
+    return render(
+      <BackendRuntimeProvider baseUrl={BASE_URL}>
+        <Probe />
+      </BackendRuntimeProvider>,
+    );
+  }
+
+  it("states it is the backend runtime rather than leaving it to be inferred", async () => {
+    renderProbe();
+    await waitFor(() => expect(probe).not.toBeNull());
+    expect(probe?.runtimeMode).toBe("backend");
+  });
+
+  it("refuses an unknown command type without sending it, and says it is unsupported", async () => {
+    renderProbe();
+    await waitFor(() => expect(worldStateReads).toBeGreaterThan(0));
+    await act(async () => sources[0]?.open());
+    const before = commandPosts.length;
+
+    await act(async () => {
+      probe?.submitCommand({ commandType: "demo.start", params: {} });
+    });
+
+    expect(commandPosts).toHaveLength(before);
+    expect(probe?.lastRejection?.kind).toBe("unsupported");
+    expect(probe?.lastRejection?.commandType).toBe("demo.start");
+  });
+
+  it("reports a disconnected backend as unreachable, not as an invalid command", async () => {
+    renderProbe();
+    await waitFor(() => expect(probe).not.toBeNull());
+    // Never opened: the stream is down.
+    await act(async () => {
+      probe?.submitCommand({ commandType: "Approval.Approve", entityId: "a", params: {} });
+    });
+    expect(probe?.lastRejection?.kind).toBe("unreachable");
+  });
+
+  it("emits building.selected through the declared command (PV1-013)", async () => {
+    renderProbe();
+    await waitFor(() => expect(worldStateReads).toBeGreaterThan(0));
+    await act(async () => sources[0]?.open());
+
+    await act(async () => probe?.selectBuilding("warehouse"));
+
+    const posted = commandPosts.at(-1) as { commandType: string; entityId: string };
+    expect(posted.commandType).toBe("Building.Select");
+    expect(posted.entityId).toBe("warehouse");
+  });
+
+  it("does not resubmit a repeat selection of the same building", async () => {
+    renderProbe();
+    await waitFor(() => expect(worldStateReads).toBeGreaterThan(0));
+    await act(async () => sources[0]?.open());
+
+    await act(async () => probe?.selectBuilding("warehouse"));
+    const after = commandPosts.length;
+    await act(async () => probe?.selectBuilding("warehouse"));
+    expect(commandPosts).toHaveLength(after);
+
+    await act(async () => probe?.selectBuilding("qa-building"));
+    expect(commandPosts.length).toBeGreaterThan(after);
+  });
+
+  it("re-selects after a clear, because the selection genuinely changed again", async () => {
+    renderProbe();
+    await waitFor(() => expect(worldStateReads).toBeGreaterThan(0));
+    await act(async () => sources[0]?.open());
+
+    await act(async () => probe?.selectBuilding("warehouse"));
+    const after = commandPosts.length;
+    await act(async () => probe?.clearSelection());
+    await act(async () => probe?.selectBuilding("warehouse"));
+    expect(commandPosts.length).toBeGreaterThan(after);
+  });
+
+  it("never falls back to mock behaviour — no scripted events appear", async () => {
+    renderProbe();
+    await waitFor(() => expect(worldStateReads).toBeGreaterThan(0));
+    await act(async () => sources[0]?.open());
+    // The mock runtime auto-issues demo.start on mount and emits a 1,043-line
+    // canonical script. Backend mode must show only what the backend sent.
+    expect(probe?.events).toEqual([]);
+    expect(
+      commandPosts.some((c) =>
+        String((c as { commandType: string }).commandType).startsWith("demo."),
+      ),
+    ).toBe(false);
   });
 });

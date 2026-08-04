@@ -6,15 +6,21 @@ import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ObjectiveInput, ObjectiveSubmissionResult } from "@/lib/backend/objectiveSubmission";
 import type { CredentialState } from "@/lib/backend/credentialState";
+import type { CommandFailure } from "@/lib/backend/commandFeedback";
 import { DEFAULT_SEED, MockRuntime } from "./runtime";
 import { clearRuntimeCursor, loadRuntimeCursor, saveRuntimeCursor } from "./sessionPersistence";
 
-interface CommandRejection {
-  commandType: string;
-  reason: string;
-}
-
 export interface RuntimeContextValue {
+  /**
+   * AC-106: which runtime is attached, stated rather than inferred.
+   *
+   * A control that behaves differently against a real backend must not
+   * deduce that from a proxy: the mock runtime is permanently "connected"
+   * (it is its own authority, ADR-001), so connection status cannot tell
+   * the two apart. Optional for the many test fixtures that supply a
+   * partial context; absent is read as `"mock"`.
+   */
+  runtimeMode?: "mock" | "backend";
   events: FoundryEvent[];
   worldState: WorldState;
   isRunning: boolean;
@@ -49,7 +55,14 @@ export interface RuntimeContextValue {
   ) => void;
   selectBuilding: (buildingId: string) => void;
   clearSelection: () => void;
-  lastRejection: CommandRejection | null;
+  /**
+   * The last command that did not succeed, classified (AC-106).
+   *
+   * The mock runtime produces only its own bounded demo-command
+   * rejections, which are `blocked`; the backend provider produces the
+   * full taxonomy.
+   */
+  lastRejection: CommandFailure | null;
   /**
    * FBL-030: true when resolving an approval requires an operator
    * credential this client does not yet hold.
@@ -133,7 +146,7 @@ export function RuntimeProvider({
   const [worldState, setWorldState] = useState<WorldState>(() => runtime.getWorldState());
   const [isRunning, setIsRunning] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const [lastRejection, setLastRejection] = useState<CommandRejection | null>(null);
+  const [lastRejection, setLastRejection] = useState<CommandFailure | null>(null);
 
   useEffect(() => {
     const marker = loadRuntimeCursor();
@@ -152,7 +165,17 @@ export function RuntimeProvider({
       saveRuntimeCursor({ seed: runtime.getSeed(), cursor: runtime.getCursor() });
     });
     const unsubscribeRejections = runtime.onCommandRejected((rejection) => {
-      setLastRejection(rejection);
+      // The mock runtime refuses only its own bounded demo commands, and
+      // only ever because the demo is not in a state that allows them —
+      // which is exactly `blocked`. It has no transport, so it can produce
+      // no other kind (AC-106).
+      setLastRejection({
+        kind: "blocked",
+        commandType: rejection.commandType,
+        title: "Blocked by current state",
+        reason: rejection.reason,
+        action: "Satisfy the stated prerequisite, then retry.",
+      });
     });
 
     // Auto-issue demo.start (or demo.resume, if reconstructed mid-run) on
@@ -216,6 +239,7 @@ export function RuntimeProvider({
   return (
     <RuntimeContext.Provider
       value={{
+        runtimeMode: "mock",
         events,
         worldState,
         isRunning,

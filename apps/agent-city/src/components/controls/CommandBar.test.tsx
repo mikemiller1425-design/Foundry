@@ -4,12 +4,14 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { CommandBar } from "./CommandBar";
+import type { CommandFailure } from "@/lib/backend/commandFeedback";
 
 function renderCommandBar(overrides: {
   isRunning?: boolean;
   isComplete?: boolean;
-  lastRejection?: { commandType: string; reason: string } | null;
+  lastRejection?: CommandFailure | null;
   mutationsEnabled?: boolean;
+  runtimeMode?: "mock" | "backend";
 }) {
   const submitCommand = vi.fn<(raw: unknown) => void>();
   const mutationsEnabled = overrides.mutationsEnabled ?? true;
@@ -17,6 +19,7 @@ function renderCommandBar(overrides: {
     return (
       <RuntimeContext.Provider
         value={{
+          runtimeMode: overrides.runtimeMode ?? "mock",
           events: [],
           worldState: createInitialWorldState(),
           isRunning: overrides.isRunning ?? false,
@@ -103,10 +106,16 @@ describe("CommandBar — bounded playback state", () => {
 
 describe("CommandBar — rejected-command feedback", () => {
   it("shows the rejection reason when a command is rejected", () => {
-    renderCommandBar({ lastRejection: { commandType: "shell.execute", reason: "not approved" } });
-    expect(screen.getByTestId("command-feedback")).toHaveTextContent(
-      "Rejected: shell.execute — not approved",
-    );
+    renderCommandBar({
+      lastRejection: {
+        kind: "blocked",
+        commandType: "shell.execute",
+        title: "Blocked by current state",
+        reason: "not approved",
+        action: "Satisfy the stated prerequisite, then retry.",
+      },
+    });
+    expect(screen.getByTestId("command-feedback")).toHaveTextContent("not approved");
   });
 
   it("shows running/paused/complete status when there is no rejection", () => {
@@ -146,5 +155,107 @@ describe("CommandBar — mutation controls disabled while disconnected (F-10)", 
   it("re-enables controls once the connection is restored", () => {
     renderCommandBar({ mutationsEnabled: true, isRunning: true });
     expect(screen.getByRole("button", { name: "Pause" })).toBeEnabled();
+  });
+});
+
+/**
+ * AC-106 — the demo-control disposition, and F-105/F-106 in the strip.
+ */
+describe("CommandBar — demo controls in backend mode (AC-106)", () => {
+  it("disables every demo control, because the backend has no demo to control", () => {
+    renderCommandBar({ runtimeMode: "backend" });
+    for (const name of ["Start", "Pause", "Resume", "Reset", "Replay"]) {
+      expect(screen.getByRole("button", { name })).toBeDisabled();
+    }
+    expect(screen.getByLabelText("Playback speed")).toBeDisabled();
+  });
+
+  it("states why they are unavailable, as text rather than a tooltip", () => {
+    renderCommandBar({ runtimeMode: "backend" });
+    const note = screen.getByTestId("demo-controls-unavailable");
+    expect(note).toBeInTheDocument();
+    expect(note.textContent).toMatch(/deterministic mock runtime/i);
+    expect(note.textContent).toMatch(/nothing to start, pause, or replay/i);
+  });
+
+  it("associates the explanation with the control group for assistive tech", () => {
+    renderCommandBar({ runtimeMode: "backend" });
+    const group = screen.getByTestId("demo-controls");
+    expect(group).toHaveAttribute("aria-describedby", "demo-controls-unavailable");
+    expect(group).toHaveAttribute("data-available", "false");
+  });
+
+  it("emits nothing at all — no unknown command type is posted", () => {
+    const { submitCommand } = renderCommandBar({ runtimeMode: "backend", isRunning: true });
+    for (const button of screen.getAllByRole("button")) fireEvent.click(button);
+    fireEvent.change(screen.getByLabelText("Playback speed"), { target: { value: "4" } });
+    expect(submitCommand).not.toHaveBeenCalled();
+  });
+
+  it("leaves mock mode exactly as it was — controls enabled, no notice", () => {
+    renderCommandBar({ runtimeMode: "mock" });
+    expect(screen.getByRole("button", { name: "Start" })).toBeEnabled();
+    expect(screen.queryByTestId("demo-controls-unavailable")).toBeNull();
+  });
+});
+
+describe("CommandBar — every failure kind is visibly distinct (F-105)", () => {
+  const failure = (kind: CommandFailure["kind"], title: string) => ({
+    kind,
+    commandType: "demo.start",
+    title,
+    reason: `reason for ${kind}`,
+    action: `action for ${kind}`,
+  });
+
+  it.each([
+    ["validation", "Invalid request"],
+    ["unauthorized", "Not authorized"],
+    ["unreachable", "Backend unreachable"],
+    ["unsupported", "Not supported"],
+    ["blocked", "Blocked by current state"],
+  ] as const)("renders %s with its title, reason, and corrective action", (kind, title) => {
+    renderCommandBar({ runtimeMode: "backend", lastRejection: failure(kind, title) });
+    const status = screen.getByTestId("command-feedback");
+    expect(status).toHaveAttribute("data-failure-kind", kind);
+    expect(status).toHaveTextContent(title);
+    expect(screen.getByTestId("command-feedback-reason")).toHaveTextContent(`reason for ${kind}`);
+    expect(screen.getByTestId("command-feedback-action")).toHaveTextContent(`action for ${kind}`);
+  });
+
+  it("announces outcomes in a live region", () => {
+    renderCommandBar({ runtimeMode: "backend" });
+    expect(screen.getByTestId("command-feedback")).toHaveAttribute("aria-live", "polite");
+  });
+
+  it("reports no failure kind when nothing has failed", () => {
+    renderCommandBar({ runtimeMode: "backend" });
+    expect(screen.getByTestId("command-feedback")).toHaveAttribute("data-failure-kind", "none");
+  });
+
+  it("keeps the failure visible rather than clearing it on a timer", () => {
+    // The previous implementation wiped the message after four seconds,
+    // so a refusal could vanish before it was read.
+    vi.useFakeTimers();
+    try {
+      renderCommandBar({
+        runtimeMode: "backend",
+        lastRejection: failure("blocked", "Blocked by current state"),
+      });
+      vi.advanceTimersByTime(30_000);
+      expect(screen.getByTestId("command-feedback")).toHaveTextContent("reason for blocked");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("states the backend-mode status when idle, not a demo playback state", () => {
+    renderCommandBar({ runtimeMode: "backend" });
+    expect(screen.getByTestId("command-feedback")).toHaveTextContent("Backend mode — live");
+  });
+
+  it("says so when backend mode is disconnected", () => {
+    renderCommandBar({ runtimeMode: "backend", mutationsEnabled: false });
+    expect(screen.getByTestId("command-feedback")).toHaveTextContent("Backend mode — disconnected");
   });
 });
