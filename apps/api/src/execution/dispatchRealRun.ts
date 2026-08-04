@@ -66,6 +66,48 @@ import type { DispatchConfig, DispatchEvidence } from "./executionDispatcher";
  * has to remember.
  */
 
+
+/**
+ * The actor a real dispatch acts as — the **backend**, never an operator.
+ *
+ * ## Why this is not an operator
+ *
+ * The first version of the shell read `FOUNDRY_OPERATOR_ID` and marked it
+ * `authenticated: true` with no `PrincipalRegistry` verification. That is
+ * a shell variable asserting operator authority, which is precisely the
+ * class of defect `FBL-029` removed from the command surface: identity
+ * established by a credential the backend issued, never by a claim the
+ * caller made.
+ *
+ * ## Why the backend actor is the correct one, not a workaround
+ *
+ * `AgentRun.Start` carries no operator requirement in `CommandHandler` —
+ * it is not in `APPROVAL_RESOLUTION_COMMANDS`, `OPERATOR_PLAN_COMMANDS`,
+ * `OPERATOR_UPGRADE_COMMANDS`, or `OPERATOR_BUILD_COMMANDS`. The commands
+ * that *do* require an authenticated operator are the governance acts:
+ * submitting an objective, reviewing a plan, starting a build, and
+ * **authorizing execution**. All of those have already happened, through
+ * the credentialed HTTP surface, by the time this entrypoint runs.
+ *
+ * So the operator's authority is not being re-asserted here — it is
+ * already recorded, immutably, on the persisted `ExecutionAuthorization`:
+ * who authorized, when, against which plan content hash, under what
+ * ceiling. This dispatch is the **backend carrying out a decision the
+ * operator already made and signed**, which is exactly what the backend
+ * actor means. `AC-109`'s orchestrator uses the same identity for the
+ * same reason.
+ *
+ * Claiming to be the operator here would add no authority and would
+ * falsify the audit trail: the event log would say a human started this
+ * run at a terminal, when what happened is that a program acted on a
+ * recorded authorization.
+ */
+export const REAL_RUN_ACTOR: CommandActor = Object.freeze({
+  actorType: "backend",
+  actorId: "backend",
+  authenticated: true,
+});
+
 export const EXECUTE_FLAG = "--execute-real-run";
 
 /** Flags a caller might reach for that would widen the run. All refused. */
@@ -105,18 +147,42 @@ export function parseDispatchArgs(argv: readonly string[]): ParseResult {
   let pinSha256: string | undefined;
   let executeRealRun = false;
 
+  /**
+   * Every accepted flag may appear **at most once**.
+   *
+   * Neither first-wins nor last-wins is safe here. A duplicated
+   * `--build-id` under last-wins would let the preflight describe one
+   * build while the dispatch targeted another, which is a paid run
+   * against something the operator never reviewed. Under first-wins the
+   * operator's *later*, presumably corrected, value would be discarded in
+   * silence. The only defensible answer to "you said it twice" is to say
+   * so and stop.
+   */
+  const seen = new Set<string>();
+  const duplicate = (flag: string): ParseResult => ({
+    ok: false,
+    reason: `\`${flag}\` was supplied more than once. Neither first-wins nor last-wins is safe: a duplicated \`--build-id\` could let the preflight describe one build while the dispatch targeted another, and discarding a corrected value silently is no better.`,
+    correctiveAction: `Supply \`${flag}\` exactly once.`,
+  });
+
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i] as string;
 
     if (token === EXECUTE_FLAG) {
+      if (seen.has(token)) return duplicate(token);
+      seen.add(token);
       executeRealRun = true;
       continue;
     }
     if (token === "--build-id") {
+      if (seen.has(token)) return duplicate(token);
+      seen.add(token);
       buildId = argv[++i];
       continue;
     }
     if (token === "--pin-sha256") {
+      if (seen.has(token)) return duplicate(token);
+      seen.add(token);
       pinSha256 = argv[++i];
       continue;
     }
@@ -161,6 +227,8 @@ export function parseDispatchArgs(argv: readonly string[]): ParseResult {
 
 export interface PreflightReport {
   ok: boolean;
+  /** The store this run would act on. Shown so it is never implicit. */
+  databasePath: string;
   buildId: string;
   planId: string | null;
   supportedObjectiveId: string | null;
@@ -191,9 +259,11 @@ export function buildPreflightReport(
   persistence: PersistenceService,
   config: Omit<DispatchConfig, "expectedExecutableSha256">,
   args: DispatchArgs,
+  databasePath: string,
 ): PreflightReport {
   const empty: PreflightReport = {
     ok: false,
+    databasePath,
     buildId: args.buildId,
     planId: null,
     supportedObjectiveId: null,
@@ -264,6 +334,7 @@ export function buildPreflightReport(
 
   return {
     ok: gate.permitted && binaryPinMatches === true,
+    databasePath,
     buildId: args.buildId,
     planId: persisted.plan.planId,
     supportedObjectiveId: template.id,
@@ -289,6 +360,7 @@ export function renderPreflight(report: PreflightReport, executeRequested: boole
 
   lines.push("AC-111 controlled execution — PREFLIGHT (dry run)");
   lines.push("");
+  row("database", report.databasePath);
   row("build", report.buildId);
   row("plan", report.planId);
   row("objective template", report.supportedObjectiveId);
@@ -336,9 +408,18 @@ export function renderPreflight(report: PreflightReport, executeRequested: boole
 export interface EntrypointDependencies {
   persistence: PersistenceService;
   config: Omit<DispatchConfig, "expectedExecutableSha256">;
+  /** Reported in the preflight so the target store is never implicit. */
+  databasePath: string;
   actor: CommandActor;
-  /** Called at most once. Never retried. */
-  dispatch: (pinSha256: string) => Promise<DispatchEvidence>;
+  /**
+   * Called at most once. Never retried.
+   *
+   * Receives the **validated** build id and pin explicitly. The shell must
+   * never re-read `process.argv` after parsing: doing so made the parsed
+   * build and the dispatched build separable, which is exactly how a paid
+   * run reaches a build the operator did not review.
+   */
+  dispatch: (buildId: string, pinSha256: string) => Promise<DispatchEvidence>;
   log?: (line: string) => void;
 }
 
@@ -366,7 +447,7 @@ export async function runEntrypoint(
     return { exitCode: 2, preflight: null, dispatched: false, evidence: null };
   }
 
-  const report = buildPreflightReport(deps.persistence, deps.config, parsed.args);
+  const report = buildPreflightReport(deps.persistence, deps.config, parsed.args, deps.databasePath);
   log(renderPreflight(report, parsed.args.executeRealRun));
 
   if (!parsed.args.executeRealRun) {
@@ -386,7 +467,9 @@ export async function runEntrypoint(
   log("EXECUTING ONE REAL RUN. This spends money and consumes the authorization.");
 
   // Exactly one attempt. No loop, no retry, no re-dispatch on any outcome.
-  const evidence = await deps.dispatch(parsed.args.pinSha256);
+  // Both values come from `parsed.args`, which is the single source of
+  // truth after parsing — never from `process.argv`.
+  const evidence = await deps.dispatch(parsed.args.buildId, parsed.args.pinSha256);
 
   log(`outcome: ${evidence.outcome}`);
   log(`verdict: ${evidence.verdict}`);

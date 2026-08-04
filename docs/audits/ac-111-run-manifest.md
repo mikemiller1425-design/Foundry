@@ -191,3 +191,76 @@ The CLI shell was additionally smoke-tested against a real empty database: it re
 
 **No run has been dispatched. `AC-111` is not closed.** The before-run review gate in § 7 stands, and authorizing a run still requires a fresh, explicit instruction naming the ceiling and confirming the pin.
 
+---
+
+## Appendix B — three entrypoint defects, corrected (appended 2026-08-04)
+
+**Appended, not edited.** Appendix A and everything above it are left exactly as written, including the commands this appendix supersedes. Principle 18.
+
+The operator reviewed the entrypoint at `0b418d7` and found three defects. All were real. None had been caught by the 25 tests, because two of them lived in the shell (`dispatchRealRunCli.ts`) rather than in `runEntrypoint`, and the third was in documentation.
+
+### B.1 Defect 1 — the parsed build and the dispatched build could differ
+
+`dispatchRealRunCli.ts` validated the build id through `runEntrypoint`, and then its dispatch closure re-read raw `process.argv`:
+
+```ts
+process.argv[process.argv.indexOf("--build-id") + 1]
+```
+
+With `--build-id` supplied twice, `indexOf` returns the **first** occurrence while the parser had taken the **last**. The preflight would describe one build and the paid dispatch would target another — a real run against something the operator never reviewed.
+
+**Corrected:**
+
+- `dispatch` now receives the **validated** `buildId` and `pinSha256` as explicit parameters. `process.argv` is never read after `parseDispatchArgs`; the only two remaining mentions in the module are comments explaining why.
+- Duplicate `--build-id`, `--pin-sha256`, and `--execute-real-run` are **refused**. Neither first-wins nor last-wins is defensible: one lets the preflight and the dispatch disagree, the other silently discards a corrected value.
+- Regression tests: duplicates refuse at the parser and at the shell, before any mutation or backend call; and the build id shown in the preflight, handed to the dispatcher, and recorded in the evidence are asserted to be **one value**.
+
+### B.2 Defect 2 — hidden caller-controlled inputs
+
+The entrypoint claimed three accepted inputs while reading four environment variables: `FOUNDRY_DB_PATH`, `FOUNDRY_CLAUDE_PATH`, `FOUNDRY_GIT_PATH`, and `FOUNDRY_OPERATOR_ID`.
+
+`FOUNDRY_OPERATOR_ID` was the worst of them: the shell marked whatever it contained as `authenticated: true` with no `PrincipalRegistry` verification — a shell variable asserting operator authority, which is exactly the class of defect `FBL-029` removed from the command surface.
+
+**Corrected:**
+
+- **No impersonation.** The entrypoint acts as the **backend** (`REAL_RUN_ACTOR`), never as an operator. This is not a workaround: `AgentRun.Start` carries no operator requirement, and the governance acts that *do* — submitting an objective, reviewing a plan, starting a build, authorizing execution — have all already happened through the credentialed HTTP surface. The operator's authority is already recorded immutably on the persisted `ExecutionAuthorization`: who, when, against which plan hash, under what ceiling. Claiming to be them here would add no authority and would falsify the audit trail.
+- **No environment input.** The real-run database, executable, and Git paths are fixed in committed source. Setting any of the four variables is a **refusal that names them**, not a silent override — ignoring them would be its own defect, since an operator who exported one believes it took effect.
+- **The API keeps `FOUNDRY_DB_PATH`.** `scripts/dev.mjs`, every integration test, and the isolated verification instances need it. The two configurations are now separated in `operationalConfig.ts` rather than shared, with the reason recorded there.
+- The preflight now **prints the database path**, so which store a paid run would act on is never implicit.
+
+### B.3 Defect 3 — the documented command could execute a stale bundle
+
+Appendix A § A.2 documented `node dist/ac111-dispatch-real-run.js` with the advice to build first if `dist/` were stale. That made the reviewed source and the executed bundle separable by operator memory.
+
+**Corrected. The canonical commands are now:**
+
+```bash
+# dry run (default — reads only, changes nothing)
+pnpm --filter @foundry/api ac-111:dispatch -- \
+  --build-id <BUILD_ID> \
+  --pin-sha256 7a181f36ed0fc4fbac6cee4ecf2b615eff93d8b434221fff5d7c878dc5ebf380
+
+# one real run (spends money, consumes the authorization)
+pnpm --filter @foundry/api ac-111:dispatch -- \
+  --build-id <BUILD_ID> \
+  --pin-sha256 7a181f36ed0fc4fbac6cee4ecf2b615eff93d8b434221fff5d7c878dc5ebf380 \
+  --execute-real-run
+```
+
+The `ac-111:dispatch` script is `node build.mjs && node dist/ac111-dispatch-real-run.js`, so the bundle is regenerated from the reviewed source immediately before every invocation. **Direct execution of `dist/` is no longer the documented operator path.** A test asserts the script builds before it runs, and a second runs the build step for real.
+
+### B.4 Verification
+
+Offline only, substituted backends throughout. **No Claude Code was invoked, no process spawned, no model called, no authorization consumed, and no money spent.**
+
+- **15 new CLI-shell tests** that spawn the bundled entrypoint as a real subprocess — the layer both defects lived in, and which the earlier unit tests could not have reached.
+- **39 entrypoint tests** (up from 25), including the duplicate-flag and build-identity regressions.
+- **1422 tests total**, 0 failures. typecheck 8/8, lint clean, build clean, `v1-canonical-run.json` byte-identical.
+- The shell tests were confirmed **read-only against the operator's live database**: 19 events and 0 entities before and after.
+
+One further fragility was found and fixed while verifying: the first version of the shell test deleted the shared bundle to prove the build regenerated it, which opened a window where a concurrent test run found it missing. A test must not remove a shared build artifact; it now re-runs the build and observes a fresh write instead.
+
+### B.5 Status, unchanged
+
+**No run has been dispatched. `AC-111` is not closed.** The before-run review gate in § 7 stands, and authorizing a run still requires a fresh, explicit instruction naming the ceiling and confirming the pin.
+

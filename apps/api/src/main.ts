@@ -3,11 +3,14 @@ import { dirname } from "node:path";
 import { PersistenceService, PrincipalRegistry } from "@foundry/persistence";
 import { WORLD_AGENTS } from "@foundry/world-model";
 import { createApp } from "./app";
-// AC-111: one definition of the operational deployment, shared with the
-// real-run entrypoint so "the same database" is a fact, not a coincidence.
-import { operationalDatabasePath } from "./operationalConfig";
+// AC-111: the API's general configuration. `FOUNDRY_DB_PATH` still moves
+// it, as dev.mjs and every integration test require. The paid real-run
+// entrypoint deliberately uses a *fixed* path instead and refuses to run
+// with this variable set — see `operationalConfig.ts` for why the two are
+// separated rather than shared.
+import { apiDatabasePath } from "./operationalConfig";
 
-const dbPath = operationalDatabasePath();
+const dbPath = apiDatabasePath();
 const port = Number(process.env.PORT ?? 4000);
 
 mkdirSync(dirname(dbPath), { recursive: true });

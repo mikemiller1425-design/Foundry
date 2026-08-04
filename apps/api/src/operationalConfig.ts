@@ -2,61 +2,76 @@ import { join } from "node:path";
 import type { DispatchConfig } from "./execution/executionDispatcher";
 
 /**
- * The one definition of "the operational deployment" (AC-111).
+ * Deployment configuration, split by what may vary (AC-111).
  *
- * Both the running service and the real-run entrypoint import from here.
- * That is the point: `AC-111`'s requirement is that the entrypoint use the
- * **exact** database and configuration the `AC-110` gate runs against, and
- * two modules that each computed the same path independently would be
- * agreeing by coincidence — a coincidence that survives until someone
- * edits one of them.
+ * ## Why there are two definitions and not one
  *
- * ## What is deliberately *not* configurable per invocation
+ * The running API genuinely needs a movable database: `scripts/dev.mjs`,
+ * every integration test, and the isolated verification instances all set
+ * `FOUNDRY_DB_PATH`, and taking that away would break them for no gain.
  *
- * Everything below except the database path. The model, tool set,
- * timeouts, byte caps, and executable path are the **runtime policy**, and
- * a caller who could set them could widen containment without touching a
- * policy file — which is the shape of every containment bug worth caring
- * about. They live in committed source so changing one is a reviewable
- * diff, not a command-line argument.
+ * The **paid real-run entrypoint** needs the opposite property. It spends
+ * money against whatever store it opens, so "which database" must not be
+ * answerable by an environment variable that happens to be exported in the
+ * shell that invoked it. A run that debits a real account against the
+ * wrong store is not a configuration mistake, it is a loss.
  *
- * The budget is absent from this file entirely. It is **not** policy: it
- * is the operator's decision, carried on the persisted
- * `ExecutionAuthorization`, and read from there and nowhere else (H-3).
+ * So the two are separated deliberately, and the real-run side is **fixed
+ * in committed source with no environment input at all**.
+ *
+ * ## Why the real-run entrypoint refuses rather than ignoring
+ *
+ * Silently ignoring `FOUNDRY_DB_PATH` would be its own defect: an operator
+ * who exported it believes it took effect, and would read the preflight as
+ * describing the store they meant. Refusing, and naming the variable, is
+ * the only answer that cannot be misread. The same applies to
+ * `FOUNDRY_CLAUDE_PATH`, `FOUNDRY_GIT_PATH`, and `FOUNDRY_OPERATOR_ID`.
  */
 
-/** The service's database. `FOUNDRY_DB_PATH` overrides, as it always has. */
-export function operationalDatabasePath(): string {
-  return process.env.FOUNDRY_DB_PATH ?? join(import.meta.dirname, "..", "data", "foundry.sqlite");
+/** Environment variables the real-run entrypoint refuses to run alongside. */
+export const REAL_RUN_PROHIBITED_ENV = [
+  "FOUNDRY_DB_PATH",
+  "FOUNDRY_CLAUDE_PATH",
+  "FOUNDRY_GIT_PATH",
+  "FOUNDRY_OPERATOR_ID",
+] as const;
+
+/** The canonical operational database. Fixed; no environment input. */
+export function realRunDatabasePath(): string {
+  return join(import.meta.dirname, "..", "data", "foundry.sqlite");
 }
 
 /**
- * The controlled executable's absolute path.
+ * The API service's database.
  *
- * Still environment-overridable, because the install location genuinely
- * varies by machine — but the **pin** is what makes that safe: whatever
- * path is configured, the file there must hash to the value the operator
- * deliberately pinned, or the dispatch is refused before anything is
- * created. A path without a pin is refused outright.
+ * Still `FOUNDRY_DB_PATH`-overridable, exactly as it always has been —
+ * this is the general configuration, and moving it is a normal thing to
+ * do. It defaults to the same canonical path the real-run entrypoint
+ * fixes, so an unconfigured deployment has one database, not two.
  */
-export function controlledExecutablePath(): string {
-  return (
-    process.env.FOUNDRY_CLAUDE_PATH ??
-    "/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe"
-  );
+export function apiDatabasePath(): string {
+  return process.env.FOUNDRY_DB_PATH ?? realRunDatabasePath();
 }
 
 /**
  * The invariant execution policy for a real controlled run.
  *
- * `expectedExecutableSha256` is deliberately absent: it is supplied per
- * invocation by the operator, and its absence is a refusal rather than a
+ * Every value is a committed literal. Nothing here reads the environment,
+ * and nothing here is reachable from the command line — changing any of it
+ * is a reviewable diff.
+ *
+ * `expectedExecutableSha256` is deliberately absent: the operator supplies
+ * the pin per invocation, and its absence is a refusal rather than a
  * default. A pin baked in here would be a pin nobody chose.
+ *
+ * The budget is absent for a different reason: it is not policy. It is the
+ * operator's decision, carried on the persisted `ExecutionAuthorization`,
+ * and read from there and nowhere else (H-3).
  */
-export function executionDispatchConfig(): Omit<DispatchConfig, "expectedExecutableSha256"> {
+export function realRunDispatchConfig(): Omit<DispatchConfig, "expectedExecutableSha256"> {
   return {
-    executablePath: controlledExecutablePath(),
-    gitExecutablePath: process.env.FOUNDRY_GIT_PATH ?? "/usr/bin/git",
+    executablePath: "/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe",
+    gitExecutablePath: "/usr/bin/git",
     nodeExecutablePath: process.execPath,
     model: "sonnet",
     timeoutMs: 10 * 60_000,
@@ -64,5 +79,32 @@ export function executionDispatchConfig(): Omit<DispatchConfig, "expectedExecuta
     maxStdoutBytes: 1024 * 1024,
     maxStderrBytes: 1024 * 1024,
     maxEvidenceBytes: 8 * 1024 * 1024,
+  };
+}
+
+export type EnvironmentOverrideCheck =
+  | { ok: true }
+  | { ok: false; present: readonly string[]; reason: string; correctiveAction: string };
+
+/**
+ * Refuses to proceed when any prohibited variable is set.
+ *
+ * Checked before anything is read or computed, so an operator whose shell
+ * carries a stale export learns it immediately rather than after a run has
+ * already opened the wrong store.
+ */
+export function assertNoEnvironmentOverrides(
+  environment: Record<string, string | undefined> = process.env,
+): EnvironmentOverrideCheck {
+  const present = REAL_RUN_PROHIBITED_ENV.filter(
+    (name) => environment[name] !== undefined && environment[name] !== "",
+  );
+  if (present.length === 0) return { ok: true };
+
+  return {
+    ok: false,
+    present,
+    reason: `The real-run entrypoint refuses to run with ${present.join(", ")} set. This entrypoint spends money against whatever store it opens and invokes whatever binary it is pointed at, so neither may be decided by an environment variable that happens to be exported in the calling shell. Ignoring these silently would be worse: you would believe they took effect.`,
+    correctiveAction: `Unset ${present.join(", ")} and re-run. The database, executable, and Git paths are fixed in \`apps/api/src/operationalConfig.ts\`; changing one is a reviewable diff, not an export.`,
   };
 }

@@ -6,6 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — three AC-111 entrypoint defects, corrected before any paid run
+
+The operator reviewed the entrypoint at `0b418d7` and found three defects. **All were real**, and none had been caught by the 25 existing tests — two lived in the shell (`dispatchRealRunCli.ts`) rather than in `runEntrypoint`, and the third was in documentation. **No run has been dispatched.**
+
+**Defect 1 — the parsed build and the dispatched build could differ.** The shell re-read raw `process.argv` inside its dispatch closure, so with `--build-id` supplied twice `indexOf` returned the *first* occurrence while the parser had taken the *last*: the preflight would describe one build and the paid dispatch would target another. `dispatch` now receives the **validated** build id and pin as explicit parameters, `process.argv` is never read after parsing, and duplicate `--build-id`, `--pin-sha256`, and `--execute-real-run` are **refused** — neither first-wins nor last-wins is defensible.
+
+**Defect 2 — hidden caller-controlled inputs.** The entrypoint claimed three accepted inputs while reading four environment variables. `FOUNDRY_OPERATOR_ID` was the worst: the shell marked whatever it contained as `authenticated: true` with **no `PrincipalRegistry` verification** — a shell variable asserting operator authority. The entrypoint now acts as the **backend**, never an impersonated operator, and that is the correct actor rather than a workaround: `AgentRun.Start` carries no operator requirement, and the governance acts that do have all already happened through the credentialed surface. The operator's authority is already recorded immutably on the persisted `ExecutionAuthorization`. All four variables are now **refused by name**, not ignored, and the preflight prints the database path so the target store is never implicit. The API keeps `FOUNDRY_DB_PATH`, which `dev.mjs` and every integration test need; the two configurations are separated rather than shared.
+
+**Defect 3 — the documented command could execute a stale bundle.** Advising the operator to "build first if `dist/` is stale" made the reviewed source and the executed bundle separable by memory. The canonical command is now `pnpm --filter @foundry/api ac-111:dispatch -- …`, which rebuilds from source immediately before every invocation. Direct execution of `dist/` is no longer documented.
+
+**Verification.** 15 new **CLI-shell tests** that spawn the bundled entrypoint as a real subprocess — the layer both defects lived in. 39 entrypoint tests (up from 25). **1422 total, 0 failures.** typecheck 8/8 · lint clean · build clean · `v1-canonical-run.json` byte-identical. The shell tests were confirmed read-only against the operator's live database: 19 events and 0 entities before and after.
+
+One further fragility found while verifying: the first shell test deleted the shared bundle to prove the build regenerated it, opening a window where a concurrent run found it missing. A test must not remove a shared build artifact; it now observes a fresh write instead.
+
+Manifest updated **append-only** with a dated correction. **`AC-111` is not closed.**
+
 ### Added — AC-111 audited one-shot dispatch entrypoint (no run dispatched)
 
 The final pre-dispatch gap. The dispatcher was "reachable from code", which is not an operational capability: it means the only way to start a real run is to write a script, and an improvised script is exactly what carries a hand-typed budget or a hand-typed path. There is now **one audited, non-HTTP, one-shot entrypoint**. Still not a route, still not reachable from the browser.

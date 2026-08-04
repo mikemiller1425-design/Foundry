@@ -11,6 +11,12 @@ import {
   type PersistedPlan,
 } from "@foundry/contracts";
 import {
+  REAL_RUN_PROHIBITED_ENV,
+  assertNoEnvironmentOverrides,
+  realRunDatabasePath,
+  realRunDispatchConfig,
+} from "../operationalConfig";
+import {
   BuildOrchestrator,
   CommandHandler,
   ENTITY_TYPES,
@@ -28,7 +34,7 @@ import type {
   SpawnParameters,
 } from "@foundry/runtime-adapters";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EXECUTE_FLAG, parseDispatchArgs, runEntrypoint } from "./dispatchRealRun";
+import { EXECUTE_FLAG, REAL_RUN_ACTOR, parseDispatchArgs, runEntrypoint } from "./dispatchRealRun";
 import { ExecutionDispatcher, type DispatchConfig } from "./executionDispatcher";
 
 /**
@@ -162,13 +168,16 @@ function deps(overrides: Partial<Parameters<typeof runEntrypoint>[1]> = {}) {
   return {
     persistence,
     config: config(),
-    actor: OPERATOR,
+    databasePath: join(dir, "foundry.sqlite"),
+    actor: REAL_RUN_ACTOR,
     log: (line: string) => logLines.push(line),
-    dispatch: (pinSha256: string) =>
+    // Mirrors the real shell: the build id comes from the *validated*
+    // arguments, never from process.argv.
+    dispatch: (buildId: string, pinSha256: string) =>
       new ExecutionDispatcher(persistence, handler, {
         ...config(),
         expectedExecutableSha256: pinSha256,
-      }).dispatch(currentBuildId, OPERATOR, {
+      }).dispatch(buildId, REAL_RUN_ACTOR, {
         adapter: fakeAdapter(),
         validationBackend: fakeValidationBackend(),
       }),
@@ -518,5 +527,137 @@ describe("AC-111 entrypoint — zero real model calls", () => {
     // Every dispatch above supplied a substituted adapter and validation
     // backend. The real ClaudeCodeAdapter is never constructed here.
     expect(backendInvocations).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("AC-111 entrypoint — defect 1: parsed build is the only build (regression)", () => {
+  it.each(["--build-id", "--pin-sha256", EXECUTE_FLAG])(
+    "REFUSES a duplicated %s rather than picking first- or last-wins",
+    (flag) => {
+      const argv =
+        flag === EXECUTE_FLAG
+          ? ["--build-id", "b", "--pin-sha256", "a".repeat(64), flag, flag]
+          : ["--build-id", "b", "--pin-sha256", "a".repeat(64), flag, "second"];
+      const result = parseDispatchArgs(argv);
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error("unreachable");
+      expect(result.reason).toContain("more than once");
+    },
+  );
+
+  it("a duplicated --build-id refuses BEFORE any mutation or backend call", async () => {
+    await seedAuthorizedBuild();
+    const before = fullSnapshot();
+    const dispatch = vi.fn();
+
+    const result = await runEntrypoint(
+      [
+        "--build-id",
+        currentBuildId,
+        "--build-id",
+        "some-other-build",
+        "--pin-sha256",
+        fakeBinarySha,
+        EXECUTE_FLAG,
+      ],
+      deps({ dispatch }),
+    );
+
+    expect(result.exitCode).toBe(2);
+    expect(result.dispatched).toBe(false);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(backendInvocations).toBe(0);
+    expect(fullSnapshot()).toEqual(before);
+  });
+
+  it("the build shown in preflight is EXACTLY the build handed to the dispatcher", async () => {
+    await seedAuthorizedBuild();
+    const seenByDispatch: string[] = [];
+
+    const result = await runEntrypoint(
+      ["--build-id", currentBuildId, "--pin-sha256", fakeBinarySha, EXECUTE_FLAG],
+      deps({
+        dispatch: async (buildId: string, pinSha256: string) => {
+          seenByDispatch.push(buildId);
+          expect(pinSha256).toBe(fakeBinarySha);
+          return new ExecutionDispatcher(persistence, handler, {
+            ...config(),
+            expectedExecutableSha256: pinSha256,
+          }).dispatch(buildId, REAL_RUN_ACTOR, {
+            adapter: fakeAdapter(),
+            validationBackend: fakeValidationBackend(),
+          });
+        },
+      }),
+    );
+
+    expect(seenByDispatch).toEqual([currentBuildId]);
+    expect(result.preflight?.buildId).toBe(currentBuildId);
+    expect(result.evidence?.buildId).toBe(currentBuildId);
+    // The same value in all three places, with no path by which they differ.
+    expect(new Set([result.preflight?.buildId, result.evidence?.buildId, seenByDispatch[0]]).size).toBe(1);
+  });
+});
+
+describe("AC-111 entrypoint — defect 2: no hidden inputs (regression)", () => {
+  it.each(REAL_RUN_PROHIBITED_ENV)("refuses to run with %s set", (name) => {
+    const check = assertNoEnvironmentOverrides({ [name]: "/somewhere/else" });
+    expect(check.ok).toBe(false);
+    if (check.ok) throw new Error("unreachable");
+    expect(check.present).toContain(name);
+    // Refused by name, not silently ignored.
+    expect(check.reason).toContain(name);
+  });
+
+  it("permits a clean environment", () => {
+    expect(assertNoEnvironmentOverrides({}).ok).toBe(true);
+    expect(assertNoEnvironmentOverrides({ FOUNDRY_DB_PATH: "" }).ok).toBe(true);
+  });
+
+  it("the real-run config reads NOTHING from the environment", () => {
+    const before = realRunDispatchConfig();
+    const beforeDb = realRunDatabasePath();
+    // Poison every variable the old version honoured.
+    const saved = { ...process.env };
+    try {
+      process.env.FOUNDRY_CLAUDE_PATH = "/tmp/evil-claude";
+      process.env.FOUNDRY_GIT_PATH = "/tmp/evil-git";
+      process.env.FOUNDRY_DB_PATH = "/tmp/evil.sqlite";
+      process.env.FOUNDRY_OPERATOR_ID = "not-the-operator";
+
+      expect(realRunDispatchConfig()).toEqual(before);
+      expect(realRunDispatchConfig().executablePath).not.toContain("evil");
+      expect(realRunDispatchConfig().gitExecutablePath).not.toContain("evil");
+      expect(realRunDatabasePath()).toBe(beforeDb);
+      expect(realRunDatabasePath()).not.toContain("evil");
+    } finally {
+      process.env = saved;
+    }
+  });
+
+  it("acts as the backend, never as an impersonated operator", () => {
+    // The operator's authority is already recorded, immutably, on the
+    // persisted ExecutionAuthorization. Claiming to be them here would add
+    // no authority and would falsify the audit trail.
+    expect(REAL_RUN_ACTOR.actorType).toBe("backend");
+    expect(REAL_RUN_ACTOR.actorId).toBe("backend");
+    expect(String(REAL_RUN_ACTOR.actorId)).not.toContain("operator");
+  });
+
+  it("records the backend as the actor on the reservation event", async () => {
+    await seedAuthorizedBuild();
+    await runEntrypoint(
+      ["--build-id", currentBuildId, "--pin-sha256", fakeBinarySha, EXECUTE_FLAG],
+      deps(),
+    );
+    const started = persistence.getAllEvents().find((e) => e.type === "agentrun.started" && e.actorType === "backend");
+    expect(started).toBeDefined();
+    expect(started?.actorId).toBe("backend");
+  });
+
+  it("names the target database in the preflight, so it is never implicit", async () => {
+    await seedAuthorizedBuild();
+    await runEntrypoint(["--build-id", currentBuildId, "--pin-sha256", fakeBinarySha], deps());
+    expect(logLines.join("\n")).toContain(join(dir, "foundry.sqlite"));
   });
 });
