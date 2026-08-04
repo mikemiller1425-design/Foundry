@@ -1,11 +1,13 @@
 import { mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname } from "node:path";
 import { PersistenceService, PrincipalRegistry } from "@foundry/persistence";
 import { WORLD_AGENTS } from "@foundry/world-model";
 import { createApp } from "./app";
+// AC-111: one definition of the operational deployment, shared with the
+// real-run entrypoint so "the same database" is a fact, not a coincidence.
+import { operationalDatabasePath } from "./operationalConfig";
 
-const DEFAULT_DB_PATH = join(import.meta.dirname, "..", "data", "foundry.sqlite");
-const dbPath = process.env.FOUNDRY_DB_PATH ?? DEFAULT_DB_PATH;
+const dbPath = operationalDatabasePath();
 const port = Number(process.env.PORT ?? 4000);
 
 mkdirSync(dirname(dbPath), { recursive: true });

@@ -117,3 +117,77 @@ To authorize one run, confirm each of the following. Any "no" should stop the ru
 ## 8. Status
 
 `AC-111` is **constructed and hardened offline**. **No run has been dispatched.** The rung is **not closed**.
+
+---
+
+## Appendix A — the audited entrypoint (appended 2026-08-04)
+
+**Appended, not edited.** Everything above is left exactly as written, including the statements this appendix corrects. Principle 18.
+
+### A.1 The gap this closes
+
+§ 6 above said *"No HTTP route dispatches a run. The dispatcher is reachable from code and tests only."* That was true, and it was insufficient: "reachable from code" means the only way to start a real run is to write a script, and an improvised script is exactly what ends up carrying a hand-typed budget or a hand-typed path. There is now **one audited, non-HTTP, one-shot entrypoint**.
+
+It is still not a route and still not reachable from the browser. Starting a real run is a deliberate act at a terminal.
+
+### A.2 The exact operator commands
+
+**Dry run — the default. Reads only; changes nothing.**
+
+```bash
+pnpm --filter @foundry/api exec node dist/ac111-dispatch-real-run.js \
+  --build-id <BUILD_ID> \
+  --pin-sha256 7a181f36ed0fc4fbac6cee4ecf2b615eff93d8b434221fff5d7c878dc5ebf380
+```
+
+**One real run — spends money and consumes the authorization.**
+
+```bash
+pnpm --filter @foundry/api exec node dist/ac111-dispatch-real-run.js \
+  --build-id <BUILD_ID> \
+  --pin-sha256 7a181f36ed0fc4fbac6cee4ecf2b615eff93d8b434221fff5d7c878dc5ebf380 \
+  --execute-real-run
+```
+
+Build first if `dist/` is stale: `pnpm --filter @foundry/api build`.
+
+### A.3 What a caller may and may not supply
+
+| Accepted | Why it cannot widen anything |
+| --- | --- |
+| `--build-id` | Selects *which* build. Selection is not permission |
+| `--pin-sha256` | A **check**. The executable path is fixed in committed configuration, so a pin can only match the file already there or refuse. **No value makes a different binary run** |
+| `--execute-real-run` | The only way out of dry run. Its absence is a refusal |
+
+**Everything else is refused by name, not ignored** — an ignored `--budget 50` is worse than a rejected one, because the operator would believe it took effect. Refused: `--budget`, `--max-budget-usd`, `--model`, `--tools`, `--timeout`, `--workspace`, `--write-path`, `--test-command`, `--executable-path`, `--objective`, `--supported-objective-id`, `--keep-workspace`, and any unrecognised token.
+
+| Value | Source |
+| --- | --- |
+| Objective template, plan content hash, authorization, **budget ceiling**, writable paths | **Persisted backend truth** |
+| Model, tools, timeouts, byte caps, executable path, **database path** | **Committed configuration** — `apps/api/src/operationalConfig.ts`, shared with the running service so "the same database" is a fact rather than a coincidence |
+
+### A.4 Correction — the cost field name is no longer uncertain
+
+§ 6 above states that the cost field name *"could not be confirmed"* and lists three candidates. **That statement is superseded, and is left in place as the record of what was known then.**
+
+**Anthropic's official headless/CLI documentation identifies `total_cost_usd` as the cost field in the `--output-format json` result.** It is the first candidate the parser checks, and the one it will find.
+
+What does **not** change:
+
+- The parser still accepts the same three candidates and still **fails closed** when none is present. Documentation is a much better basis than a guess, and it is still not the same thing as having observed this binary's output. Removing the fallback and the fail-closed path on the strength of a document would be trading a working safety property for tidiness.
+- A missing or malformed cost is still recorded as `null`, never `0`.
+
+**Residual risk, restated honestly:** materially lower than when § 6 was written. The first real run is now considerably less likely to fail on cost parsing — but if it does, it still fails closed, having spent money.
+
+### A.5 Verification of the entrypoint
+
+Offline only, with a substituted execution backend throughout. **No Claude Code was invoked, no process spawned, no model called, no authorization consumed, and no money spent.**
+
+25 entrypoint tests, covering: the three accepted flags; refusal of twelve policy-widening flags by name; refusal of unrecognised tokens; a malformed or absent pin; **dry run with the whole persisted store asserted byte-equal before and after**; the preflight showing build, plan, template, plan hash, authorization id, ceiling, binary identity, exact argv, write scope, timeout, and the network limitation; refusal to dispatch without the flag, with zero side effects; dispatch with the flag using the **persisted** budget; wrong-pin refusal before execution; a second invocation reaching no backend; **concurrent invocations producing exactly one backend invocation and exactly one `claude_code` `AgentRun`**; and no retry after failure.
+
+The CLI shell was additionally smoke-tested against a real empty database: it refused missing arguments, refused `--budget` by name, rendered a full preflight, and left the database at **0 events and 0 entities**.
+
+### A.6 Status, unchanged
+
+**No run has been dispatched. `AC-111` is not closed.** The before-run review gate in § 7 stands, and authorizing a run still requires a fresh, explicit instruction naming the ceiling and confirming the pin.
+

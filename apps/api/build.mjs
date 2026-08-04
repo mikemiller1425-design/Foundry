@@ -19,6 +19,11 @@ await build({
     // FBL-031 operator helper: seeds the operational history that makes
     // the Warehouse upgrade genuinely eligible. Declared events only.
     "fbl031-seed-upgrade-ready": "src/fbl031/seedUpgradeReady.ts",
+    // AC-111: the audited one-shot real-run entrypoint. Dry-run by
+    // default; a real dispatch requires --execute-real-run. Not a route
+    // and not reachable from the browser — starting a real run is a
+    // deliberate act at a terminal.
+    "ac111-dispatch-real-run": "src/execution/dispatchRealRunCli.ts",
   },
   outdir: "dist",
   bundle: true,

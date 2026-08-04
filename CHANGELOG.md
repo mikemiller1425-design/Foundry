@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — AC-111 audited one-shot dispatch entrypoint (no run dispatched)
+
+The final pre-dispatch gap. The dispatcher was "reachable from code", which is not an operational capability: it means the only way to start a real run is to write a script, and an improvised script is exactly what carries a hand-typed budget or a hand-typed path. There is now **one audited, non-HTTP, one-shot entrypoint**. Still not a route, still not reachable from the browser.
+
+**A caller may supply three things:** `--build-id` (selects; never widens), `--pin-sha256` (a **check** — the executable path is fixed in committed configuration, so no pin value makes a different binary run), and `--execute-real-run`. **Everything else is refused by name, not ignored** — an ignored `--budget 50` is worse than a rejected one, because the operator would believe it took effect.
+
+**Dry run is the default.** It shows build, plan, template, plan content hash, authorization id, ceiling, binary identity, the exact argv, write scope, timeout, and the network limitation — then stops. No reservation, no workspace, no spawn, no mutation, proven by asserting the whole persisted store byte-equal before and after.
+
+**One definition of the operational deployment.** `operationalConfig.ts` is shared with the running service, so "the entrypoint uses the same database and configuration as the AC-110 gate" is a fact rather than two modules agreeing by coincidence. Budget is deliberately absent from it — that is the operator's decision, carried on the persisted authorization.
+
+**Exactly one attempt.** No retry loop, no backoff, no re-dispatch on timeout, unknown cost, process failure, or containment failure. Concurrent invocations produce exactly one backend invocation and exactly one `claude_code` `AgentRun`.
+
+**Correction, appended not rewritten:** the manifest's statement that the cost field name "could not be confirmed" is superseded — **Anthropic's official headless documentation identifies `total_cost_usd`**. The original uncertainty statement is retained as the record of what was known then. The parser still accepts three candidates and still fails closed, because documentation is a better basis than a guess but is not the same as having observed this binary's output.
+
+**Gates:** typecheck 8/8 · lint clean · build clean · **1393 passed / 96 files / 0 failures** (up from 1368) · `v1-canonical-run.json` byte-identical. 25 entrypoint tests, substituted backend throughout; the CLI additionally smoke-tested against a real empty database, which it left at 0 events and 0 entities.
+
+**No run has been dispatched. `AC-111` is not closed.**
+
 ### Proposed — AC-111 run manifest and before-run operator gate
 
 Supersedes the preflight, which recorded six blocking prerequisites; **all six are now addressed**. The preflight is retained unedited as the record of what was true then.
