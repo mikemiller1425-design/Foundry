@@ -6,6 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Proposed — AC-111 run manifest (read-only preflight)
+
+What a real controlled run *would* be, so the operator can decide whether to authorize one. **Nothing was executed: no Claude Code invoked, no process spawned, no model called, no money spent.** It authorizes nothing.
+
+Documents the exact argument vector, the fixed literal allowlist, the fresh `mkdtemp` workspace, the 10-minute process-tree timeout, the tool set (no Bash, so the run cannot execute or fake its own validation), the evidence that would be retained, and the blast radius if a run were authorized.
+
+**The manifest cannot be executed as-is.** Six prerequisites carry over from the hardening review, and three would make an operator-facing guarantee **false** rather than incomplete: the run would write its spend marker to a **different database** than the `AC-110` gate reads (`M-1`), the operator's chosen budget **never reaches the runtime** (`M-2`), and actual spend is **never read back or recorded** (`M-3`).
+
+**`M-4` is an operator decision due before `AC-111` begins:** the real stage implements a fixed demo task, not the submitted objective, and generalizing it collides with the rule that the Builder must not write its own validation. Three options with their costs are laid out rather than chosen.
+
+**`AC-111` is not startable today regardless**, because its stated dependency on `AC-103` being closed is unmet — that rung is diagnosed and remediated but awaiting the operator's acceptance.
+
+Recommended sequence ends with the observation that `M-1`–`M-6` can all be built and proven **offline with a substituted execution backend**, which `F-117` already requires — so none of the remediation costs money to verify.
+
+Recorded in `docs/audits/ac-111-run-manifest-preflight.md`.
+
 ### Verified — clean full regression pass at `8e8f0f7`
 
 Measured on a clean tree after the queue's three preceding items, because "should not have regressed anything" is a prediction and this is the measurement.
