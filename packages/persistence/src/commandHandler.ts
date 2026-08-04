@@ -84,6 +84,20 @@ const OPERATOR_UPGRADE_COMMANDS = new Set<CommandType>(["Upgrade.Request", "Upgr
 const OPERATOR_PLAN_COMMANDS = new Set<CommandType>(["Plan.Review"]);
 
 /**
+ * AC-109 — starting a build is an act of human direction.
+ *
+ * Same standard as submitting an objective and reviewing a plan
+ * (principle 14). The orchestrator advances a build once it is running,
+ * but it may not decide that one should start: a system that could
+ * commission its own execution would make the review it just passed
+ * decorative.
+ *
+ * `Build.Start` is the *only* build command with this requirement.
+ * Pause, resume, cancel, fail, and complete are unchanged.
+ */
+const OPERATOR_BUILD_COMMANDS = new Set<CommandType>(["Build.Start"]);
+
+/**
  * Project statuses that still count as open work (`ProjectStatusSchema`).
  * `domain-model.md` → Project V1 limits: **one active project**.
  */
@@ -164,6 +178,12 @@ export class CommandHandler {
       if (authorization) return authorization;
     }
 
+    // AC-109: an orchestrated run begins on the operator's direction.
+    if (OPERATOR_BUILD_COMMANDS.has(commandType)) {
+      const authorization = this.requireAuthorizedOperator(commandType, entityId, actor);
+      if (authorization) return authorization;
+    }
+
     /**
      * AC-108 — per-command parameter validation, for the commands AC-107
      * declared shapes for. Runs *after* authorization so the field-level
@@ -214,6 +234,22 @@ export class CommandHandler {
         entityId,
         `No ${ENTITY_TYPE_LABELS[def.entityType]} with id ${entityId}.`,
       );
+    }
+
+    /**
+     * AC-109 — the start guard runs ahead of the generic transition check.
+     *
+     * Ordering is the whole point. Left to the generic check, a second
+     * `Build.Start` on a build already at the approval gate answered
+     * "Illegal transition for Build …: waiting_for_approval → running",
+     * which is true and useless: it names a state machine, not the thing
+     * the operator did. Running the named guard first means every reason a
+     * build will not start — no plan, unreviewed, rejected, stale, already
+     * started — is stated in the operator's terms.
+     */
+    if (commandType === "Build.Start") {
+      const startable = this.requireStartableBuild(commandType, entityId);
+      if (startable) return startable;
     }
 
     let eventType = def.eventType;
@@ -326,6 +362,8 @@ export class CommandHandler {
         return this.requirePlannableBuild(commandType, entityId, params);
       case "Plan.Review":
         return this.requireReviewablePlan(commandType, entityId, params, actor);
+      // `Build.Start` is guarded earlier, ahead of the transition check —
+      // see `requireStartableBuild`'s call site for why.
       case "BuildStage.Complete":
         return this.requireMandatoryRequirementsPassed(commandType, entityId);
       case "BuildStage.RequestRevision":
@@ -423,9 +461,11 @@ export class CommandHandler {
     // exist. Caught by live verification at AC-108.
     const act = OPERATOR_PLAN_COMMANDS.has(commandType)
       ? "Reviewing a plan"
-      : OPERATOR_UPGRADE_COMMANDS.has(commandType)
-        ? "Requesting or approving an upgrade"
-        : "Resolving an approval";
+      : OPERATOR_BUILD_COMMANDS.has(commandType)
+        ? "Starting a build"
+        : OPERATOR_UPGRADE_COMMANDS.has(commandType)
+          ? "Requesting or approving an upgrade"
+          : "Resolving an approval";
 
     return this.deny(
       commandType,
@@ -880,6 +920,91 @@ export class CommandHandler {
     params.reviewedBy = actor.actorId;
     params.planRevision = current;
     delete params.reviewedRevision;
+
+    return undefined;
+  }
+
+  /**
+   * AC-109 — a build starts only from a plan the operator read and
+   * accepted, and only once.
+   *
+   * This is the gate the whole orchestration hangs from, so each condition
+   * is checked and named separately. A single "cannot start" would leave
+   * the operator guessing between six genuinely different problems with
+   * six different fixes.
+   *
+   * Every check reads **persisted truth**. The revision is recomputed from
+   * the stored plan rather than trusted from the stored `revision` field,
+   * so a plan edited after review cannot present the fingerprint of the
+   * version that was approved.
+   *
+   * Note what this deliberately is **not**: an execution authorization. It
+   * permits the mock executor to advance a reviewed build. Authorizing a
+   * real model invocation is a separate, single-use act that does not
+   * exist yet (`F-113`, `AC-110`), and no amount of starting builds
+   * produces one.
+   */
+  private requireStartableBuild(
+    commandType: CommandType,
+    buildId: string,
+  ): CommandOutcome | undefined {
+    const build = this.persistence.getEntity<{ status: string }>("builds", buildId);
+    if (!build) {
+      return this.deny(commandType, buildId, `No Build with id ${buildId}.`);
+    }
+
+    // Checked before the plan so a restarted build reports the reason that
+    // actually applies to it, rather than something about its plan.
+    if (build.status !== "planned") {
+      return this.deny(
+        commandType,
+        buildId,
+        `Build ${buildId} is ${build.status}, not planned — a build is started once.`,
+        build.status === "running"
+          ? "Nothing to do: this build is already running. Watch its stages rather than starting it again."
+          : "A build that has left `planned` cannot be restarted; its history is the record of what happened.",
+      );
+    }
+
+    const persisted = this.persistence
+      .listEntities<PersistedPlan>("plans")
+      .find((entry) => entry.plan.buildId === buildId);
+    if (!persisted) {
+      return this.deny(
+        commandType,
+        buildId,
+        `Build ${buildId} has no plan. There is nothing to orchestrate: the stages, their order, and their requirements all come from the plan.`,
+        "Submit an objective so the Architect produces a plan, then read and review it.",
+      );
+    }
+
+    const review = persisted.review;
+    if (!review) {
+      return this.deny(
+        commandType,
+        buildId,
+        `Plan ${persisted.plan.planId} has not been reviewed. A build is not started from a plan nobody read (principle 14: humans govern).`,
+        "Read the plan and record a decision on it.",
+      );
+    }
+    if (review.decision !== "proceed") {
+      return this.deny(
+        commandType,
+        buildId,
+        `Plan ${persisted.plan.planId} was reviewed as ${review.decision} by ${review.reviewedBy}, not proceed.`,
+        "A recorded review is an immutable decision. It is not re-decided; a different plan would need a different build.",
+      );
+    }
+
+    const current = planRevision(persisted.plan);
+    if (review.reviewedRevision !== current) {
+      return this.deny(
+        commandType,
+        buildId,
+        `The plan changed after it was reviewed: reviewed revision ${review.reviewedRevision}, current ${current}. The recorded approval does not cover the current plan.`,
+        "Re-read the current plan and record a decision against it before starting.",
+      );
+    }
 
     return undefined;
   }

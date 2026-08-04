@@ -5,6 +5,7 @@ import type { FoundryEvent } from "@foundry/event-types";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ObjectiveInput, ObjectiveSubmissionResult } from "@/lib/backend/objectiveSubmission";
+import type { BuildRunResult } from "@/lib/backend/buildRun";
 import type { CredentialState } from "@/lib/backend/credentialState";
 import type { CommandFailure } from "@/lib/backend/commandFeedback";
 import { DEFAULT_SEED, MockRuntime } from "./runtime";
@@ -105,6 +106,21 @@ export interface RuntimeContextValue {
     decision: "proceed" | "rejected" | "revision_requested";
     note?: string;
   }) => Promise<void>;
+  /**
+   * AC-109: starts the orchestrated run for the current build.
+   *
+   * Backend mode only, and for the same reason `submitObjective` is: the
+   * mock runtime is a deterministic recording of a run that already
+   * happened (ADR-001), so there is nothing here for it to orchestrate.
+   * Offering a control that could not do its job is the silent no-op
+   * AC-106 removed, so the control is simply not offered.
+   *
+   * **The run is simulated.** Every stage is advanced by the deterministic
+   * mock executor; no Claude Code is invoked and no money is spent. The
+   * result carries the backend's own `simulated`/`executor` fields rather
+   * than a claim made here.
+   */
+  startBuildRun?: () => Promise<BuildRunResult>;
 }
 
 // Exported so tests can supply a fixed, hand-crafted event fixture via

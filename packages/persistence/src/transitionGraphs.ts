@@ -43,7 +43,13 @@ export const TRANSITION_GRAPHS: Partial<Record<EntityType, TransitionGraph>> = {
     // `planned` self-loop is `Build.Plan` (build.planned doesn't itself
     // change status per reducer.ts — legal only while still `planned`).
     planned: ["planned", "running", "cancelled", "failed"],
-    running: ["validating", "paused", "blocked", "failed", "cancelled"],
+    // `waiting_for_approval` is reached by *derivation* from
+    // `approval.requested` (AC-109, see reducer.ts), never by a command —
+    // no command definition carries it as a `toStatus`. The edge is listed
+    // anyway because this graph and the reducer must never disagree about
+    // which states are reachable; omitting it would leave the graph
+    // describing a build lifecycle the reducer does not actually produce.
+    running: ["validating", "waiting_for_approval", "paused", "blocked", "failed", "cancelled"],
     paused: ["running", "cancelled"],
     blocked: ["running", "failed", "cancelled"],
     validating: ["waiting_for_approval", "revision_required", "failed"],

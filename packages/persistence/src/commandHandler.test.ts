@@ -1,6 +1,12 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import {
+  BUILD_STAGE_SEQUENCE,
+  planRevision,
+  plannedStageId,
+  type BuildPlan,
+} from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CommandHandler, type CommandActor } from "./commandHandler";
@@ -75,6 +81,67 @@ function seedProjectAndBuild() {
       entityId: "build-1",
       payload: { projectId: "project-1", buildId: "build-1", objective: "Build a thing" },
     }),
+  );
+}
+
+/**
+ * AC-109: a plan for `build-1`, reviewed as `proceed`, so `Build.Start` is
+ * reachable. Submitted through the handler rather than appended directly,
+ * so the review carries the revision the handler itself computes.
+ */
+function seedReviewedPlan() {
+  const plan: BuildPlan = {
+    planId: "plan-1",
+    projectId: "project-1",
+    buildId: "build-1",
+    objective: "Build a thing",
+    workspace: "foundry_managed",
+    riskClass: "R2",
+    createdAt: "2026-08-03T00:00:00.000Z",
+    stages: BUILD_STAGE_SEQUENCE.map((name, i) => ({
+      name,
+      sequence: i + 1,
+      sourceBuildingId: "construction-office",
+      destinationBuildingId: "construction-office",
+      runtime: "mock" as const,
+      required: true,
+      requirements: [
+        {
+          name: `${name} complete`,
+          description: "Stage work is done.",
+          required: true,
+          validatorType: "test",
+          acceptanceCriteria: ["It completes with its stated work done."],
+        },
+      ],
+    })),
+  };
+  handler.submit(
+    {
+      commandType: "Build.Plan",
+      entityId: "build-1",
+      params: {
+        planId: plan.planId,
+        planArtifactId: plan.planId,
+        stageIds: BUILD_STAGE_SEQUENCE.map((n) => plannedStageId(plan.planId, n)),
+        requirementCount: BUILD_STAGE_SEQUENCE.length,
+        plan,
+      },
+    },
+    OPERATOR,
+  );
+  handler.submit(
+    {
+      commandType: "Plan.Review",
+      entityId: plan.planId,
+      params: {
+        planId: plan.planId,
+        buildId: plan.buildId,
+        reviewedRevision: planRevision(plan),
+        decision: "proceed",
+      },
+    },
+    OPERATOR,
   );
 }
 
@@ -595,6 +662,10 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
 
   it("Build: Start is allowed from planned, prohibited immediately after (already running)", () => {
     seedProjectAndBuild();
+    // AC-109 added a precondition to `Build.Start`: a build is started
+    // from a plan the operator read and accepted. The transition property
+    // under test is unchanged; its precondition now has to be met.
+    seedReviewedPlan();
     const start = handler.submit(
       { commandType: "Build.Start", entityId: "build-1", params: {} },
       OPERATOR,

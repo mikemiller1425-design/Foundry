@@ -317,6 +317,24 @@ Payload: `reason`, `artifactSafetyState`, `recoveryAction`.
 ### `approval.requested`
 Payload: `approvalId`, `title`, `reason`, `riskClass`, `evidenceIds`, `recommendedAction`. Frontend: Lighthouse attention; gate closes.
 
+**V1.1 amendment (`AC-109`, 2026-08-04) — the Build enters `waiting_for_approval`, by derivation.**
+Backend: when the **current Build is `running`**, this event also moves it to
+`waiting_for_approval`. `domain-model.md` lists that state in the Build lifecycle,
+but no `build.*` event produces it and none is added — the V1 post-`FBL-001` audit
+already recorded that these Build states are *"plausibly derived compositionally
+from Stage/Approval/Revision events rather than needing bespoke `build.*` events"*.
+This is that derivation, made real; it is the state `F-110` requires an
+orchestrated build to reach.
+
+The `running` condition is the whole of the rule. An `approval.requested` raised
+on the Warehouse upgrade path arrives after `build.completed`, so it cannot drag a
+finished Build backwards.
+
+The frontend mock reducer is deliberately **not** changed to match: the mock
+runtime and `v1-canonical-run.json` are the frozen V1 regression baseline. The
+divergence is intermediate-state only — `build.completed` still lands both
+reducers on `completed`, which is what the canonical replay test compares.
+
 ### `approval.approved`
 Payload: `resolvedBy`, `resolutionNote`. Backend: gated transition may resume.
 

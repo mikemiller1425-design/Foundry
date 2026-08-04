@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — AC-109: backend orchestration of a build with the mock executor
+
+A reviewed `BuildPlan` is now advanced through the fixed stage sequence by the deterministic mock executor, and the run stops at the approval gate. This is the first time backend mode shows work advancing at all — before this rung the world went quiet after a plan was reviewed.
+
+**The orchestrator is a client of `CommandHandler` and nothing else.** Its constructor takes a handler and a pacing option; it is never handed a `PersistenceService`, so it has no `appendEvent`, no reducer, no database handle, and no second write path. Enforced by what is reachable, not by review — plus the literal source assertion `F-111` asks for by name, which strips comments first so the test is about the code rather than about how the file describes itself.
+
+**Nothing executes.** No process spawned, no shell, no network, no model invoked, no money spent. The `backend_implementation` stage — the one the plan allocates to `claude_code` — is advanced with `runtimeType: "mock"` like the other five, and the interface says so in five places: the panel heading, a standing statement, the allocation note, **the stage row itself**, and the run control. The response carries `simulated`/`executor` on every answer, and the client reads those fields rather than hard-coding them.
+
+**Where it stops:** the approval gate, between `qa_validation` and `deployment_package`. Six stages complete, an `Approval` is requested, and the seventh stage is deliberately left **uncreated**. No transfer, no vehicle movement, no execution authorization. Resolving the approval records a decision and advances nothing — said in the approval's own `recommendedAction` so it is not a silent no-op (`F-105`).
+
+**Refusals, six of them, each by name (`F-112`):** no credential, an agent credential, no plan, an unreviewed plan, a plan reviewed as rejected or revision-requested, a build already started, and a plan that changed after review. `Build.Start` now requires an authenticated operator and a `proceed` review at the plan's current revision — and is explicitly **not** an execution authorization.
+
+**`F-110` — `waiting_for_approval` by derivation.** No `build.*` event produces that state and none was added; `approval.requested` derives it, scoped to a running build. The frontend mock reducer is deliberately unchanged, so `v1-canonical-run.json` stays **byte-identical** — verified against `HEAD`, not assumed.
+
+No new event type and no new command type: every step a run submits is already in the closed `COMMAND_TYPES` vocabulary, asserted by test. Amendments recorded in `event-model.md` and `domain-model.md`.
+
+**Gates:** typecheck 8/8 · lint clean · build clean · **1239 passed / 89 files / 0 failures** (up from 1170). Live-verified against an isolated API instance and database so the operator's running `AC-108` session was not disturbed; the full journey, every refusal, and a restart-replay all confirmed. Recorded in `docs/evidence/ac-109/orchestration-record.md`.
+
+**`AC-109` is implemented but not closed** — it closes on the operator's observation. `AC-110` not started, no execution authorization created, no Claude Code invoked, no baseline work, no Finding 6 work, no NAS District file touched.
+
 ### Observed — AC-108 closed: operator submitted an objective and reviewed the plan (documentation only)
 
 The operator ran the observation environment against `2843b53` and reported the rung **observed and approved**. The stop condition — *"operator has submitted an objective and reviewed a plan"* — is satisfied, so **`AC-108` is closed.**

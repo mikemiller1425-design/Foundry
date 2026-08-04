@@ -1065,6 +1065,32 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
 
     case "approval.requested": {
       const id = event.entityId;
+      /**
+       * AC-109 — the Build enters `waiting_for_approval`, by derivation.
+       *
+       * `domain-model.md` lists `waiting_for_approval` in the Build
+       * lifecycle, but no `build.*` event in `event-model.md` produces it,
+       * and none is added here: the V1 post-FBL-001 audit already recorded
+       * that these Build states are "plausibly derived compositionally from
+       * Stage/Approval/Revision events rather than needing bespoke
+       * `build.*` events". This is that derivation, made real — the state
+       * `F-110` requires an orchestrated build to reach.
+       *
+       * Narrow on purpose. Only a **running** build is moved, so an
+       * `approval.requested` belonging to the Warehouse upgrade path
+       * (raised after `build.completed`) cannot drag a finished build
+       * backwards. Recorded as an amendment in `event-model.md`.
+       *
+       * The frontend mock reducer is deliberately **not** changed to match:
+       * the mock runtime and `v1-canonical-run.json` are the frozen V1
+       * regression baseline. The divergence is intermediate-state only —
+       * `build.completed` still lands both reducers on `completed`, which
+       * is the state the canonical replay test compares.
+       */
+      const currentBuild = state.currentBuildId ? state.builds[state.currentBuildId] : undefined;
+      if (currentBuild?.status === "running") {
+        updateBuild(state, touched, { status: "waiting_for_approval" });
+      }
       state.approvals[id] = {
         id,
         buildId: state.currentBuildId ?? "",

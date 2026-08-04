@@ -2,6 +2,7 @@
 
 import { CollapseToggleButton, ResizeHandle, useCollapsible, useResizable } from "@foundry/ui";
 import { ApprovalCard } from "@/components/controls/ApprovalCard";
+import { BuildRunPanel } from "@/components/controls/BuildRunPanel";
 import { CommandBar } from "@/components/controls/CommandBar";
 import { ConnectionBanner } from "@/components/controls/ConnectionBanner";
 import { LiveIntelligence } from "@/components/controls/LiveIntelligence";
@@ -238,6 +239,11 @@ export function AppShell() {
                 is a proposal — the stages below it are the ones actually
                 scheduled, which is still none. Backend mode only. */}
             <PlanReviewPanel />
+            {/* AC-109. Directly below the plan because it is what a
+                reviewed plan becomes, and above the stage list because it
+                states what is actually executing them: the mock executor,
+                not Claude Code. Backend mode only. */}
+            <BuildRunPanel />
             <StageAgentPanel selection={selection} onSelect={handleSelect} />
           </div>
         )}

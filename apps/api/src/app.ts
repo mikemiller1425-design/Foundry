@@ -1,14 +1,18 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { CommandRequestSchema, WorldStateSchema } from "@foundry/contracts";
+import { CommandRequestSchema, WorldStateSchema, type PersistedPlan } from "@foundry/contracts";
 import {
+  BuildOrchestrator,
   CommandHandler,
   ENTITY_TYPES,
   ObjectiveIntake,
   PrincipalRegistry,
   bearerToken,
+  defaultOrchestratorActors,
+  planOrchestration,
   type EntityType,
   type ObjectiveRejectionCode,
   type PersistenceService,
+  type Principal,
 } from "@foundry/persistence";
 import { buildPlanForObjective, planRequirementCount, planStageIds } from "./architect/planBuild";
 import { handleEventStream } from "./eventStream";
@@ -33,9 +37,21 @@ const MAX_BODY_BYTES = 1_000_000;
  * guard (F-05) a real authorization decision rather than a check against
  * a name the caller chose for itself.
  */
+export interface AppOptions {
+  /**
+   * Pause between orchestration steps, in milliseconds (AC-109).
+   *
+   * Display-only pacing: an unpaced run would finish before the operator
+   * could watch a single stage move. Every step is submitted and enforced
+   * identically at any delay; tests run at 0.
+   */
+  orchestratorStepDelayMs?: number;
+}
+
 export function createApp(
   persistence: PersistenceService,
   principals: PrincipalRegistry = new PrincipalRegistry(),
+  options: AppOptions = {},
 ): Server {
   const commandHandler = new CommandHandler(persistence);
   /**
@@ -59,17 +75,35 @@ export function createApp(
       requirementCount: planRequirementCount(plan),
     };
   });
+  /**
+   * AC-109 — the orchestrator, a client of the same `CommandHandler`.
+   *
+   * Constructed with the handler and pacing, and nothing else. It is never
+   * handed `persistence`: that is what makes "the orchestrator has no
+   * second write path" a fact about what it can reach rather than a claim
+   * about what it chooses to do.
+   */
+  const orchestrator = new BuildOrchestrator(commandHandler, {
+    stepDelayMs: options.orchestratorStepDelayMs ?? 0,
+  });
+
   return createServer((req, res) => {
-    void handleRequest(persistence, commandHandler, objectiveIntake, principals, req, res).catch(
-      (err: unknown) => {
-        if (!res.headersSent) {
-          sendJson(res, 500, {
-            error: "internal_error",
-            message: err instanceof Error ? err.message : "Unknown error",
-          });
-        }
-      },
-    );
+    void handleRequest(
+      persistence,
+      commandHandler,
+      objectiveIntake,
+      orchestrator,
+      principals,
+      req,
+      res,
+    ).catch((err: unknown) => {
+      if (!res.headersSent) {
+        sendJson(res, 500, {
+          error: "internal_error",
+          message: err instanceof Error ? err.message : "Unknown error",
+        });
+      }
+    });
   });
 }
 
@@ -77,6 +111,7 @@ async function handleRequest(
   persistence: PersistenceService,
   commandHandler: CommandHandler,
   objectiveIntake: ObjectiveIntake,
+  orchestrator: BuildOrchestrator,
   principals: PrincipalRegistry,
   req: IncomingMessage,
   res: ServerResponse,
@@ -146,6 +181,16 @@ async function handleRequest(
 
   if (method === "POST" && segments.length === 1 && segments[0] === "objectives") {
     await handleObjectivePost(objectiveIntake, principals, req, res);
+    return;
+  }
+
+  if (
+    method === "POST" &&
+    segments.length === 3 &&
+    segments[0] === "builds" &&
+    segments[2] === "start"
+  ) {
+    handleBuildStartPost(persistence, orchestrator, principals, segments[1] ?? "", req, res);
     return;
   }
 
@@ -300,6 +345,123 @@ async function handleObjectivePost(
 
   const status = result.code ? OBJECTIVE_REJECTION_STATUS[result.code] : 400;
   sendJson(res, status, { ...result, error: result.code });
+}
+
+/**
+ * `POST /builds/{buildId}/start` — orchestrate a reviewed build with the
+ * mock executor (AC-109).
+ *
+ * Deliberately not a new command type, for the reason `POST /objectives`
+ * gives: `COMMAND_TYPES` is the closed vocabulary transcribed from
+ * `domain-model.md`, and this route submits only commands already in it.
+ * The first of them, `Build.Start`, is submitted **synchronously**, so the
+ * response is the enforcement layer's own ruling on whether this build may
+ * start — no plan, an unreviewed or rejected plan, a plan that changed
+ * since review, an already-running build, or an unauthenticated caller
+ * each answer here with their own reason.
+ *
+ * Once started, the remaining steps proceed in the background at a
+ * watchable pace and reach the operator through the existing SSE stream,
+ * because they are ordinary declared events with no special channel.
+ *
+ * The route reads the persisted plan and hands it to the orchestrator. The
+ * orchestrator has no `PersistenceService` of its own — that read happens
+ * here, at the layer that already owns database access, and is the reason
+ * the "no second write path" property survives contact with a real
+ * request.
+ *
+ * **Nothing real executes.** Every response says so, in a field that is
+ * always present rather than one added on success.
+ */
+function handleBuildStartPost(
+  persistence: PersistenceService,
+  orchestrator: BuildOrchestrator,
+  principals: PrincipalRegistry,
+  buildId: string,
+  req: IncomingMessage,
+  res: ServerResponse,
+): void {
+  const simulation = { simulated: true as const, executor: "mock" as const, buildId };
+  const principal: Principal = principals.resolve(bearerToken(req.headers.authorization));
+
+  // Answered before the build is looked up, so the "no such build" reply
+  // cannot be used as an existence oracle by a caller with no standing —
+  // the same ordering `CommandHandler` uses for its own guards.
+  if (!principal.authenticated || principal.actorType !== "operator") {
+    sendJson(res, 403, {
+      ...simulation,
+      accepted: false,
+      error: "unauthorized",
+      reason:
+        "Starting a build requires an authenticated operator (principle 14: humans govern). Agent, frontend, backend, and unauthenticated callers are rejected.",
+      correctiveAction: "Present the operator credential this API session issued.",
+    });
+    return;
+  }
+
+  const persistedPlan = persistence
+    .listEntities<PersistedPlan>("plans")
+    .find((entry) => entry.plan.buildId === buildId);
+  if (!persistedPlan) {
+    // Distinguished from a plan-shaped refusal on purpose: "there is no
+    // plan here" and "the plan here is not startable" have different
+    // fixes, and a single 409 would hide which one applies.
+    sendJson(res, 404, {
+      ...simulation,
+      accepted: false,
+      error: "no_plan",
+      reason: `No plan is recorded for build ${buildId}. There is nothing to orchestrate: the stages, their order, and their requirements all come from the plan.`,
+      correctiveAction:
+        "Submit an objective so the Architect produces a plan, then read and review it.",
+    });
+    return;
+  }
+
+  const actors = defaultOrchestratorActors({
+    actorType: principal.actorType,
+    actorId: principal.actorId,
+    authenticated: principal.authenticated,
+  });
+
+  const handle = orchestrator.begin(persistedPlan, actors);
+
+  if (!handle.started) {
+    sendJson(res, 409, {
+      ...simulation,
+      accepted: false,
+      error: "not_startable",
+      planId: persistedPlan.plan.planId,
+      reason: handle.outcome.reason ?? "Build.Start was refused.",
+      correctiveAction: handle.outcome.correctiveAction,
+    });
+    return;
+  }
+
+  /**
+   * The run continues after the response.
+   *
+   * A rejected step stops the run and is already recorded as a refusal
+   * the operator can read; there is no exception path to swallow, and a
+   * thrown error would otherwise become an unhandled rejection that takes
+   * the process down mid-build. So it is caught and logged, and the
+   * partially-advanced build stays exactly as the event log left it —
+   * which is the honest outcome for an append-only system.
+   */
+  void handle.continue().catch((err: unknown) => {
+    console.error(
+      `[orchestrator] run for build ${buildId} stopped unexpectedly:`,
+      err instanceof Error ? err.message : err,
+    );
+  });
+
+  sendJson(res, 202, {
+    ...simulation,
+    accepted: true,
+    planId: persistedPlan.plan.planId,
+    stepCount: planOrchestration(persistedPlan.plan).length,
+    stopsAt: "approval_gate",
+    note: "Simulated run. Every stage is advanced by the deterministic mock executor; no Claude Code is invoked, no process is spawned, and no money is spent. The run stops at the approval gate.",
+  });
 }
 
 function readJsonBody(req: IncomingMessage): Promise<unknown> {

@@ -14,6 +14,7 @@ import {
 } from "./commandFeedback";
 import { applyConnectionStatus, areMutationsAllowed } from "./connectionState";
 import { postObjective, type ObjectiveInput } from "./objectiveSubmission";
+import { postBuildRun, type BuildRunResult } from "./buildRun";
 import { deriveCredentialState, isAuthFailure } from "./credentialState";
 import {
   clearOperatorCredential,
@@ -280,6 +281,51 @@ export function BackendRuntimeProvider({
     [client, postCommand, worldState.currentPlan],
   );
 
+  /**
+   * AC-109 — starts the orchestrated run for the current build.
+   *
+   * Not routed through `submitCommand`: starting a run is not one of the
+   * declared command types, and inventing one would be a specification
+   * change made in passing. `POST /builds/{id}/start` translates it into
+   * `Build.Start` server-side — through the same `CommandHandler` every
+   * other caller faces — and then drives the rest of the run from the
+   * backend, where the authority lives.
+   *
+   * The result is returned rather than stored, so the panel can show the
+   * backend's own reason and corrective action instead of a banner.
+   *
+   * **Simulated.** The backend advances every stage with the deterministic
+   * mock executor. Nothing here authorizes a real invocation; that gate
+   * does not exist yet (AC-110).
+   */
+  const startBuildRun = useCallback(async (): Promise<BuildRunResult> => {
+    const buildId = worldState.currentBuild?.id;
+    if (!buildId) {
+      return {
+        accepted: false,
+        code: "no_build",
+        reason: "There is no current build to run. Submit an objective first.",
+      };
+    }
+    if (!mutationsEnabled) {
+      return {
+        accepted: false,
+        code: "unreachable",
+        reason:
+          "Not sent — the backend is not connected, so its current state is unknown. Starting resumes when the connection is restored.",
+      };
+    }
+
+    const result = await postBuildRun(baseUrl, buildId, readOperatorCredential());
+    if (!result.accepted && /authenticated operator/i.test(result.reason ?? "")) {
+      setCredentialRejected(true);
+    }
+    // The first events land immediately; re-read rather than assume, for
+    // the same reason objective submission does.
+    if (result.accepted) await client.refreshWorldState();
+    return result;
+  }, [baseUrl, client, mutationsEnabled, worldState.currentBuild?.id]);
+
   // ---- Operator credential (AC-105) --------------------------------------
 
   const [storedCredential, setStoredCredential] = useState<string | null>(null);
@@ -379,6 +425,7 @@ export function BackendRuntimeProvider({
         useHandoffCredential,
         clearOperatorCredential: clearCredential,
         reviewPlan,
+        startBuildRun,
       }}
     >
       {children}

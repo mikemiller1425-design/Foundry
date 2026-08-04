@@ -261,6 +261,35 @@ export function planRevision(plan: BuildPlan): string {
 }
 
 /**
+ * Deterministic identifiers derived from a plan (AC-108, shared at AC-109).
+ *
+ * These live in the contract rather than in either the Architect or the
+ * orchestrator because **both** must agree on them, exactly:
+ *
+ * - The Architect names the planned stages in `build.planned.stageIds`,
+ *   before any `BuildStage` entity exists.
+ * - The orchestrator later creates those `BuildStage` records, and the ids
+ *   it creates must be the ids the operator already read on the plan —
+ *   otherwise the plan the operator reviewed and the stages that ran would
+ *   be two unrelated lists that merely look alike.
+ *
+ * Two independent copies of the same string-building rule would make that
+ * agreement a coincidence maintained by hand. One definition makes it a
+ * fact, and `plannedStageId` is the only place the rule exists.
+ *
+ * Derived rather than random so that a plan is reproducible, so a restart
+ * recomputes the same ids, and so a resubmitted orchestration step is
+ * idempotent against the same entity rather than creating a second one.
+ */
+export function plannedStageId(planId: string, stageName: string): string {
+  return `${planId}--${stageName}`;
+}
+
+export function planStageIds(planId: string): string[] {
+  return BUILD_STAGE_SEQUENCE.map((name) => plannedStageId(planId, name));
+}
+
+/**
  * The operator's recorded decision after reading a plan (AC-108).
  *
  * **Reviewing is not authorizing.** `proceed` records that the operator

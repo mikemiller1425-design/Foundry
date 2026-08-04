@@ -1,6 +1,8 @@
 import {
   BUILD_STAGE_SEQUENCE,
   CLAUDE_CODE_STAGE,
+  planStageIds,
+  plannedStageId,
   type BuildPlan,
   type ObjectiveWorkspace,
   type PlannedStage,
@@ -114,18 +116,12 @@ export interface PlanInputs {
 /**
  * Deterministic stage identifiers.
  *
- * Derived from the plan id and the stage name so a plan is reproducible
- * and so `stageIds` is meaningful before any `BuildStage` entity exists.
- * These name *planned* stages; `AC-109` is what turns them into scheduled
- * `BuildStage` records.
+ * Re-exported from `@foundry/contracts` rather than defined here (AC-109):
+ * the orchestrator must create `BuildStage` records under exactly the ids
+ * this planner recorded in `build.planned.stageIds`, and a second copy of
+ * the rule would make that agreement a convention instead of a fact.
  */
-export function plannedStageId(planId: string, stageName: string): string {
-  return `${planId}--${stageName}`;
-}
-
-export function planStageIds(planId: string): string[] {
-  return BUILD_STAGE_SEQUENCE.map((name) => plannedStageId(planId, name));
-}
+export { plannedStageId, planStageIds };
 
 export function buildPlanForObjective(inputs: PlanInputs): BuildPlan {
   const stages: PlannedStage[] = BUILD_STAGE_SEQUENCE.map((name, index) => {

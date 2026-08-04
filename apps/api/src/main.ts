@@ -45,7 +45,17 @@ const agentCredentials = WORLD_AGENTS.map((agent) => ({
 const operatorId = process.env.FOUNDRY_OPERATOR_ID ?? "operator-1";
 const operatorToken = principals.issueOperatorCredential(operatorId);
 
-const server = createApp(persistence, principals);
+/**
+ * AC-109: pacing for the orchestrated mock run.
+ *
+ * Display-only — it changes how fast the operator sees stages move, never
+ * what is enforced. The default is chosen so a full run to the approval
+ * gate takes roughly half a minute, which is long enough to watch and
+ * short enough to sit through.
+ */
+const orchestratorStepDelayMs = Number(process.env.FOUNDRY_ORCHESTRATOR_STEP_MS ?? 250);
+
+const server = createApp(persistence, principals, { orchestratorStepDelayMs });
 
 server.listen(port, () => {
   console.log(`@foundry/api listening on :${port} (db: ${dbPath})`);
