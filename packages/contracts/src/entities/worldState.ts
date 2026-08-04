@@ -5,6 +5,7 @@ import { ApprovalSchema } from "./approval";
 import { BuildSchema } from "./build";
 import { BuildingSchema } from "./building";
 import { TransferSchema } from "./transfer";
+import { PersistedPlanSchema } from "../plan";
 
 // docs/02-specification/domain-model.md → WorldState
 // Read-optimized projection for the frontend; not itself a source of
@@ -42,6 +43,15 @@ export const WorldStateSchema = z.object({
   buildings: z.array(BuildingSchema),
   agents: z.array(AgentSchema),
   currentBuild: BuildSchema.nullable(),
+  /**
+   * The plan for the current build, with its review state (AC-108).
+   *
+   * Optional rather than required so every V1 fixture, the frozen
+   * canonical run, and the mock runtime's projection stay valid unchanged —
+   * they predate plans entirely. Absent means "no plan"; it never means
+   * "a plan exists and is being withheld".
+   */
+  currentPlan: PersistedPlanSchema.nullable().optional(),
   activeTransfers: z.array(TransferSchema),
   approvals: z.array(ApprovalSchema),
   inventoryCounts: z.record(z.string(), z.number().int().nonnegative()),

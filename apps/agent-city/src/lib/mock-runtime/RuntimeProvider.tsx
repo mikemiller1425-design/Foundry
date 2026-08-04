@@ -94,6 +94,17 @@ export interface RuntimeContextValue {
   useHandoffCredential?: () => void;
   /** Discards the stored credential, so a mistaken token is recoverable. */
   clearOperatorCredential?: () => void;
+  /**
+   * AC-108: records the operator's review of the current plan.
+   *
+   * Backend mode only — the mock runtime produces no plan. Recording a
+   * review authorizes nothing; execution requires a separate single-use
+   * authorization that does not exist yet.
+   */
+  reviewPlan?: (input: {
+    decision: "proceed" | "rejected" | "revision_requested";
+    note?: string;
+  }) => Promise<void>;
 }
 
 // Exported so tests can supply a fixed, hand-crafted event fixture via

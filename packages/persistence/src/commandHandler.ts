@@ -2,9 +2,14 @@ import { randomUUID } from "node:crypto";
 import type { CommandRequest, CommandType } from "@foundry/contracts";
 import { FoundryEventSchema, type ActorType, type FoundryEvent } from "@foundry/event-types";
 import {
+  BUILD_STAGE_SEQUENCE,
   ObjectiveTextSchema,
   WAREHOUSE_LEVEL_2_MIN_PASS_RATE,
   WAREHOUSE_LEVEL_2_REQUIRED_PACKAGE_COUNT,
+  parseCommandParams,
+  planRevision,
+  type BuildPlan,
+  type PersistedPlan,
 } from "@foundry/contracts";
 import { WORLD_AGENTS } from "@foundry/world-model";
 import {
@@ -68,6 +73,15 @@ const APPROVAL_RESOLUTION_STATUS: Record<string, string> = {
  * not more — the human decides, the system carries it out.
  */
 const OPERATOR_UPGRADE_COMMANDS = new Set<CommandType>(["Upgrade.Request", "Upgrade.Approve"]);
+
+/**
+ * AC-108 — reviewing a plan is a human governance act (principle 14).
+ *
+ * Same standard as resolving an approval: an authenticated operator, never
+ * an agent and never an anonymous caller. An agent that could sign off its
+ * own plan would make the review ceremonial.
+ */
+const OPERATOR_PLAN_COMMANDS = new Set<CommandType>(["Plan.Review"]);
 
 /**
  * Project statuses that still count as open work (`ProjectStatusSchema`).
@@ -143,6 +157,31 @@ export class CommandHandler {
     if (OPERATOR_UPGRADE_COMMANDS.has(commandType)) {
       const authorization = this.requireAuthorizedOperator(commandType, entityId, actor);
       if (authorization) return authorization;
+    }
+
+    if (OPERATOR_PLAN_COMMANDS.has(commandType)) {
+      const authorization = this.requireAuthorizedOperator(commandType, entityId, actor);
+      if (authorization) return authorization;
+    }
+
+    /**
+     * AC-108 — per-command parameter validation, for the commands AC-107
+     * declared shapes for. Runs *after* authorization so the field-level
+     * detail cannot be used as a free schema oracle by a caller with no
+     * standing, and *before* every state guard so a malformed request is
+     * refused on its shape rather than on a state it was never going to
+     * reach. Commands with no declared shape pass through unchanged.
+     */
+    const parsedParams = parseCommandParams(commandType, params);
+    if (!parsedParams.ok) {
+      return this.deny(
+        commandType,
+        entityId,
+        `params do not match the declared shape for ${commandType}: ${parsedParams.issues
+          .map((issue) => `${issue.field || "(root)"} — ${issue.message}`)
+          .join("; ")}`,
+        "Correct the named fields and resubmit.",
+      );
     }
 
     const existing = this.persistence.getEntity<Record<string, unknown>>(def.entityType, entityId);
@@ -283,6 +322,10 @@ export class CommandHandler {
         return this.requireBoundedObjective(commandType, entityId, params);
       case "Build.Create":
         return this.requireBuildCoherence(commandType, entityId, params);
+      case "Build.Plan":
+        return this.requirePlannableBuild(commandType, entityId, params);
+      case "Plan.Review":
+        return this.requireReviewablePlan(commandType, entityId, params, actor);
       case "BuildStage.Complete":
         return this.requireMandatoryRequirementsPassed(commandType, entityId);
       case "BuildStage.RequestRevision":
@@ -369,16 +412,26 @@ export class CommandHandler {
    */
   private requireAuthorizedOperator(
     commandType: CommandType,
-    approvalId: string,
+    entityId: string,
     actor: CommandActor,
   ): CommandOutcome | undefined {
     if (actor.authenticated && actor.actorType === "operator") return undefined;
 
+    // The act is named, not assumed. This guard now covers approvals,
+    // upgrades, and plan review; a plan reviewer told "resolving an
+    // approval requires…" would go looking for an approval that does not
+    // exist. Caught by live verification at AC-108.
+    const act = OPERATOR_PLAN_COMMANDS.has(commandType)
+      ? "Reviewing a plan"
+      : OPERATOR_UPGRADE_COMMANDS.has(commandType)
+        ? "Requesting or approving an upgrade"
+        : "Resolving an approval";
+
     return this.deny(
       commandType,
-      approvalId,
-      "Resolving an approval requires an authenticated operator (principle 14: humans govern). Agent, frontend, backend, and unauthenticated or authority-asserting callers are rejected.",
-      "Resolve the approval from the operator's own authenticated credential.",
+      entityId,
+      `${act} requires an authenticated operator (principle 14: humans govern). Agent, frontend, backend, and unauthenticated or authority-asserting callers are rejected.`,
+      `Submit ${commandType} from the operator's own authenticated credential.`,
     );
   }
 
@@ -669,6 +722,164 @@ export class CommandHandler {
         "Let the open build reach a terminal state before creating another.",
       );
     }
+
+    return undefined;
+  }
+
+  /**
+   * AC-108 — a `Build.Plan` must be a plan *for this build*, and the build
+   * must not already have one.
+   *
+   * The parameter schema has already proved the plan is structurally valid
+   * — seven ordered stages, Foundry-managed workspace, R0–R2, at most one
+   * Claude Code stage and only `backend_implementation`. What it cannot
+   * check is coherence with persisted truth, which is this guard's job.
+   */
+  private requirePlannableBuild(
+    commandType: CommandType,
+    buildId: string,
+    params: Record<string, unknown>,
+  ): CommandOutcome | undefined {
+    const plan = params.plan as BuildPlan | undefined;
+    if (!plan) {
+      return this.deny(commandType, buildId, "params.plan is required to plan a build.");
+    }
+
+    const build = this.persistence.getEntity<{ projectId: string; objectiveSnapshot: string }>(
+      "builds",
+      buildId,
+    );
+    if (!build) {
+      return this.deny(commandType, buildId, `No Build with id ${buildId}.`);
+    }
+
+    if (plan.buildId !== buildId) {
+      return this.deny(
+        commandType,
+        buildId,
+        `params.plan.buildId (${plan.buildId}) does not match entityId (${buildId}) — a plan belongs to exactly one build.`,
+      );
+    }
+    if (plan.projectId !== build.projectId) {
+      return this.deny(
+        commandType,
+        buildId,
+        `params.plan.projectId (${plan.projectId}) does not match Build ${buildId}'s project (${build.projectId}).`,
+      );
+    }
+    // The plan must be a plan for the objective the operator actually
+    // submitted, not for a different one that happens to be well-formed.
+    if (plan.objective !== build.objectiveSnapshot) {
+      return this.deny(
+        commandType,
+        buildId,
+        "params.plan.objective does not match the Build's objectiveSnapshot — a plan must address the submitted objective.",
+        "Re-plan against the objective this build records.",
+      );
+    }
+    if (params.planId !== plan.planId || params.planArtifactId !== plan.planId) {
+      return this.deny(
+        commandType,
+        buildId,
+        `params.planId and params.planArtifactId must both equal params.plan.planId (${plan.planId}).`,
+      );
+    }
+    if (!Array.isArray(params.stageIds) || params.stageIds.length !== BUILD_STAGE_SEQUENCE.length) {
+      return this.deny(
+        commandType,
+        buildId,
+        `params.stageIds must name exactly ${BUILD_STAGE_SEQUENCE.length} planned stages.`,
+      );
+    }
+
+    // One plan per build in V1.1. Re-planning is a revision path this
+    // mission does not have, and silently replacing a plan the operator
+    // may already have reviewed would destroy the record of what they read.
+    const existing = this.persistence
+      .listEntities<PersistedPlan>("plans")
+      .find((entry) => entry.plan.buildId === buildId);
+    if (existing) {
+      return this.deny(
+        commandType,
+        buildId,
+        `Build ${buildId} already has plan ${existing.plan.planId}. V1.1 permits one plan per build.`,
+        "Nothing to do — read the existing plan. Re-planning is not a V1.1 capability.",
+      );
+    }
+
+    return undefined;
+  }
+
+  /**
+   * AC-108 — a review must name a plan that exists, at the revision the
+   * operator actually read, and must not overwrite a decision.
+   *
+   * `reviewedBy` and `planRevision` are written here from authenticated and
+   * persisted values respectively, never from the payload — the same rule
+   * `prepareApprovalResolution` applies to `resolvedBy`, and for the same
+   * reason: a caller must not be able to assert who decided, or claim to
+   * have read a revision other than the one on record.
+   */
+  private requireReviewablePlan(
+    commandType: CommandType,
+    planId: string,
+    params: Record<string, unknown>,
+    actor: CommandActor,
+  ): CommandOutcome | undefined {
+    const persisted = this.persistence.getEntity<PersistedPlan>("plans", planId);
+    if (!persisted) {
+      return this.deny(commandType, planId, `No Plan with id ${planId}.`);
+    }
+    if (params.planId !== planId) {
+      return this.deny(
+        commandType,
+        planId,
+        `params.planId (${String(params.planId)}) must equal entityId (${planId}).`,
+      );
+    }
+    if (params.buildId !== persisted.plan.buildId) {
+      return this.deny(
+        commandType,
+        planId,
+        `params.buildId does not match plan ${planId}'s build (${persisted.plan.buildId}).`,
+      );
+    }
+
+    // The operator must have read *this* revision. Recomputing rather than
+    // trusting the stored value keeps the check honest if the two ever
+    // disagree.
+    const current = planRevision(persisted.plan);
+    if (params.reviewedRevision !== current) {
+      return this.deny(
+        commandType,
+        planId,
+        `The plan changed since it was read: reviewed revision ${String(params.reviewedRevision)}, current ${current}.`,
+        "Re-read the current plan, then record your decision against it.",
+      );
+    }
+
+    if (persisted.review) {
+      if (persisted.review.decision === params.decision) {
+        return {
+          accepted: true,
+          commandType,
+          entityId: planId,
+          reason: `Plan ${planId} was already reviewed as ${persisted.review.decision} by ${persisted.review.reviewedBy} at ${persisted.review.reviewedAt} — idempotent no-op, no second decision recorded.`,
+        };
+      }
+      return this.deny(
+        commandType,
+        planId,
+        `Plan ${planId} is already reviewed as ${persisted.review.decision}; a conflicting ${String(params.decision)} decision is rejected.`,
+        "A recorded review is an immutable decision. It is not re-decided.",
+      );
+    }
+
+    // Normalise into the event payload shape. Authority-bearing fields are
+    // set from the credential and from persisted state, not from input.
+    params.reviewedBy = actor.actorId;
+    params.planRevision = current;
+    delete params.reviewedRevision;
 
     return undefined;
   }

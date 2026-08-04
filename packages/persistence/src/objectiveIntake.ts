@@ -44,19 +44,43 @@ export interface ObjectiveIntakeResult {
   projectId?: string;
   buildId?: string;
   objective?: string;
+  /** The plan the Architect produced, when one was. */
+  planId?: string;
+  /**
+   * Why planning did not happen, when the objective itself succeeded.
+   * Reported rather than swallowed — a submission that quietly produced no
+   * plan would leave the operator waiting for a panel that never arrives.
+   */
+  planRejection?: string;
   /** The events the accepted submission produced, in order. */
   events?: FoundryEvent[];
 }
 
 /** Mints the ids for a submission. Injectable so tests are deterministic. */
-export type ObjectiveIdFactory = (kind: "project" | "build") => string;
+export type ObjectiveIdFactory = (kind: "project" | "build" | "plan") => string;
 
 const defaultIdFactory: ObjectiveIdFactory = (kind) => `${kind}-${randomUUID()}`;
+
+/**
+ * Produces the plan for a newly created build (AC-108).
+ *
+ * Injected rather than imported so `@foundry/persistence` keeps no
+ * dependency on the Architect implementation, and so a caller that wants
+ * objective submission *without* planning — every existing test — simply
+ * does not supply one.
+ */
+export type PlanFactory = (input: {
+  planId: string;
+  projectId: string;
+  buildId: string;
+  objective: string;
+}) => { plan: unknown; stageIds: string[]; requirementCount: number };
 
 export class ObjectiveIntake {
   constructor(
     private readonly commands: CommandHandler,
     private readonly newId: ObjectiveIdFactory = defaultIdFactory,
+    private readonly planFactory?: PlanFactory,
   ) {}
 
   submit(raw: unknown, actor: CommandActor): ObjectiveIntakeResult {
@@ -141,12 +165,53 @@ export class ObjectiveIntake {
       };
     }
 
+    /**
+     * AC-108 — the Architect plans the build it just created.
+     *
+     * Submitted through the same `CommandHandler`, as `Build.Plan`. It
+     * produces a *proposal*: no `BuildStage` is scheduled, no agent is
+     * assigned, and nothing executes. The operator reads it and records a
+     * decision; that decision still authorizes nothing.
+     *
+     * A planning failure does **not** fail the submission. The objective,
+     * the Project, and the Build are already real and correct; refusing
+     * the whole submission because a proposal could not be drafted would
+     * discard work the operator successfully performed. The failure is
+     * reported instead, and the plan's absence is visible.
+     */
+    let planOutcome: CommandOutcome | undefined;
+    let plannedId: string | undefined;
+    if (this.planFactory) {
+      const planId = this.newId("plan");
+      plannedId = planId;
+      const drafted = this.planFactory({ planId, projectId, buildId, objective });
+      planOutcome = this.commands.submit(
+        {
+          commandType: "Build.Plan",
+          entityId: buildId,
+          params: {
+            planId,
+            planArtifactId: planId,
+            stageIds: drafted.stageIds,
+            requirementCount: drafted.requirementCount,
+            plan: drafted.plan,
+          },
+        },
+        actor,
+      );
+    }
+
     return {
       accepted: true,
       projectId,
       buildId,
       objective,
-      events: [projectOutcome.event, buildOutcome.event].filter(
+      // The plan's own id, not the command's `entityId` — `Build.Plan` is
+      // addressed to the *build*, so reporting `entityId` here handed the
+      // caller a build id labelled as a plan id. Caught by live check.
+      planId: planOutcome?.accepted ? plannedId : undefined,
+      planRejection: planOutcome && !planOutcome.accepted ? planOutcome.reason : undefined,
+      events: [projectOutcome.event, buildOutcome.event, planOutcome?.event].filter(
         (event): event is FoundryEvent => event !== undefined,
       ),
     };

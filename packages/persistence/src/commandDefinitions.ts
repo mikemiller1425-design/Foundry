@@ -4,6 +4,7 @@ import type { EntityType } from "./reducer";
 
 export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
   projects: "Project",
+  plans: "Plan",
   builds: "Build",
   buildStages: "BuildStage",
   requirements: "Requirement",
@@ -112,6 +113,9 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
 
   "Build.Create": { entityType: "builds", eventType: "build.created", isCreate: true },
   "Build.Plan": { entityType: "builds", eventType: "build.planned", toStatus: "planned" },
+  // AC-108: plan review is a human governance act, routed through the same
+  // handler as every other authority-bearing decision.
+  "Plan.Review": { entityType: "plans", eventType: "operator.plan_reviewed" },
   "Build.Start": { entityType: "builds", eventType: "build.started", toStatus: "running" },
   "Build.Pause": { entityType: "builds", eventType: "build.paused", toStatus: "paused" },
   "Build.Resume": { entityType: "builds", eventType: "build.resumed", toStatus: "running" },

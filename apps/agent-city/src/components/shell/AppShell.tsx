@@ -7,6 +7,7 @@ import { ConnectionBanner } from "@/components/controls/ConnectionBanner";
 import { LiveIntelligence } from "@/components/controls/LiveIntelligence";
 import { ObjectiveForm } from "@/components/controls/ObjectiveForm";
 import { OperatorCredentialPanel } from "@/components/controls/OperatorCredentialPanel";
+import { PlanReviewPanel } from "@/components/controls/PlanReviewPanel";
 import { SelectedObjectDetail } from "@/components/controls/SelectedObjectDetail";
 import type { Selection } from "@/components/controls/selection";
 import { StageAgentPanel } from "@/components/controls/StageAgentPanel";
@@ -232,6 +233,11 @@ export function AppShell() {
                 mode only — see `RuntimeContextValue.credentialState`. */}
             <OperatorCredentialPanel />
             <ObjectiveForm />
+            {/* AC-108. Below the objective form because it is what the
+                objective produces, and above the stage list because a plan
+                is a proposal — the stages below it are the ones actually
+                scheduled, which is still none. Backend mode only. */}
+            <PlanReviewPanel />
             <StageAgentPanel selection={selection} onSelect={handleSelect} />
           </div>
         )}

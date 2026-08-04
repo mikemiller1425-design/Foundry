@@ -61,10 +61,13 @@ describe("CommandRequestSchema", () => {
  * plan, and authorization commands specifically.
  */
 describe("COMMAND_PARAM_SCHEMAS (AC-107)", () => {
-  it("declares shapes only for the commands this rung owns", () => {
+  it("declares shapes only for the objective, plan, and review commands", () => {
+    // AC-107 declared three; AC-108 added `Plan.Review` when it introduced
+    // the command. Everything else stays envelope-only.
     expect(Object.keys(COMMAND_PARAM_SCHEMAS).sort()).toEqual([
       "Build.Create",
       "Build.Plan",
+      "Plan.Review",
       "Project.Create",
     ]);
   });
@@ -141,10 +144,30 @@ describe("parseCommandParams — Build.Create", () => {
 
 describe("parseCommandParams — Build.Plan", () => {
   it("requires exactly one stage id per authoritative stage", () => {
+    // AC-108 added the plan itself to this command's parameters, so a
+    // well-formed `Build.Plan` now carries what it is planning.
     const base = {
       planId: "plan-1",
       planArtifactId: "artifact-1",
       requirementCount: 3,
+      plan: {
+        planId: "plan-1",
+        projectId: "project-1",
+        buildId: "build-1",
+        objective: "Add a JSON task store module with tests",
+        workspace: "foundry_managed",
+        riskClass: "R2",
+        createdAt: "2026-08-03T00:00:00.000Z",
+        stages: BUILD_STAGE_SEQUENCE.map((name, i) => ({
+          name,
+          sequence: i + 1,
+          sourceBuildingId: "construction-office",
+          destinationBuildingId: "construction-office",
+          runtime: "mock",
+          required: true,
+          requirements: [],
+        })),
+      },
     };
     expect(
       parseCommandParams("Build.Plan", {
@@ -162,6 +185,7 @@ describe("parseCommandParams — Build.Plan", () => {
         planArtifactId: "artifact-1",
         stageIds: BUILD_STAGE_SEQUENCE.map((_, i) => `stage-${i + 1}`),
         requirementCount: -1,
+        plan: {},
       }).ok,
     ).toBe(false);
   });

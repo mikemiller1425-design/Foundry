@@ -219,6 +219,13 @@ const MINIMAL_PAYLOAD: Record<string, Record<string, unknown>> = {
   "approval.approved": { resolvedBy: "operator-1" },
   "approval.rejected": { resolvedBy: "operator-1" },
   "approval.revision_requested": { resolvedBy: "operator-1" },
+  "operator.plan_reviewed": {
+    planId: "plan-1",
+    buildId: "build-1",
+    planRevision: "rev-1",
+    decision: "proceed",
+    reviewedBy: "operator-1",
+  },
   "building.selected": { buildingId: "lighthouse" },
   "building.state_changed": { priorState: "idle", newState: "active" },
   "upgrade.completed": { fromLevel: 1, toLevel: 2 },

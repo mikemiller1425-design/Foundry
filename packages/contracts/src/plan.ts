@@ -259,3 +259,46 @@ export function planRevision(plan: BuildPlan): string {
 
   return `rev-${hash(0x811c9dc5)}${hash(0x9e3779b9)}`;
 }
+
+/**
+ * The operator's recorded decision after reading a plan (AC-108).
+ *
+ * **Reviewing is not authorizing.** `proceed` records that the operator
+ * read the plan and is willing to continue; it confers no permission to
+ * execute anything. Execution requires a separate, single-use
+ * `ExecutionAuthorization` (`authorization.ts`), and that separation was
+ * an explicitly approved contract decision at the `AC-107` review.
+ */
+export const PlanReviewDecisionSchema = z.enum(["proceed", "rejected", "revision_requested"]);
+export type PlanReviewDecision = z.infer<typeof PlanReviewDecisionSchema>;
+
+export const PlanReviewSchema = z
+  .object({
+    decision: PlanReviewDecisionSchema,
+    /** Written from the authenticated operator, never from a payload claim. */
+    reviewedBy: IdSchema,
+    reviewedAt: TimestampSchema,
+    /** The revision the operator actually read, so a later edit is detectable. */
+    reviewedRevision: z.string().min(1),
+    note: z.string().max(PLAN_TEXT_MAX).optional(),
+  })
+  .strict();
+export type PlanReview = z.infer<typeof PlanReviewSchema>;
+
+/**
+ * A plan as persisted backend truth, with its review state (AC-108).
+ *
+ * `revision` is stored alongside so a reader can tell whether the plan
+ * changed since it was reviewed without recomputing it — and so the
+ * frontend never has to derive authority-adjacent values itself.
+ */
+export const PersistedPlanSchema = z
+  .object({
+    plan: BuildPlanSchema,
+    revision: z.string().min(1),
+    /** `null` until the operator records a decision. */
+    review: PlanReviewSchema.nullable(),
+    createdAt: TimestampSchema,
+  })
+  .strict();
+export type PersistedPlan = z.infer<typeof PersistedPlanSchema>;

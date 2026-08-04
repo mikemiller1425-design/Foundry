@@ -399,11 +399,20 @@ describe("CommandHandler — one allowed and one prohibited transition per remai
     ])("rejects a %s objective with zero mutation", (_label, objective) => {
       const before = fullSnapshot();
       const outcome = handler.submit(
-        { commandType: "Project.Create", entityId: "project-1", params: { objective } },
+        {
+          commandType: "Project.Create",
+          entityId: "project-1",
+          params: { objective, projectId: "project-1" },
+        },
         OPERATOR,
       );
       expect(outcome.accepted).toBe(false);
-      expect(outcome.reason).toMatch(/bounded objective/i);
+      // AC-108 wired AC-107's declared parameter schema through
+      // `parseCommandParams`, so the refusal now names the offending field
+      // rather than stating the category. Still truthful, still zero
+      // mutation, and strictly more actionable.
+      expect(outcome.reason).toMatch(/objective/i);
+      expect(outcome.correctiveAction).toBeTruthy();
       expect(fullSnapshot()).toEqual(before);
     });
 

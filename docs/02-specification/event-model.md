@@ -420,7 +420,15 @@ Plan **production** needs nothing new — `build.planned` already covers it. Wha
 | Audit | Required — this is the gate before anything real runs |
 | Idempotency | Single-use. A second execution under the same authorization is refused |
 
-### Status of these events
+### Status update (`AC-108`, 2026-08-03)
+
+**`operator.plan_reviewed` is now a member of the runtime event vocabulary.** It joined `OPERATOR_EVENTS` at the rung that produces it, together with its reducer disposition (records the review on the persisted Plan; creates nothing) and its event→world projection-map entry (no visual change — a decision about a proposal is not work in the world).
+
+`operator.execution_authorized` remains declared-only; it joins at `AC-110`.
+
+**`build.planned` gained an optional `plan` field** carrying the structured plan itself. Optional deliberately: the frozen V1 canonical run emits `build.planned` without it and `v1-canonical-run.json` must stay byte-identical, so requiring it would invalidate the regression baseline. `planArtifactId` equals the plan's own id — V1.1 persists a plan as a first-class record rather than a separate `Artifact` row.
+
+### Original status note (`AC-107`)
 
 **Declared here and typed in `packages/event-types`, but deliberately not yet members of the runtime event vocabulary** (`ALL_EVENT_SCHEMAS` / `FoundryEventSchema` / `EVENT_TYPES`).
 

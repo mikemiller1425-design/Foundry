@@ -14,6 +14,21 @@ export const BuildPlannedEvent = defineEvent(
     stageIds: z.array(IdSchema),
     requirementCount: z.number().int().nonnegative(),
     planArtifactId: IdSchema,
+    /**
+     * The structured plan itself (V1.1 amendment, AC-108).
+     *
+     * **Optional, deliberately.** The frozen V1 canonical run emits
+     * `build.planned` without it, and `v1-canonical-run.json` must stay
+     * byte-identical — so requiring it would invalidate the regression
+     * baseline. The backend path always supplies it; historical events
+     * never will.
+     *
+     * Typed as a passthrough object here rather than importing
+     * `BuildPlanSchema`: `@foundry/event-types` depends on
+     * `@foundry/contracts`, and the full plan shape is validated by
+     * `parseCommandParams` before the event is ever built.
+     */
+    plan: z.record(z.string(), z.unknown()).optional(),
   }),
 );
 

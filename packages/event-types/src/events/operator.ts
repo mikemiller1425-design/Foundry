@@ -38,11 +38,27 @@ export const OperatorCommandRejectedEvent = defineEvent(
   }),
 );
 
+export const OperatorPlanReviewedEvent = defineEvent(
+  "operator.plan_reviewed",
+  z.object({
+    planId: IdSchema,
+    buildId: IdSchema,
+    /** The plan revision the operator actually read (`planRevision`). */
+    planRevision: z.string().min(1),
+    /** What the operator decided after reading it. Reviewing is not authorizing. */
+    decision: z.enum(["proceed", "rejected", "revision_requested"]),
+    reviewedBy: IdSchema,
+    note: z.string().optional(),
+  }),
+);
+
 export const OPERATOR_EVENTS = [
   OperatorObjectiveSubmittedEvent,
   OperatorCommandSubmittedEvent,
   OperatorCommandAcceptedEvent,
   OperatorCommandRejectedEvent,
+  // AC-108: joined the runtime vocabulary at the rung that produces it.
+  OperatorPlanReviewedEvent,
 ] as const;
 
 /**
@@ -71,20 +87,6 @@ export const OPERATOR_EVENTS = [
  * together with their reducer disposition and projection-map entries. The
  * corresponding `event-model.md` amendment records exactly that.
  */
-
-export const OperatorPlanReviewedEvent = defineEvent(
-  "operator.plan_reviewed",
-  z.object({
-    planId: IdSchema,
-    buildId: IdSchema,
-    /** The reviewed plan's content fingerprint (`fingerprintPlan`). */
-    planFingerprint: z.string().min(1),
-    /** What the operator decided after reading it. Reviewing is not authorizing. */
-    decision: z.enum(["proceed", "rejected", "revision_requested"]),
-    reviewedBy: IdSchema,
-    note: z.string().optional(),
-  }),
-);
 
 export const OperatorExecutionAuthorizedEvent = defineEvent(
   "operator.execution_authorized",
@@ -120,7 +122,4 @@ export const OperatorExecutionAuthorizedEvent = defineEvent(
  * are typed and testable now; `AC-108`/`AC-110` move them into
  * `OPERATOR_EVENTS`.
  */
-export const V1_1_OPERATOR_DECISION_EVENTS = [
-  OperatorPlanReviewedEvent,
-  OperatorExecutionAuthorizedEvent,
-] as const;
+export const V1_1_OPERATOR_DECISION_EVENTS = [OperatorExecutionAuthorizedEvent] as const;

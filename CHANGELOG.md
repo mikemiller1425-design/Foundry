@@ -6,6 +6,30 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — AC-108: Persisted BuildPlan and operator plan review
+
+The Architect creates one schema-valid `BuildPlan` for the active Build, it is persisted as backend truth, the frontend displays it, and the operator records a review of it.
+
+**"Proceed" records a review. It authorizes nothing** — no execution, no invocation, no scheduling, no queueing. That separation was an approved `AC-107` contract decision, and it is enforced in four places: the handler creates no scheduling entities, the reducer creates none, the panel says so in words, and a test asserts that after a `proceed` decision there are still **zero** `BuildStage`, `Task`, `AgentRun`, `Artifact`, and `Approval` records.
+
+**Backend truth.** `parseCommandParams` is now wired through the handler — after authorization, so it is not a schema oracle; before every state guard, so a malformed request is refused on its shape rather than on a state it was never going to reach. `Build.Plan` persists the plan (`build.planned` gains an **optional** `plan` field — optional deliberately, because the frozen canonical run emits that event without one and `v1-canonical-run.json` must stay byte-identical). `Plan.Review` is a new command; `operator.plan_reviewed` joins the runtime vocabulary at the rung that produces it, with its reducer disposition and projection-map entry. One event per command, replay-deterministic, idempotent.
+
+**Refusals are specific**: a plan for a different build, a plan whose objective is not the build's, an invented stage, `claude_code` on the wrong stage, a missing build, a second plan for the same build, a stale revision, an unauthenticated caller, and a conflicting second decision each produce their own reason with zero mutation.
+
+**The Architect step is deterministic and template-driven**, transcribed from `v1-scope.md` § "V1 Build Stages". That is the design, not a placeholder: `interface-model.md` prohibits "unrestricted natural-language autonomous planning", and the seven stages are already fixed by specification. It invents no requirements, acceptance evidence, budget, or runtime state — asserted by a test that the serialised plan contains no `maxBudgetUsd`, `authorization`, `status`, `startedAt`, or `agentRun`.
+
+**Frontend.** `PlanReviewPanel` shows the objective, workspace, risk class, plan revision, seven ordered stages with runtime allocation, plain-text acceptance criteria, the budget boundary, and review status — in five distinct, individually explained states: unreachable, empty, no-plan, awaiting-review, reviewed.
+
+**PV1-052's assigned half is resolved.** Once a plan exists it is visibly represented **without pretending work has begun**: no stage appears in the Stages list, the world shows no activity, and the `build.planned` timeline row reads "proposal only, nothing scheduled". The half about *running* work is `AC-109`'s.
+
+**Two defects found by live verification**, not by the suite, both now covered by regression tests: the reported `planId` was the **build** id (`Build.Plan` is addressed to the build, so returning its `entityId` mislabelled it), and the authorization refusal for `Plan.Review` read *"Resolving an approval requires an authenticated operator"* — sending a plan reviewer to look for an approval that does not exist. The guard now names the actual act.
+
+**Amendments:** `domain-model.md` — `Plan.Review` added to the closed vocabulary and `Plan` recorded as a persisted record with its invariants; `event-model.md` — `operator.plan_reviewed`'s vocabulary entry and `build.planned`'s optional `plan` field. The vocabulary grew by exactly one command, at the rung that needed it, as `AC-107` said it would.
+
+**Verification.** `pnpm typecheck` 8/8 · `pnpm lint` clean · `pnpm build` clean · `pnpm -r run test` → **1170 passed / 94 files / 0 failures** (up from 1121). Live against a running backend: submission → three events; plan persisted with seven stages, `foundry_managed`, R2, `claude_code` on `backend_implementation` only; stale revision refused; unauthenticated review refused; review recorded; conflicting decision refused; **every scheduling entity table empty**; plan and review surviving an API restart.
+
+Record: `docs/evidence/ac-108/plan-review-record.md`. **`AC-108` is implemented but not closed** — it closes on the operator's observation. `AC-109`/`AC-110` not started, no execution authorization created, no Claude Code invoked, no baseline work, no Finding 6 work, no NAS District file touched.
+
 ### Approved — AC-107 closed: operator approved the V1.1 contract boundary (documentation only)
 
 The operator reviewed the contract package against `29dbcbc` and **approved it**, closing `AC-107`. The first review had returned *approved with required corrections*; all three — budget, plan binding, Claude Code allocation — were applied before this approval.

@@ -14,6 +14,18 @@ export function describeEvent(event: FoundryEvent): string {
       return `System health changed: ${p.previousHealth} → ${p.newHealth}`;
     case "operator.objective_submitted":
       return `Operator submitted objective: "${p.objective}"`;
+    case "operator.plan_reviewed": {
+      // The decision and its limit in one line: a reviewer scanning the
+      // timeline must not read "proceed" as "execution authorized".
+      const decision = String(p.decision);
+      const meaning =
+        decision === "proceed"
+          ? "review recorded, no execution authorized"
+          : decision === "rejected"
+            ? "plan rejected"
+            : "revision requested";
+      return `Operator reviewed plan: ${decision} — ${meaning}`;
+    }
     case "operator.command_submitted":
       return `Operator command submitted: ${p.commandType}`;
     case "operator.command_accepted":
@@ -58,7 +70,7 @@ export function describeEvent(event: FoundryEvent): string {
     case "build.created":
       return "Build created for the submitted objective";
     case "build.planned":
-      return `Build planned (${(p.stageIds as unknown[]).length} stages)`;
+      return `Build planned (${(p.stageIds as unknown[]).length} stages) — proposal only, nothing scheduled`;
     case "build.ready":
       return "Build ready to start";
     case "build.started":

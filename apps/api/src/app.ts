@@ -10,6 +10,7 @@ import {
   type ObjectiveRejectionCode,
   type PersistenceService,
 } from "@foundry/persistence";
+import { buildPlanForObjective, planRequirementCount, planStageIds } from "./architect/planBuild";
 import { handleEventStream } from "./eventStream";
 
 const ENTITY_TYPE_SET = new Set<string>(ENTITY_TYPES);
@@ -37,9 +38,27 @@ export function createApp(
   principals: PrincipalRegistry = new PrincipalRegistry(),
 ): Server {
   const commandHandler = new CommandHandler(persistence);
-  // AC-103: the objective intake is a *client* of the command handler, not
-  // a second write path — see `objectiveIntake.ts`.
-  const objectiveIntake = new ObjectiveIntake(commandHandler);
+  /**
+   * AC-103: the objective intake is a *client* of the command handler, not
+   * a second write path — see `objectiveIntake.ts`.
+   *
+   * AC-108 supplies the Architect planning step as an injected factory, so
+   * a submitted objective is followed by one proposed plan. The factory is
+   * pure and template-driven; nothing it returns is scheduled or executed.
+   */
+  const objectiveIntake = new ObjectiveIntake(commandHandler, undefined, (input) => {
+    const plan = buildPlanForObjective({
+      ...input,
+      workspace: "foundry_managed",
+      riskClass: "R2",
+      createdAt: new Date().toISOString(),
+    });
+    return {
+      plan,
+      stageIds: planStageIds(input.planId),
+      requirementCount: planRequirementCount(plan),
+    };
+  });
   return createServer((req, res) => {
     void handleRequest(persistence, commandHandler, objectiveIntake, principals, req, res).catch(
       (err: unknown) => {

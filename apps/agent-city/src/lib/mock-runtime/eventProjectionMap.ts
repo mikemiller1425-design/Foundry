@@ -55,6 +55,18 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     textualEquivalent: GLOBAL_TEXT,
     idempotency: GLOBAL_IDEMPOTENCY,
   },
+  "operator.plan_reviewed": {
+    producer: "Backend, after an authenticated operator records a decision (AC-108)",
+    reducerEffect:
+      "Records the review on the persisted Plan (decision, reviewedBy, reviewedAt, reviewedRevision). No BuildStage, Task, AgentRun, or Artifact is created — reviewing is not authorizing and nothing is scheduled",
+    representation2D:
+      "Plan review panel status line; timeline row. Backend mode only — the mock runtime never produces this event",
+    representation3D:
+      "No visual change: a recorded decision about a proposal is not work in the world. The Construction Site activates when work begins, which is AC-109",
+    textualEquivalent: 'describeEvent → "Operator reviewed plan: proceed — review recorded, no execution authorized"',
+    idempotency:
+      "Re-submitting the same decision is an accepted no-op that appends nothing; a conflicting decision is refused by the command handler",
+  },
   "operator.command_submitted": {
     producer: "Frontend → mock runtime",
     reducerEffect: "No WorldState mutation — command flow only (runtime.ts submitCommand)",

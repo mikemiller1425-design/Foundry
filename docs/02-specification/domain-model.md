@@ -306,3 +306,36 @@ Every **other** command keeps envelope-only validation. This document still does
 - The **closed command vocabulary is unchanged.** No command type was added, removed, or renamed. `Build.Plan` was already declared, so plan production needs no new command.
 - **Execution authorization has no command type.** Its contract (`ExecutionAuthorizationSchema`) is declared in `packages/contracts`, but introducing a command to carry it is an amendment owned by the rung that builds the gate (`AC-110`), not this one.
 - The schemas are **declared, not yet enforced at the transport**. `CommandRequestSchema` is unchanged: moving them into it would convert handler-level refusals (HTTP 200 with a stated reason) into transport-level rejections (HTTP 400), which is a behaviour change. `AC-107` is contract-only. `parseCommandParams` is the seam the consuming rung wires in.
+
+
+---
+
+## V1.1 amendment — `Plan.Review` command and the `Plan` record (`AC-108`, 2026-08-03)
+
+**Amendment, recorded at the rung that owns it. Foundation 1.0 meaning is otherwise unchanged; no existing command was altered, renamed, or removed.**
+
+### `Plan.Review` added to the command vocabulary
+
+`AC-107` declared the plan and authorization *shapes* and noted that introducing commands to carry them belongs to the rung that builds each. `AC-108` builds plan review, so it adds the one command that act needs.
+
+| Command | Parameters | Produces | Authorization |
+| --- | --- | --- | --- |
+| `Plan.Review` | `planId`, `buildId`, `reviewedRevision`, `decision` (`proceed` \| `rejected` \| `revision_requested`), optional `note` | `operator.plan_reviewed` | Authenticated **operator** only (principle 14) |
+
+`reviewedBy` is deliberately **not** a parameter: it is written from the authenticated principal server-side, exactly as `resolvedBy` is for approvals. A caller may not assert who decided.
+
+**Execution authorization still has no command.** That remains owned by `AC-110`.
+
+### `Plan` as a persisted record
+
+V1.1 persists a plan as a first-class record keyed by `planId`, rather than as a separate `Artifact` row. `build.planned`'s declared `planArtifactId` field equals the `planId`.
+
+| Section | Content |
+| --- | --- |
+| Purpose | One structured, reviewable proposal for how a Build would be carried out |
+| Required fields | `plan` (a schema-valid `BuildPlan`), `revision`, `review` (nullable), `createdAt` |
+| Relationships | Belongs to exactly one Build |
+| Invariants | **One plan per Build in V1.1.** A recorded review is immutable — a repeat of the same decision is an idempotent no-op, a conflicting one is refused. A review may only be recorded against the revision the operator read |
+| Commands | `Build.Plan` (create), `Plan.Review` (record a decision) |
+| Emitted events | `build.planned`, `operator.plan_reviewed` |
+| V1.1 limits | Seven fixed stages; Foundry-managed workspace; R0–R2; `claude_code` only on `backend_implementation`, at most once. **A plan schedules nothing** — no `BuildStage`, `Task`, `AgentRun`, `Artifact`, or `Approval` is created by planning or by reviewing |

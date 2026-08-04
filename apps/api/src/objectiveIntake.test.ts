@@ -81,10 +81,14 @@ describe("POST /objectives — accepted submission", () => {
     expect(typeof body.projectId).toBe("string");
     expect(typeof body.buildId).toBe("string");
     expect(body.objective).toBe(OBJECTIVE);
+    // AC-108 added the Architect step, so a submission now also produces
+    // one proposed plan. Nothing is scheduled or executed by it.
     expect(body.events.map((e: { type: string }) => e.type)).toEqual([
       "operator.objective_submitted",
       "build.created",
+      "build.planned",
     ]);
+    expect(typeof body.planId).toBe("string");
   });
 
   it("makes the objective visible in the world-state projection the frontend reads", async () => {
@@ -104,6 +108,7 @@ describe("POST /objectives — accepted submission", () => {
     expect(events.map((e: { type: string }) => e.type)).toEqual([
       "operator.objective_submitted",
       "build.created",
+      "build.planned",
     ]);
   });
 });
@@ -200,7 +205,10 @@ describe("POST /objectives — the closed command vocabulary is untouched", () =
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.accepted).toBe(false);
-    expect(body.reason).toMatch(/bounded objective/i);
+    // AC-108 wired AC-107's declared parameter schema through the handler,
+    // so the refusal now names the offending field. Still truthful, still
+    // zero mutation.
+    expect(body.reason).toMatch(/objective/i);
     expect(snapshotAllPersistedState()).toEqual(before);
   });
 });

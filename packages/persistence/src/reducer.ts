@@ -15,6 +15,8 @@ import type {
   Transfer,
   Upgrade,
   Vehicle,
+  PersistedPlan,
+  BuildPlan,
 } from "@foundry/contracts";
 import {
   CAPACITY_CAPABILITY_PREFIX,
@@ -23,6 +25,7 @@ import {
   capacityCapability,
 } from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
+import { planRevision as planRevisionOf } from "@foundry/contracts";
 import { WORLD_AGENTS, WORLD_BUILDINGS, WORLD_VEHICLE } from "@foundry/world-model";
 
 /**
@@ -153,6 +156,8 @@ export interface EntityState {
   agents: Record<string, Agent>;
   buildings: Record<string, Building>;
   vehicles: Record<string, Vehicle>;
+  /** AC-108: persisted BuildPlans, keyed by plan id. */
+  plans: Record<string, PersistedPlan>;
   /** FBL-029 Inspector decision history, keyed by stage id. */
   stageValidations: Record<string, StageValidationHistory>;
   inventoryCounts: Record<string, number>;
@@ -188,6 +193,7 @@ export const ENTITY_TYPES: readonly EntityType[] = [
   "transfers",
   "approvals",
   "revisions",
+  "plans",
   "upgrades",
   "agents",
   "buildings",
@@ -219,6 +225,7 @@ export function createInitialEntityState(): EntityState {
     transfers: {},
     approvals: {},
     revisions: {},
+    plans: {},
     upgrades: {},
     stageValidations: {},
     agents: Object.fromEntries(
@@ -317,6 +324,7 @@ export function reduceEntities(prev: EntityState, event: FoundryEvent): ReduceRe
     transfers: { ...prev.transfers },
     approvals: { ...prev.approvals },
     revisions: { ...prev.revisions },
+    plans: { ...prev.plans },
     upgrades: { ...prev.upgrades },
     agents: { ...prev.agents },
     buildings: { ...prev.buildings },
@@ -715,8 +723,58 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
       touch(touched, "builds", id);
       return;
     }
-    case "build.planned":
+    /**
+     * AC-108 — the plan becomes backend truth.
+     *
+     * The event carries the plan itself. Historical `build.planned` events
+     * (the frozen canonical run) carry no `plan`, so the field is optional
+     * and this branch is a no-op for them — replaying V1 history produces
+     * exactly the state it always did.
+     *
+     * No BuildStage entities are created here. A plan is a *proposal*;
+     * turning it into scheduled stages is orchestration and belongs to
+     * AC-109. Creating them now would make the world claim work had begun.
+     */
+    case "build.planned": {
+      const plan = event.payload.plan as BuildPlan | undefined;
+      if (!plan) return;
+      const planId = plan.planId;
+      // Idempotent: a replayed event must not reset a recorded review.
+      if (state.plans[planId]) return;
+      state.plans[planId] = {
+        plan,
+        revision: planRevisionOf(plan),
+        review: null,
+        createdAt: event.occurredAt,
+      };
+      touch(touched, "plans", planId);
       return;
+    }
+
+    /**
+     * AC-108 — the operator's recorded review decision.
+     *
+     * Records the decision and nothing else. `proceed` authorizes no
+     * execution; that requires a separate single-use authorization
+     * (AC-110). A second, conflicting decision is refused by the command
+     * handler before it ever reaches here.
+     */
+    case "operator.plan_reviewed": {
+      const existing = state.plans[event.payload.planId];
+      if (!existing) return;
+      state.plans[event.payload.planId] = {
+        ...existing,
+        review: {
+          decision: event.payload.decision,
+          reviewedBy: event.payload.reviewedBy,
+          reviewedAt: event.occurredAt,
+          reviewedRevision: event.payload.planRevision,
+          ...(event.payload.note ? { note: event.payload.note } : {}),
+        },
+      };
+      touch(touched, "plans", event.payload.planId);
+      return;
+    }
     case "build.ready":
       updateBuild(state, touched, { status: "ready" });
       return;

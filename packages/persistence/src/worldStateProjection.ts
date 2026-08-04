@@ -19,6 +19,17 @@ export function projectWorldState(state: EntityState): WorldState {
     buildings: Object.values(state.buildings),
     agents: Object.values(state.agents),
     currentBuild: state.currentBuildId ? (state.builds[state.currentBuildId] ?? null) : null,
+    /**
+     * AC-108 — the plan for the current build, with its review state.
+     *
+     * Projected so the frontend can render what the operator must read
+     * without deriving it, and so a reload shows the same plan: the source
+     * is the persisted record, not client memory.
+     */
+    currentPlan: state.currentBuildId
+      ? (Object.values(state.plans).find((entry) => entry.plan.buildId === state.currentBuildId) ??
+        null)
+      : null,
     activeTransfers: Object.values(state.transfers).filter((t) =>
       ACTIVE_TRANSFER_STATUSES.has(t.status),
     ),

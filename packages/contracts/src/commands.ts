@@ -2,6 +2,7 @@ import { z } from "zod";
 import { IdSchema } from "./common";
 import { BUILD_STAGE_SEQUENCE } from "./entities/buildStage";
 import { ObjectiveTextSchema } from "./objective";
+import { BuildPlanSchema, PlanReviewDecisionSchema } from "./plan";
 
 // docs/02-specification/domain-model.md → each entity's "Commands" row.
 // This is the closed, authoritative V1 command vocabulary a backend API
@@ -33,6 +34,10 @@ export const COMMAND_TYPES = [
   "Project.Cancel",
   "Build.Create",
   "Build.Plan",
+  // V1.1 amendment (AC-108): plan review is a human governance act and
+  // needs a declared command so it goes through CommandHandler like every
+  // other authority-bearing decision. Recorded in domain-model.md.
+  "Plan.Review",
   "Build.Start",
   "Build.Pause",
   "Build.Resume",
@@ -186,13 +191,39 @@ export const COMMAND_PARAM_SCHEMAS = {
     })
     .strict(),
 
-  /** Produces `build.planned`. Shapes only; no planner exists yet. */
+  /**
+   * Produces `build.planned`, carrying the plan itself (AC-108).
+   *
+   * `planArtifactId` equals `planId`: V1.1 persists the plan as a
+   * first-class record rather than a separate `Artifact` row, and the
+   * declared payload field retains the plan's identifier. Recorded in the
+   * `event-model.md` AC-108 amendment.
+   */
   "Build.Plan": z
     .object({
       planId: IdSchema,
       planArtifactId: IdSchema,
       stageIds: z.array(IdSchema).length(BUILD_STAGE_SEQUENCE.length),
       requirementCount: z.number().int().nonnegative(),
+      plan: BuildPlanSchema,
+    })
+    .strict(),
+
+  /**
+   * Produces `operator.plan_reviewed` (AC-108).
+   *
+   * `reviewedBy` is deliberately absent: it is written from the
+   * authenticated principal server-side, never accepted from the payload,
+   * exactly as `resolvedBy` is for approvals.
+   */
+  "Plan.Review": z
+    .object({
+      planId: IdSchema,
+      buildId: IdSchema,
+      /** The revision the operator actually read. A later edit is detectable. */
+      reviewedRevision: z.string().min(1),
+      decision: PlanReviewDecisionSchema,
+      note: z.string().max(500).optional(),
     })
     .strict(),
 } as const satisfies Partial<Record<CommandType, z.ZodType>>;

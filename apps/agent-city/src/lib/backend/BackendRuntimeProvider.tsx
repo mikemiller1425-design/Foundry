@@ -244,6 +244,42 @@ export function BackendRuntimeProvider({
     lastSelectedRef.current = null;
   }, []);
 
+  /**
+   * AC-108 — records the operator's plan review.
+   *
+   * Goes through `postCommand` → `POST /commands` → `CommandHandler` like
+   * every other authority-bearing decision, so it inherits the whole
+   * failure taxonomy: an unauthenticated caller, a stale revision, or a
+   * conflicting second decision each produce their own readable refusal.
+   *
+   * `reviewedRevision` is the revision this browser is displaying. If the
+   * plan changed since it was rendered the backend refuses, rather than
+   * recording a decision about something the operator did not read.
+   *
+   * Recording a review authorizes nothing. Execution requires a separate
+   * single-use authorization, which does not exist yet (AC-110).
+   */
+  const reviewPlan = useCallback(
+    async (input: { decision: "proceed" | "rejected" | "revision_requested"; note?: string }) => {
+      const persisted = worldState.currentPlan;
+      if (!persisted) return;
+      await postCommand({
+        commandType: "Plan.Review",
+        entityId: persisted.plan.planId,
+        params: {
+          planId: persisted.plan.planId,
+          buildId: persisted.plan.buildId,
+          reviewedRevision: persisted.revision,
+          decision: input.decision,
+          ...(input.note ? { note: input.note } : {}),
+        },
+      });
+      // The review is backend truth; re-read it rather than assuming.
+      await client.refreshWorldState();
+    },
+    [client, postCommand, worldState.currentPlan],
+  );
+
   // ---- Operator credential (AC-105) --------------------------------------
 
   const [storedCredential, setStoredCredential] = useState<string | null>(null);
@@ -342,6 +378,7 @@ export function BackendRuntimeProvider({
         handoffAvailable: handoffCredential !== null,
         useHandoffCredential,
         clearOperatorCredential: clearCredential,
+        reviewPlan,
       }}
     >
       {children}
