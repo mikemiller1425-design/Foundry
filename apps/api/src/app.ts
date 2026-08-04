@@ -3,6 +3,8 @@ import { CommandRequestSchema, WorldStateSchema, type PersistedPlan } from "@fou
 import {
   BuildOrchestrator,
   CommandHandler,
+  evaluateExecutionGate,
+  readExecutionGateInput,
   ENTITY_TYPES,
   ObjectiveIntake,
   PrincipalRegistry,
@@ -14,6 +16,7 @@ import {
   type PersistenceService,
   type Principal,
 } from "@foundry/persistence";
+import { BuildStageNameSchema, CLAUDE_CODE_STAGE } from "@foundry/contracts";
 import { buildPlanForObjective, planRequirementCount, planStageIds } from "./architect/planBuild";
 import { handleEventStream } from "./eventStream";
 
@@ -181,6 +184,16 @@ async function handleRequest(
 
   if (method === "POST" && segments.length === 1 && segments[0] === "objectives") {
     await handleObjectivePost(objectiveIntake, principals, req, res);
+    return;
+  }
+
+  if (
+    method === "GET" &&
+    segments.length === 3 &&
+    segments[0] === "builds" &&
+    segments[2] === "execution-authorization"
+  ) {
+    handleExecutionGateGet(persistence, segments[1] ?? "", url, res);
     return;
   }
 
@@ -461,6 +474,68 @@ function handleBuildStartPost(
     stepCount: planOrchestration(persistedPlan.plan).length,
     stopsAt: "approval_gate",
     note: "Simulated run. Every stage is advanced by the deterministic mock executor; no Claude Code is invoked, no process is spawned, and no money is spent. The run stops at the approval gate.",
+  });
+}
+
+/**
+ * `GET /builds/{buildId}/execution-authorization` — the gate, read-only
+ * (AC-110).
+ *
+ * This is the decision `AC-111`'s dispatcher must pass through, exposed
+ * now so it can be proven in both directions before anything can run.
+ *
+ * **A GET, deliberately.** `F-114` requires that an unauthorized attempt
+ * have zero side effects, and the cheapest way to guarantee that is a
+ * surface with no write path at all: this handler holds no
+ * `CommandHandler`, and `evaluateExecutionGate` is a pure function. Zero
+ * side effects is therefore a property of what the code can reach, not a
+ * promise about how carefully it was written.
+ *
+ * It is also unauthenticated, and that is a considered choice rather than
+ * an oversight. It reports whether permission *exists*; it grants none,
+ * changes none, and reveals nothing an operator cannot already read from
+ * `/world-state`, which is likewise open on this loopback-only service.
+ * Issuing an authorization requires an authenticated operator — that is
+ * `POST /commands` with `Plan.Authorize`, and it is refused without a
+ * credential.
+ *
+ * **`permitted: true` starts nothing.** The response says so in a field
+ * that is always present, so no caller can read a preflight as a dispatch.
+ */
+function handleExecutionGateGet(
+  persistence: PersistenceService,
+  buildId: string,
+  url: URL,
+  res: ServerResponse,
+): void {
+  const requestedStage = url.searchParams.get("stage") ?? CLAUDE_CODE_STAGE;
+  const parsedStage = BuildStageNameSchema.safeParse(requestedStage);
+  if (!parsedStage.success) {
+    sendJson(res, 400, {
+      error: "unknown_stage",
+      permitted: false,
+      executed: false,
+      reason: `\`${requestedStage}\` is not one of the seven named build stages.`,
+      correctiveAction: "Request one of the stages the plan declares.",
+    });
+    return;
+  }
+
+  const input = readExecutionGateInput(persistence, buildId, parsedStage.data);
+  const decision = evaluateExecutionGate(input);
+
+  sendJson(res, 200, {
+    buildId,
+    stageName: parsedStage.data,
+    permitted: decision.permitted,
+    /** Always false. This endpoint reports; it never dispatches. */
+    executed: decision.executed,
+    refusals: decision.refusals,
+    authorization: decision.authorization,
+    /** The binding, recomputed from persisted content on this request. */
+    currentContentHash: input.currentContentHash,
+    spentRunIds: input.spentRunIds,
+    note: "Reports whether one real execution of this stage would be permitted. Nothing is started, spent, or scheduled by reading this. Performing the run is AC-111.",
   });
 }
 

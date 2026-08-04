@@ -2,6 +2,7 @@ import { z } from "zod";
 import { IdSchema, TimestampSchema, RuntimeTypeSchema, V1RiskClassSchema } from "./common";
 import { BUILD_STAGE_SEQUENCE, BuildStageNameSchema } from "./entities/buildStage";
 import { ObjectiveTextSchema, ObjectiveWorkspaceSchema } from "./objective";
+import { ExecutionAuthorizationSchema } from "./authorization";
 
 /**
  * The structured plan an Architect step will produce (AC-107).
@@ -216,11 +217,29 @@ export type BuildPlan = z.infer<typeof BuildPlanSchema>;
  * `createdAt` and `planId` are included, so two plans with identical
  * content but different identity are distinguishable.
  */
-export function planRevision(plan: BuildPlan): string {
-  // Canonical form: field order fixed here rather than inherited from
-  // whatever order the object happened to be built in, so the fingerprint
-  // is a function of content and not of construction.
-  const canonical = JSON.stringify([
+/**
+ * The canonical serialisation of a plan's content (AC-110).
+ *
+ * One definition, used by **both** fingerprints, for a reason that matters:
+ * `planRevision` (the client-computable change indicator) and the
+ * backend-generated SHA-256 execution binding must be functions of exactly
+ * the same bytes. Two canonical forms that drifted apart would let a plan
+ * be "unchanged" by one measure and "changed" by the other, and there
+ * would be no principled answer to which was right.
+ *
+ * Field order is fixed here rather than inherited from whatever order the
+ * object happened to be built in, so the result is a function of content
+ * and not of construction. Identity (`planId`, `createdAt`) is included, so
+ * two plans with identical bodies but different identity are
+ * distinguishable.
+ *
+ * The hashing itself deliberately lives elsewhere. This module is imported
+ * by the browser bundle, so it holds no `node:crypto` — see
+ * `@foundry/persistence`'s `planContentHash`, which is the only producer
+ * of the execution binding and is backend-only by construction.
+ */
+export function canonicalPlanContent(plan: BuildPlan): string {
+  return JSON.stringify([
     plan.planId,
     plan.projectId,
     plan.buildId,
@@ -244,7 +263,10 @@ export function planRevision(plan: BuildPlan): string {
       ]),
     ]),
   ]);
+}
 
+export function planRevision(plan: BuildPlan): string {
+  const canonical = canonicalPlanContent(plan);
   // FNV-1a, 32-bit, doubled over two offsets. Chosen for being short,
   // deterministic, and obviously not a cryptographic claim — see the
   // contract note above for what must gate a real invocation instead.
@@ -325,8 +347,30 @@ export const PersistedPlanSchema = z
   .object({
     plan: BuildPlanSchema,
     revision: z.string().min(1),
+    /**
+     * The **execution binding** (AC-110, `F-113a`).
+     *
+     * A backend-generated SHA-256 over `canonicalPlanContent(plan)`,
+     * computed when the plan is persisted and recomputed from persisted
+     * content whenever it is checked. Stored here — "with the `Plan`
+     * record" — exactly as the operator's `AC-107` contract review
+     * required.
+     *
+     * This, not `revision`, is what gates a real invocation. `revision` is
+     * a non-cryptographic FNV change indicator that anything can compute;
+     * a value supplied by a client is **never** accepted as this binding.
+     */
+    contentHash: z.string().min(1),
     /** `null` until the operator records a decision. */
     review: PlanReviewSchema.nullable(),
+    /**
+     * The operator's single-use execution authorization (AC-110).
+     *
+     * `null` until one is issued, and at most one per plan in V1.1.
+     * Recording it here rather than as a free-floating record is what
+     * makes "which plan did this authorize?" unanswerable incorrectly.
+     */
+    authorization: ExecutionAuthorizationSchema.nullable(),
     createdAt: TimestampSchema,
   })
   .strict();

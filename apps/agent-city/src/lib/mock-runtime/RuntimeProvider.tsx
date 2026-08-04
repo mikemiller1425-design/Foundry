@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ObjectiveInput, ObjectiveSubmissionResult } from "@/lib/backend/objectiveSubmission";
 import type { BuildRunResult } from "@/lib/backend/buildRun";
+import type { ExecutionGateReport } from "@/lib/backend/executionGate";
 import type { CredentialState } from "@/lib/backend/credentialState";
 import type { CommandFailure } from "@/lib/backend/commandFeedback";
 import { DEFAULT_SEED, MockRuntime } from "./runtime";
@@ -121,6 +122,31 @@ export interface RuntimeContextValue {
    * than a claim made here.
    */
   startBuildRun?: () => Promise<BuildRunResult>;
+  /**
+   * AC-110: issues the single-use execution authorization for one stage.
+   *
+   * Backend mode only. **Authorizing is not running.** It records
+   * permission for one future run of one stage, bound to a
+   * backend-generated hash of the plan's persisted content; performing
+   * that run is AC-111, and nothing here starts, schedules, or spends it.
+   *
+   * The plan content hash is deliberately not a parameter. The client
+   * states which hash it read (the provider reads it from the projected
+   * plan), the backend recomputes its own and refuses on disagreement — a
+   * client-supplied value is never the binding (F-113a).
+   */
+  authorizeExecution?: (input: {
+    stageName: string;
+    maxBudgetUsd: number;
+    note?: string;
+  }) => Promise<void>;
+  /**
+   * AC-110: reads the gate's current verdict. Read-only, no side effects.
+   *
+   * Asking whether execution would be permitted must never be able to
+   * cause it, so this is a `GET` against a handler with no write path.
+   */
+  readExecutionGate?: (stageName: string) => Promise<ExecutionGateReport | null>;
 }
 
 // Exported so tests can supply a fixed, hand-crafted event fixture via

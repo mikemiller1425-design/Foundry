@@ -22,7 +22,11 @@ const BUILD = {
 function persistedPlan(review: PersistedPlan["review"] = null): PersistedPlan {
   return {
     revision: "rev-abcd1234abcd1234",
+    // AC-110: the backend-generated execution binding, always present on a
+    // persisted plan. A literal here — the frontend never computes it.
+    contentHash: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
     review,
+    authorization: null,
     createdAt: "2026-08-03T00:00:00.000Z",
     plan: {
       planId: "plan-1",

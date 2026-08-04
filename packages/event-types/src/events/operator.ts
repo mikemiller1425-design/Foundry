@@ -52,14 +52,7 @@ export const OperatorPlanReviewedEvent = defineEvent(
   }),
 );
 
-export const OPERATOR_EVENTS = [
-  OperatorObjectiveSubmittedEvent,
-  OperatorCommandSubmittedEvent,
-  OperatorCommandAcceptedEvent,
-  OperatorCommandRejectedEvent,
-  // AC-108: joined the runtime vocabulary at the rung that produces it.
-  OperatorPlanReviewedEvent,
-] as const;
+
 
 /**
  * The V1.1 operator-decision event family (AC-107).
@@ -102,11 +95,15 @@ export const OperatorExecutionAuthorizedEvent = defineEvent(
     planRevision: z.string().min(1),
     /**
      * Backend-generated SHA-256 of canonical persisted plan content
-     * (AC-107 operator-review correction 2). Optional in the declared
-     * shape only because no producer exists yet; AC-110 must require it,
-     * compute it server-side, and compare it server-side.
+     * (AC-107 operator-review correction 2).
+     *
+     * **Required from AC-110**, which is the rung that produces it. It was
+     * optional in the declared shape only because no producer existed; a
+     * producer exists now, it computes this server-side from persisted
+     * content, and it compares it server-side. An authorization that could
+     * omit its binding would be an authorization with nothing to bind to.
      */
-    planContentHash: z.string().min(1).optional(),
+    planContentHash: z.string().min(1),
     /** Exactly one stage — an authorization is never build-wide. */
     stageName: z.string().min(1),
     riskClass: z.string().min(1),
@@ -122,4 +119,17 @@ export const OperatorExecutionAuthorizedEvent = defineEvent(
  * are typed and testable now; `AC-108`/`AC-110` move them into
  * `OPERATOR_EVENTS`.
  */
+export const OPERATOR_EVENTS = [
+  OperatorObjectiveSubmittedEvent,
+  OperatorCommandSubmittedEvent,
+  OperatorCommandAcceptedEvent,
+  OperatorCommandRejectedEvent,
+  // AC-108: joined the runtime vocabulary at the rung that produces it.
+  OperatorPlanReviewedEvent,
+  // AC-110: same rule, same rung. `Plan.Authorize` produces this, the
+  // reducer records it on the persisted Plan, and the projection map and
+  // `describeEvent` both cover it.
+  OperatorExecutionAuthorizedEvent,
+] as const;
+
 export const V1_1_OPERATOR_DECISION_EVENTS = [OperatorExecutionAuthorizedEvent] as const;

@@ -3,10 +3,12 @@ import {
   ExecutionAuthorizationDraftSchema,
   ExecutionAuthorizationSchema,
   MAX_BUDGET_USD_CEILING,
-  authorizesPlan,
   isExecutionAuthorization,
   type ExecutionAuthorization,
 } from "./authorization";
+// AC-110: moved to its own module so the dependency between the
+// authorization shape and the plan runs one way.
+import { authorizesPlan } from "./authorizationCheck";
 import { BUILD_STAGE_SEQUENCE } from "./entities/buildStage";
 import { planRevision, type BuildPlan } from "./plan";
 
@@ -23,7 +25,9 @@ function validPlan(): BuildPlan {
       sequence: i + 1,
       sourceBuildingId: "construction-office",
       destinationBuildingId: "construction-office",
-      runtime: "mock" as const,
+      // AC-110: `backend_implementation` is the one stage the plan may
+      // allocate real execution to, and the one an authorization may name.
+      runtime: name === "backend_implementation" ? ("claude_code" as const) : ("mock" as const),
       required: true,
       requirements: [],
     })),
@@ -31,11 +35,22 @@ function validPlan(): BuildPlan {
   };
 }
 
+/**
+ * Stands in for the backend-generated SHA-256 (AC-110).
+ *
+ * A literal, deliberately: `@foundry/contracts` cannot compute the binding
+ * — it holds no `node:crypto` because it ships to the browser — so these
+ * tests exercise the *comparison*, and `@foundry/persistence` tests the
+ * production of the value. That split is the point of `F-113a`.
+ */
+const CONTENT_HASH = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+
 function validAuthorization(plan = validPlan()): ExecutionAuthorization {
   return {
     authorizationId: "auth-1",
     planId: plan.planId,
     planRevision: planRevision(plan),
+    planContentHash: CONTENT_HASH,
     projectId: plan.projectId,
     buildId: plan.buildId,
     stageName: "backend_implementation",
@@ -134,7 +149,7 @@ describe("ExecutionAuthorizationSchema — it cannot widen the boundary", () => 
 describe("authorizesPlan — plan-bound", () => {
   it("accepts the authorization against the plan it was granted for", () => {
     const plan = validPlan();
-    expect(authorizesPlan(validAuthorization(plan), plan)).toEqual({
+    expect(authorizesPlan(validAuthorization(plan), plan, CONTENT_HASH)).toEqual({
       valid: true,
       mismatches: [],
     });
@@ -145,9 +160,9 @@ describe("authorizesPlan — plan-bound", () => {
     const authorization = validAuthorization(plan);
 
     const edited = validPlan();
-    edited.stages[3]!.runtime = "claude_code";
+    edited.stages[1]!.sourceBuildingId = "warehouse";
 
-    const check = authorizesPlan(authorization, edited);
+    const check = authorizesPlan(authorization, edited, CONTENT_HASH);
     expect(check.valid).toBe(false);
     expect(check.mismatches).toContain("plan_modified");
   });
@@ -155,13 +170,13 @@ describe("authorizesPlan — plan-bound", () => {
   it("refuses a different plan id, build, or project", () => {
     const plan = validPlan();
     expect(
-      authorizesPlan(validAuthorization(plan), { ...plan, planId: "plan-2" }).mismatches,
+      authorizesPlan(validAuthorization(plan), { ...plan, planId: "plan-2" }, CONTENT_HASH).mismatches,
     ).toContain("plan_id_mismatch");
     expect(
-      authorizesPlan(validAuthorization(plan), { ...plan, buildId: "build-2" }).mismatches,
+      authorizesPlan(validAuthorization(plan), { ...plan, buildId: "build-2" }, CONTENT_HASH).mismatches,
     ).toContain("build_mismatch");
     expect(
-      authorizesPlan(validAuthorization(plan), { ...plan, projectId: "project-2" }).mismatches,
+      authorizesPlan(validAuthorization(plan), { ...plan, projectId: "project-2" }, CONTENT_HASH).mismatches,
     ).toContain("project_mismatch");
   });
 
@@ -169,13 +184,13 @@ describe("authorizesPlan — plan-bound", () => {
     const plan = validPlan();
     const authorization = validAuthorization(plan);
     const shortened: BuildPlan = { ...plan, stages: plan.stages.slice(0, 2) };
-    expect(authorizesPlan(authorization, shortened).mismatches).toContain("stage_not_in_plan");
+    expect(authorizesPlan(authorization, shortened, CONTENT_HASH).mismatches).toContain("stage_not_in_plan");
   });
 
   it("refuses when workspace or risk class drifted from the plan", () => {
     const plan = validPlan();
     const authorization = validAuthorization(plan);
-    expect(authorizesPlan({ ...authorization, riskClass: "R0" }, plan).mismatches).toContain(
+    expect(authorizesPlan({ ...authorization, riskClass: "R0" }, plan, CONTENT_HASH).mismatches).toContain(
       "risk_class_mismatch",
     );
   });
@@ -189,7 +204,7 @@ describe("authorizesPlan — plan-bound", () => {
       buildId: "build-9",
       riskClass: "R0",
     };
-    const check = authorizesPlan(authorization, other);
+    const check = authorizesPlan(authorization, other, CONTENT_HASH);
     expect(check.mismatches.length).toBeGreaterThan(2);
     expect(check.valid).toBe(false);
   });

@@ -89,6 +89,7 @@
 | V1 limits | One active build; demo objective fixed |
 | V1.1 amendment (`AC-107`, 2026-08-03) | **The demo objective is no longer fixed.** A Build's `objectiveSnapshot` now carries an operator-submitted objective, bounded by `ObjectiveSubmissionSchema` in `packages/contracts` (12–500 printable single-line characters, one permitted workspace, risk class R0–R2). "One active build" is **unchanged** and enforced. `currentStageId` is `IdSchema.nullable()`: it remains a required field — always present — and `null` expresses a Build created before any stage exists, a state that always occurred and was previously unrepresentable. Amendment confirmed at `AC-107`; originally made at `AC-103P`. |
 | V1.1 amendment (`AC-109`, 2026-08-04) | **`Build.Start` gained preconditions and an actor requirement.** It requires an **authenticated operator** (principle 14: humans govern) — starting a build is an act of human direction, and a system that could commission its own execution would make the plan review that precedes it decorative. It also requires a persisted `Plan` for the build whose recorded review is `proceed` **at the plan's current revision**, and a Build still in `planned`. Every one of those is refused separately and by name. No other Build command changed. `Build.Start` is **not** an execution authorization: it permits the mock executor to advance a reviewed build, while authorizing a real model invocation remains a separate single-use act (`F-113`, `AC-110`). `waiting_for_approval` is reachable in practice from `AC-109` onward, by derivation from `approval.requested` — see `event-model.md`. |
+| V1.1 amendment (`AC-110`, 2026-08-04) | **`Plan.Authorize` joins the closed command vocabulary**, producing `operator.execution_authorized`. It requires an **authenticated operator**, a plan reviewed `proceed`, a stage the plan allocates to the `claude_code` runtime, and a **required** `maxBudgetUsd` (positive, finite, ≤ $25). A `Plan` gains two persisted fields: `contentHash` — a **backend-generated SHA-256 over canonical plan content**, which is the execution binding (`F-113a`) — and `authorization`, at most one per plan, single-use and never reissued. `planRevision` is retained as a change indicator and is **not** a security boundary. `authorizationId`, `authorizedBy`, `planRevision`, `workspace`, and `riskClass` are written server-side and are unrepresentable in the payload. **Authorizing creates no `BuildStage`, `Task`, `AgentRun`, or process** — it is permission for one future run, and performing that run is `AC-111`. |
 
 ## BuildStage
 
@@ -340,3 +341,41 @@ V1.1 persists a plan as a first-class record keyed by `planId`, rather than as a
 | Commands | `Build.Plan` (create), `Plan.Review` (record a decision) |
 | Emitted events | `build.planned`, `operator.plan_reviewed` |
 | V1.1 limits | Seven fixed stages; Foundry-managed workspace; R0–R2; `claude_code` only on `backend_implementation`, at most once. **A plan schedules nothing** — no `BuildStage`, `Task`, `AgentRun`, `Artifact`, or `Approval` is created by planning or by reviewing |
+
+---
+
+## V1.1 amendment — `Plan.Authorize` and the execution binding (`AC-110`, 2026-08-04)
+
+**Amendment, recorded at the rung that owns it. Foundation 1.0 meaning is otherwise unchanged; no existing command was altered, renamed, or removed.**
+
+**This supersedes the `AC-108` note above that "execution authorization still has no command."** That was true when written; the rung that owns the gate has now been built, and this is the command it needed. The earlier statement is left in place as the record of what was true then (principle 18).
+
+### `Plan.Authorize` added to the command vocabulary
+
+| Command | Parameters | Produces | Authorization |
+| --- | --- | --- | --- |
+| `Plan.Authorize` | `planId`, `buildId`, `stageName`, `maxBudgetUsd`, `acknowledgedContentHash`, optional `note` | `operator.execution_authorized` | Authenticated **operator** only (principle 14) |
+
+**What a caller may not send.** `authorizationId`, `authorizedBy`, `planRevision`, `workspace`, and `riskClass` are absent from the parameter schema and refused by `.strict()`. Each is written server-side from the credential or from persisted plan content, so a payload cannot assert who authorized, under what constraints, or against what.
+
+**`acknowledgedContentHash` is not the binding.** It states which hash the operator was looking at. The backend recomputes the SHA-256 from persisted content, refuses if the two disagree, and writes its **own** value. A client-supplied value is therefore never accepted as the binding (`F-113a`) — only ever used to detect that the operator was reading something stale.
+
+### The execution binding
+
+| Field | Meaning |
+| --- | --- |
+| `Plan.contentHash` | **The binding.** A backend-generated SHA-256 over `canonicalPlanContent(plan)`, computed when the plan is persisted and recomputed from persisted content whenever it is checked. Compared server-side before anything may run |
+| `Plan.revision` | A non-cryptographic FNV **change indicator**, computable anywhere including a browser. Useful for review-time drift detection. **Not a security boundary** |
+
+The producer of the binding lives in `@foundry/persistence`, which imports `node:crypto` and is therefore unreachable from the browser bundle. "Backend-generated" is a property of the module boundary, not a convention.
+
+### `Plan` record — fields added
+
+| Section | Content |
+| --- | --- |
+| Required fields | `plan`, `revision`, **`contentHash`**, `review` (nullable), **`authorization`** (nullable), `createdAt` |
+| Invariants | **At most one authorization per plan.** Single-use, and never reissued — a second `Plan.Authorize` is refused. An authorization may only be issued against a plan reviewed `proceed`, and only for the stage the plan allocates to the `claude_code` runtime |
+| Commands | `Build.Plan` (create), `Plan.Review` (record a decision), **`Plan.Authorize`** (grant one single-use execution permission) |
+| Emitted events | `build.planned`, `operator.plan_reviewed`, **`operator.execution_authorized`** |
+
+**Authorizing is not running.** No `BuildStage`, `Task`, `AgentRun`, `Artifact`, or process is created by authorizing. It is permission for one future run of one stage; performing that run is `AC-111`, once, under this record. Spend is derived from persisted truth — a real `AgentRun` recorded for the stage — rather than from a mutable flag.

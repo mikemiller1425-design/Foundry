@@ -116,6 +116,9 @@ export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
   // AC-108: plan review is a human governance act, routed through the same
   // handler as every other authority-bearing decision.
   "Plan.Review": { entityType: "plans", eventType: "operator.plan_reviewed" },
+  // AC-110: the execution authorization gate. Same routing as plan review
+  // — a human decision, through the one write path.
+  "Plan.Authorize": { entityType: "plans", eventType: "operator.execution_authorized" },
   "Build.Start": { entityType: "builds", eventType: "build.started", toStatus: "running" },
   "Build.Pause": { entityType: "builds", eventType: "build.paused", toStatus: "paused" },
   "Build.Resume": { entityType: "builds", eventType: "build.resumed", toStatus: "running" },

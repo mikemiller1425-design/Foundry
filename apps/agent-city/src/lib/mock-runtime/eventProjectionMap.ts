@@ -67,6 +67,19 @@ export const EVENT_PROJECTION_MAP: Record<FoundryEvent["type"], EventProjectionE
     idempotency:
       "Re-submitting the same decision is an accepted no-op that appends nothing; a conflicting decision is refused by the command handler",
   },
+  "operator.execution_authorized": {
+    producer: "Backend, after an authenticated operator authorizes exactly one stage (AC-110)",
+    reducerEffect:
+      "Records the single-use, plan-bound authorization on the persisted Plan. No BuildStage, Task, AgentRun, Artifact, or process is created — authorizing is permission for one future run, not that run",
+    representation2D:
+      "Execution authorization panel: who, what, when, and the plan content hash it binds to; timeline row. Backend mode only — the mock runtime never produces this event",
+    representation3D:
+      "No visual change: permission to run is not running. The real AgentRun appears in the world at AC-111, when a run actually happens",
+    textualEquivalent:
+      'describeEvent → "Operator authorized execution of backend_implementation (≤ $5) — permission only, nothing started"',
+    idempotency:
+      "Single-use. One authorization per plan; reissuing is refused, and the authorization is spent by the one real run it permits",
+  },
   "operator.command_submitted": {
     producer: "Frontend → mock runtime",
     reducerEffect: "No WorldState mutation — command flow only (runtime.ts submitCommand)",

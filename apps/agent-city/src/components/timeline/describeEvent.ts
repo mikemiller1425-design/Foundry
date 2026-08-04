@@ -26,6 +26,12 @@ export function describeEvent(event: FoundryEvent): string {
             : "revision requested";
       return `Operator reviewed plan: ${decision} — ${meaning}`;
     }
+    case "operator.execution_authorized": {
+      // The limit travels with the line. An operator scanning the timeline
+      // must not read "authorized" as "running" — permission and the run
+      // are separate acts, and only the first of them has happened.
+      return `Operator authorized execution of ${String(p.stageName)} (\u2264 $${String(p.maxBudgetUsd)}) — permission only, nothing started`;
+    }
     case "operator.command_submitted":
       return `Operator command submitted: ${p.commandType}`;
     case "operator.command_accepted":

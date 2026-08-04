@@ -2,7 +2,6 @@ import { z } from "zod";
 import { IdSchema, TimestampSchema, V1RiskClassSchema } from "./common";
 import { BuildStageNameSchema } from "./entities/buildStage";
 import { ObjectiveWorkspaceSchema } from "./objective";
-import { planRevision, type BuildPlan } from "./plan";
 
 /**
  * The operator's authorization to execute one stage, once (AC-107).
@@ -74,10 +73,28 @@ export const ExecutionAuthorizationSchema = z
     /** The plan this authorization was granted against. */
     planId: IdSchema,
     /**
-     * The plan's content fingerprint at the moment of authorization.
-     * Any later edit changes it, which invalidates this authorization.
+     * The plan's **change indicator** at the moment of authorization.
+     *
+     * Retained because it is what the operator's review recorded and what
+     * a reviewer recognises. It is **not** the binding — see
+     * `planContentHash` immediately below, and the module note above.
      */
     planRevision: z.string().min(1),
+    /**
+     * The **execution binding** (AC-110, `F-113a`).
+     *
+     * The backend-generated SHA-256 over canonical persisted plan content,
+     * as it stood when this authorization was issued. Required, because an
+     * authorization that could omit its binding would be an authorization
+     * with nothing to bind to.
+     *
+     * The backend recomputes this from persisted content and compares
+     * server-side before anything runs. A client-supplied value is never
+     * accepted as the binding — a client may state which hash it *read*,
+     * and be refused if that disagrees, but the value written here is
+     * always the backend's own.
+     */
+    planContentHash: z.string().min(1),
     projectId: IdSchema,
     buildId: IdSchema,
     /** Exactly one stage. An authorization is never build-wide. */
@@ -143,51 +160,4 @@ export type ExecutionAuthorizationDraft = z.infer<typeof ExecutionAuthorizationD
  */
 export function isExecutionAuthorization(value: unknown): value is ExecutionAuthorization {
   return ExecutionAuthorizationSchema.safeParse(value).success;
-}
-
-export type AuthorizationMismatch =
-  | "plan_id_mismatch"
-  | "plan_modified"
-  | "build_mismatch"
-  | "project_mismatch"
-  | "stage_not_in_plan"
-  | "workspace_mismatch"
-  | "risk_class_mismatch";
-
-export interface AuthorizationCheck {
-  valid: boolean;
-  /** Every way the pairing fails, so a reviewer sees all of them at once. */
-  mismatches: AuthorizationMismatch[];
-}
-
-/**
- * Whether an authorization still authorizes the plan it names.
- *
- * Pure and total: it takes both documents and returns every mismatch it
- * finds rather than throwing on the first. `AC-110` decides what to *do*
- * with the answer; this only makes the answer computable, and computable
- * the same way in every caller.
- *
- * `plan_modified` reports revision drift. It is a useful signal and it is
- * **not** the execution binding — see the module note above. `AC-110` must
- * gate a real invocation on the backend-generated SHA-256 comparison, not
- * on this.
- */
-export function authorizesPlan(
-  authorization: ExecutionAuthorization,
-  plan: BuildPlan,
-): AuthorizationCheck {
-  const mismatches: AuthorizationMismatch[] = [];
-
-  if (authorization.planId !== plan.planId) mismatches.push("plan_id_mismatch");
-  if (authorization.planRevision !== planRevision(plan)) mismatches.push("plan_modified");
-  if (authorization.buildId !== plan.buildId) mismatches.push("build_mismatch");
-  if (authorization.projectId !== plan.projectId) mismatches.push("project_mismatch");
-  if (!plan.stages.some((stage) => stage.name === authorization.stageName)) {
-    mismatches.push("stage_not_in_plan");
-  }
-  if (authorization.workspace !== plan.workspace) mismatches.push("workspace_mismatch");
-  if (authorization.riskClass !== plan.riskClass) mismatches.push("risk_class_mismatch");
-
-  return { valid: mismatches.length === 0, mismatches };
 }

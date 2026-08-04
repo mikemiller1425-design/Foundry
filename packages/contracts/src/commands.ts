@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { IdSchema } from "./common";
-import { BUILD_STAGE_SEQUENCE } from "./entities/buildStage";
+import { BUILD_STAGE_SEQUENCE, BuildStageNameSchema } from "./entities/buildStage";
 import { ObjectiveTextSchema } from "./objective";
 import { BuildPlanSchema, PlanReviewDecisionSchema } from "./plan";
+import { BudgetUsdSchema } from "./authorization";
 
 // docs/02-specification/domain-model.md → each entity's "Commands" row.
 // This is the closed, authoritative V1 command vocabulary a backend API
@@ -38,6 +39,10 @@ export const COMMAND_TYPES = [
   // needs a declared command so it goes through CommandHandler like every
   // other authority-bearing decision. Recorded in domain-model.md.
   "Plan.Review",
+  // V1.1 amendment (AC-110): the execution authorization gate. Declared
+  // so the operator's authorization goes through CommandHandler like
+  // every other authority-bearing decision. Recorded in domain-model.md.
+  "Plan.Authorize",
   "Build.Start",
   "Build.Pause",
   "Build.Resume",
@@ -223,6 +228,37 @@ export const COMMAND_PARAM_SCHEMAS = {
       /** The revision the operator actually read. A later edit is detectable. */
       reviewedRevision: z.string().min(1),
       decision: PlanReviewDecisionSchema,
+      note: z.string().max(500).optional(),
+    })
+    .strict(),
+
+  /**
+   * Produces `operator.execution_authorized` (AC-110).
+   *
+   * Note what a caller may **not** send. `authorizationId`, `authorizedBy`,
+   * `planRevision`, `workspace`, and `riskClass` are all absent, and
+   * `.strict()` refuses them: each is written server-side from the
+   * credential or from persisted plan content, so a payload cannot assert
+   * who authorized, under what constraints, or against what.
+   *
+   * `acknowledgedContentHash` is the one hash-shaped field a caller sends,
+   * and it is deliberately **not** the binding. It states which hash the
+   * operator was looking at. The backend recomputes the SHA-256 from
+   * persisted content, refuses if the two disagree, and writes its **own**
+   * value into the authorization — so a client-supplied value is never
+   * accepted as the binding (`F-113a`), only ever used to detect that the
+   * operator was reading something stale.
+   */
+  "Plan.Authorize": z
+    .object({
+      planId: IdSchema,
+      buildId: IdSchema,
+      /** Exactly one stage. An authorization is never build-wide. */
+      stageName: BuildStageNameSchema,
+      /** Required, positive, finite, capped at $25 (AC-107 decision 7). */
+      maxBudgetUsd: BudgetUsdSchema,
+      /** What the operator read. Compared, never trusted. */
+      acknowledgedContentHash: z.string().min(1),
       note: z.string().max(500).optional(),
     })
     .strict(),

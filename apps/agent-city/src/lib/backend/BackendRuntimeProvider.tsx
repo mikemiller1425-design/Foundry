@@ -15,6 +15,7 @@ import {
 import { applyConnectionStatus, areMutationsAllowed } from "./connectionState";
 import { postObjective, type ObjectiveInput } from "./objectiveSubmission";
 import { postBuildRun, type BuildRunResult } from "./buildRun";
+import { fetchExecutionGate, type ExecutionGateReport } from "./executionGate";
 import { deriveCredentialState, isAuthFailure } from "./credentialState";
 import {
   clearOperatorCredential,
@@ -326,6 +327,54 @@ export function BackendRuntimeProvider({
     return result;
   }, [baseUrl, client, mutationsEnabled, worldState.currentBuild?.id]);
 
+  /**
+   * AC-110 — issues the single-use execution authorization.
+   *
+   * Goes through `postCommand` → `POST /commands` → `CommandHandler` like
+   * every other authority-bearing decision, so it inherits the whole
+   * failure taxonomy: an unauthenticated caller, an unreviewed plan, a
+   * stage the plan runs with the mock, a budget over the ceiling, or a
+   * second authorization each produce their own readable refusal.
+   *
+   * `acknowledgedContentHash` is the hash **this browser is displaying**.
+   * If the persisted plan hashes to anything else the backend refuses,
+   * rather than recording permission for something the operator did not
+   * see. It is evidence about what was on screen — never the binding.
+   *
+   * Authorizing starts nothing.
+   */
+  const authorizeExecution = useCallback(
+    async (input: { stageName: string; maxBudgetUsd: number; note?: string }) => {
+      const persisted = worldState.currentPlan;
+      if (!persisted) return;
+      await postCommand({
+        commandType: "Plan.Authorize",
+        entityId: persisted.plan.planId,
+        params: {
+          planId: persisted.plan.planId,
+          buildId: persisted.plan.buildId,
+          stageName: input.stageName,
+          maxBudgetUsd: input.maxBudgetUsd,
+          acknowledgedContentHash: persisted.contentHash,
+          ...(input.note ? { note: input.note } : {}),
+        },
+      });
+      // The authorization is backend truth; re-read it rather than assuming.
+      await client.refreshWorldState();
+    },
+    [client, postCommand, worldState.currentPlan],
+  );
+
+  /** AC-110 — reads the gate's verdict. A GET; it changes nothing. */
+  const readExecutionGate = useCallback(
+    async (stageName: string): Promise<ExecutionGateReport | null> => {
+      const buildId = worldState.currentBuild?.id;
+      if (!buildId) return null;
+      return fetchExecutionGate(baseUrl, buildId, stageName);
+    },
+    [baseUrl, worldState.currentBuild?.id],
+  );
+
   // ---- Operator credential (AC-105) --------------------------------------
 
   const [storedCredential, setStoredCredential] = useState<string | null>(null);
@@ -426,6 +475,8 @@ export function BackendRuntimeProvider({
         clearOperatorCredential: clearCredential,
         reviewPlan,
         startBuildRun,
+        authorizeExecution,
+        readExecutionGate,
       }}
     >
       {children}

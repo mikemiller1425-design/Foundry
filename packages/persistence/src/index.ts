@@ -27,9 +27,23 @@ export { TRANSITION_GRAPHS, isLegalTransition, type TransitionGraph } from "./tr
 export {
   CommandHandler,
   INSPECTOR_AGENT_ID,
+  executionAuthorizationId,
   type CommandActor,
   type CommandOutcome,
 } from "./commandHandler";
+export {
+  PLAN_CONTENT_HASH_PREFIX,
+  planContentHash,
+  plansContentHashEquals,
+} from "./planContentHash";
+export {
+  evaluateExecutionGate,
+  readExecutionGateInput,
+  type ExecutionGateDecision,
+  type ExecutionGateInput,
+  type ExecutionRefusal,
+  type ExecutionRefusalCode,
+} from "./executionGate";
 export {
   ObjectiveIntake,
   type ObjectiveIdFactory,

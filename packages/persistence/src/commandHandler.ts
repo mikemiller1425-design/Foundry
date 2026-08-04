@@ -3,6 +3,7 @@ import type { CommandRequest, CommandType } from "@foundry/contracts";
 import { FoundryEventSchema, type ActorType, type FoundryEvent } from "@foundry/event-types";
 import {
   BUILD_STAGE_SEQUENCE,
+  CLAUDE_CODE_STAGE,
   ObjectiveTextSchema,
   WAREHOUSE_LEVEL_2_MIN_PASS_RATE,
   WAREHOUSE_LEVEL_2_REQUIRED_PACKAGE_COUNT,
@@ -19,6 +20,7 @@ import {
 } from "./commandDefinitions";
 import type { PersistenceService } from "./persistenceService";
 import type { EntityType, StageValidationHistory } from "./reducer";
+import { planContentHash, plansContentHashEquals } from "./planContentHash";
 import { isLegalTransition } from "./transitionGraphs";
 
 export interface CommandActor {
@@ -81,7 +83,20 @@ const OPERATOR_UPGRADE_COMMANDS = new Set<CommandType>(["Upgrade.Request", "Upgr
  * an agent and never an anonymous caller. An agent that could sign off its
  * own plan would make the review ceremonial.
  */
-const OPERATOR_PLAN_COMMANDS = new Set<CommandType>(["Plan.Review"]);
+const OPERATOR_PLAN_COMMANDS = new Set<CommandType>(["Plan.Review", "Plan.Authorize"]);
+
+/**
+ * AC-110 — the id of a plan's single authorization.
+ *
+ * Derived from the plan rather than supplied or generated, for three
+ * reasons that all point the same way: a replay reconstructs the identical
+ * id, a resubmission collides with the existing record instead of minting
+ * a second one, and no caller gets to choose the identifier of the thing
+ * that grants it permission.
+ */
+export function executionAuthorizationId(planId: string): string {
+  return `${planId}--authorization`;
+}
 
 /**
  * AC-109 — starting a build is an act of human direction.
@@ -362,6 +377,8 @@ export class CommandHandler {
         return this.requirePlannableBuild(commandType, entityId, params);
       case "Plan.Review":
         return this.requireReviewablePlan(commandType, entityId, params, actor);
+      case "Plan.Authorize":
+        return this.requireAuthorizablePlan(commandType, entityId, params, actor);
       // `Build.Start` is guarded earlier, ahead of the transition check —
       // see `requireStartableBuild`'s call site for why.
       case "BuildStage.Complete":
@@ -459,7 +476,10 @@ export class CommandHandler {
     // upgrades, and plan review; a plan reviewer told "resolving an
     // approval requires…" would go looking for an approval that does not
     // exist. Caught by live verification at AC-108.
-    const act = OPERATOR_PLAN_COMMANDS.has(commandType)
+    const act =
+      commandType === "Plan.Authorize"
+        ? "Authorizing execution"
+        : OPERATOR_PLAN_COMMANDS.has(commandType)
       ? "Reviewing a plan"
       : OPERATOR_BUILD_COMMANDS.has(commandType)
         ? "Starting a build"
@@ -920,6 +940,151 @@ export class CommandHandler {
     params.reviewedBy = actor.actorId;
     params.planRevision = current;
     delete params.reviewedRevision;
+
+    return undefined;
+  }
+
+  /**
+   * AC-110 — the execution authorization gate, at the write path.
+   *
+   * This is the one place an `ExecutionAuthorization` can come into
+   * existence, and every authority-bearing field on it is written here
+   * from persisted truth or from the credential. A caller supplies the
+   * stage, the budget, and a statement of which hash it was looking at —
+   * nothing else, and `.strict()` refuses anything else.
+   *
+   * ## The binding (`F-113a`)
+   *
+   * `planContentHash` is **recomputed from persisted plan content** on
+   * every authorization and written into the event. The client's
+   * `acknowledgedContentHash` is compared against it and then discarded:
+   * it exists so an operator reading a stale screen is refused rather than
+   * silently authorizing something they did not see. A client-supplied
+   * value is therefore never the binding — it is only ever evidence about
+   * what the client had in front of it.
+   *
+   * The stored `contentHash` field is deliberately **not** consulted.
+   * Comparing the stored hash to itself would prove nothing; recomputing
+   * from content means a record whose stored hash and stored plan ever
+   * disagreed fails closed.
+   *
+   * ## What this does not do
+   *
+   * It creates no `BuildStage`, no `Task`, no `AgentRun`, and no process.
+   * Authorizing is permission for one future run of one stage. `AC-111`
+   * performs that run, once, under this record.
+   */
+  private requireAuthorizablePlan(
+    commandType: CommandType,
+    planId: string,
+    params: Record<string, unknown>,
+    actor: CommandActor,
+  ): CommandOutcome | undefined {
+    const persisted = this.persistence.getEntity<PersistedPlan>("plans", planId);
+    if (!persisted) {
+      return this.deny(commandType, planId, `No Plan with id ${planId}.`);
+    }
+    if (params.planId !== planId) {
+      return this.deny(
+        commandType,
+        planId,
+        `params.planId (${String(params.planId)}) must equal entityId (${planId}).`,
+      );
+    }
+    if (params.buildId !== persisted.plan.buildId) {
+      return this.deny(
+        commandType,
+        planId,
+        `params.buildId does not match plan ${planId}'s build (${persisted.plan.buildId}).`,
+      );
+    }
+
+    // Reviewing precedes authorizing, and they stay separate decisions
+    // (AC-107 decision 6). `proceed` alone never authorized anything; this
+    // is the act that does, and it cannot happen without that review.
+    if (!persisted.review) {
+      return this.deny(
+        commandType,
+        planId,
+        `Plan ${planId} has not been reviewed. Execution is not authorized from a plan nobody read (principle 14: humans govern).`,
+        "Read the plan and record a decision on it first.",
+      );
+    }
+    if (persisted.review.decision !== "proceed") {
+      return this.deny(
+        commandType,
+        planId,
+        `Plan ${planId} was reviewed as ${persisted.review.decision}, not proceed; execution cannot be authorized against it.`,
+        "A recorded review is an immutable decision. It is not re-decided.",
+      );
+    }
+
+    // One authorization per plan in V1.1. Reissuing would quietly widen a
+    // single-use grant into a renewable one.
+    if (persisted.authorization) {
+      return this.deny(
+        commandType,
+        planId,
+        `Plan ${planId} already has execution authorization ${persisted.authorization.authorizationId}, issued by ${persisted.authorization.authorizedBy} at ${persisted.authorization.authorizedAt} for stage \`${persisted.authorization.stageName}\`. An authorization is single-use and is not reissued (F-113).`,
+        "Nothing to do — the authorization already exists. Reissuing would turn a single-use grant into a renewable one.",
+      );
+    }
+
+    const stageName = params.stageName;
+    const stage = persisted.plan.stages.find((entry) => entry.name === stageName);
+    if (!stage) {
+      return this.deny(
+        commandType,
+        planId,
+        `Stage \`${String(stageName)}\` is not in plan ${planId}.`,
+      );
+    }
+    /**
+     * The authorized stage must be one the plan actually allocates to the
+     * controlled runtime. Authorizing a mock stage would grant permission
+     * for something that was never going to invoke a model — an
+     * authorization that reads as meaningful and buys nothing.
+     */
+    if (stage.runtime !== "claude_code") {
+      return this.deny(
+        commandType,
+        planId,
+        `Stage \`${stage.name}\` runs with the \`${stage.runtime}\` runtime in this plan, so there is no real execution to authorize. Only the stage the plan allocates to \`claude_code\` (\`${CLAUDE_CODE_STAGE}\`) can be authorized.`,
+        `Authorize \`${CLAUDE_CODE_STAGE}\`, or re-plan if a different stage was intended to run for real.`,
+      );
+    }
+
+    // Recomputed from persisted content — the binding, and the only value
+    // this command will write.
+    const currentContentHash = planContentHash(persisted.plan);
+    if (
+      typeof params.acknowledgedContentHash !== "string" ||
+      !plansContentHashEquals(params.acknowledgedContentHash, currentContentHash)
+    ) {
+      return this.deny(
+        commandType,
+        planId,
+        `The plan changed since it was read: acknowledged content hash ${String(params.acknowledgedContentHash)}, current ${currentContentHash}. Authorization is refused rather than granted against something the operator did not see.`,
+        "Re-read the current plan, then authorize against it.",
+      );
+    }
+
+    /**
+     * Normalise into the event payload shape.
+     *
+     * Every authority-bearing field is set here, from the credential or
+     * from persisted plan content. `acknowledgedContentHash` is deleted
+     * rather than carried: it was evidence for a check that has now run,
+     * and leaving it on the event would put a client-supplied hash next to
+     * the backend's own where a later reader could confuse the two.
+     */
+    params.authorizationId = executionAuthorizationId(planId);
+    params.planContentHash = currentContentHash;
+    params.planRevision = planRevision(persisted.plan);
+    params.workspace = persisted.plan.workspace;
+    params.riskClass = persisted.plan.riskClass;
+    params.authorizedBy = actor.actorId;
+    delete params.acknowledgedContentHash;
 
     return undefined;
   }

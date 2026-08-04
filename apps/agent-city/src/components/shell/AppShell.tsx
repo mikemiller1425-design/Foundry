@@ -4,6 +4,7 @@ import { CollapseToggleButton, ResizeHandle, useCollapsible, useResizable } from
 import { ApprovalCard } from "@/components/controls/ApprovalCard";
 import { BuildRunPanel } from "@/components/controls/BuildRunPanel";
 import { CommandBar } from "@/components/controls/CommandBar";
+import { ExecutionAuthorizationPanel } from "@/components/controls/ExecutionAuthorizationPanel";
 import { ConnectionBanner } from "@/components/controls/ConnectionBanner";
 import { LiveIntelligence } from "@/components/controls/LiveIntelligence";
 import { ObjectiveForm } from "@/components/controls/ObjectiveForm";
@@ -243,6 +244,10 @@ export function AppShell() {
                 reviewed plan becomes, and above the stage list because it
                 states what is actually executing them: the mock executor,
                 not Claude Code. Backend mode only. */}
+            {/* AC-110. Between the plan and the run: it is the decision a
+                reviewed plan enables and the last human act before
+                anything real could happen. Backend mode only. */}
+            <ExecutionAuthorizationPanel />
             <BuildRunPanel />
             <StageAgentPanel selection={selection} onSelect={handleSelect} />
           </div>

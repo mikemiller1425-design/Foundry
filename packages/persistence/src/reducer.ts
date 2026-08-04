@@ -26,6 +26,7 @@ import {
 } from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
 import { planRevision as planRevisionOf } from "@foundry/contracts";
+import { planContentHash } from "./planContentHash";
 import { WORLD_AGENTS, WORLD_BUILDINGS, WORLD_VEHICLE } from "@foundry/world-model";
 
 /**
@@ -744,7 +745,15 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
       state.plans[planId] = {
         plan,
         revision: planRevisionOf(plan),
+        /**
+         * AC-110 — the execution binding, computed when the plan becomes
+         * persisted truth. Deterministic, so a full replay reconstructs the
+         * identical hash rather than invalidating every authorization it
+         * rebuilt.
+         */
+        contentHash: planContentHash(plan),
         review: null,
+        authorization: null,
         createdAt: event.occurredAt,
       };
       touch(touched, "plans", planId);
@@ -770,6 +779,42 @@ function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[
           reviewedAt: event.occurredAt,
           reviewedRevision: event.payload.planRevision,
           ...(event.payload.note ? { note: event.payload.note } : {}),
+        },
+      };
+      touch(touched, "plans", event.payload.planId);
+      return;
+    }
+    /**
+     * AC-110 — the operator's single-use execution authorization.
+     *
+     * Records the authorization on the persisted Plan and **nothing else**.
+     * No BuildStage, Task, AgentRun, or Artifact is created; no runtime is
+     * selected; no process exists. Authorizing is permission for one future
+     * run of one stage — it is not that run, and `AC-111` is what performs
+     * it, once, under this same record.
+     *
+     * Idempotent: a replayed event must not overwrite an authorization the
+     * command handler already refused to reissue.
+     */
+    case "operator.execution_authorized": {
+      const existing = state.plans[event.payload.planId];
+      if (!existing || existing.authorization) return;
+      state.plans[event.payload.planId] = {
+        ...existing,
+        authorization: {
+          authorizationId: event.payload.authorizationId,
+          planId: event.payload.planId,
+          planRevision: event.payload.planRevision,
+          planContentHash: event.payload.planContentHash,
+          projectId: existing.plan.projectId,
+          buildId: event.payload.buildId,
+          stageName: event.payload.stageName as BuildStageName,
+          workspace: existing.plan.workspace,
+          riskClass: existing.plan.riskClass,
+          maxBudgetUsd: event.payload.maxBudgetUsd,
+          authorizedBy: event.payload.authorizedBy,
+          authorizedAt: event.occurredAt,
+          singleUse: true,
         },
       };
       touch(touched, "plans", event.payload.planId);
