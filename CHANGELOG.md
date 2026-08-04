@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — AC-105 closed: operator confirmed the credential handoff and its recovery paths (documentation only)
+
+The operator verified, against `573b1d1`: **automatic local credential handoff without copying a terminal token**, **Clear**, **Use this session's credential**, **recovery from an invalid credential with a readable rejection**, and a **clear corrective error on an occupied API port**. The rung's stop condition — *"Both modes reachable from one artifact and the credential step is automatic"* — is satisfied, so **`AC-105` is closed.**
+
+Recorded in `docs/evidence/ac-105/operator-observation.md` as an **operator-reported observation**, with the same standing as the `AC-104` and `FBL-035` records. Two precisions are stated there rather than glossed: the operator **did not report observing mode switching without a rebuild** — the first half of the rung's gate, carried instead by `pnpm verify:runtime-mode` against a real build — and did not report observing the **stale** credential state, which is covered by unit tests.
+
+**A defect was found by the closure process itself and fixed in `3e76c70`.** Re-running `pnpm verify:launch` for the closure gates **deleted the handoff file belonging to the operator's live session**: the handoff path was a constant, so a second launcher instance overwrote the first one's credential and removed it on its own shutdown. It did not fail silently — the route answered *"declared a handoff file, but it is not present. Paste the credential manually"*, so the fallback was intact and explained — but the collision should not happen. The filename now carries the API port, instances are disjoint by construction, and `verify-launch.mjs` pins it: this run's file is namespaced and removed while a default-port session's file is untouched, verified directly.
+
+**Gates re-verified:** `verify:runtime-mode` 7/7 · `typecheck` 8/8 · lint clean · build clean · **988 passed / 84 files / 0 failures**.
+
+`AC-106` is not started. Finding 6 (`AC-103`), D-8, N-03, N-05, N-06, and the remaining `AC-103P` residue (`AC-106`–`AC-108`) are unchanged. `AC-105`'s own share of that residue — runtime-mode selection and the automatic handoff — is now cleared.
+
 ### Fixed — AC-105: Runtime-mode selection and credential handoff at run time
 
 **Runtime mode is now a run-time input (F-103).** `page.tsx` read `NEXT_PUBLIC_FOUNDRY_API_URL` at module scope, and Next inlines `NEXT_PUBLIC_*` into the bundle at build time — so a built artifact was permanently one mode and switching required a rebuild (PV1-028), while the app's README claimed unqualified that "the runtime is selectable". The page now resolves mode per request from a **server-side** `FOUNDRY_API_URL`, with `export const dynamic = "force-dynamic"` — without that, Next prerenders the page and bakes the answer in, which is exactly how the defect worked. `NEXT_PUBLIC_FOUNDRY_API_URL` is still honoured second, so existing invocations and the `FBL-026` browser spec keep working unchanged.

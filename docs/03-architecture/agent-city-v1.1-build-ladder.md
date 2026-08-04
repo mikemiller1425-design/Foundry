@@ -35,7 +35,7 @@ This is the **authoritative V1.1 Build Ladder**. Before this document existed, t
 | **AC-103P** | — | **Pre-ladder proof — objective submission** | — | Verified | ⚠️ **Preserved, not a rung.** See §3 |
 | AC-103 | FIX | Finding 6 resolution | AC-102 | **Accept closure** | ⬜ Not started |
 | AC-104 | HARD | One-command local operation | AC-102 | **Launch it** | ✅ **Closed** (`4e7d0f6`) |
-| AC-105 | FIX | Runtime-mode and credential handoff at runtime | AC-104 | Observe | ⬜ Not started — partially anticipated by AC-103P |
+| AC-105 | FIX | Runtime-mode and credential handoff at runtime | AC-104 | Observe | ✅ **Closed** (`573b1d1`, `3e76c70`) |
 | AC-106 | FIX | Backend-mode command honesty | AC-105 | Observe | ⬜ Not started — substantially anticipated by AC-103P |
 | AC-107 | FEAT | Bounded-objective contract | AC-106 | Review contract | ⬜ Not started — substantially anticipated by AC-103P |
 | AC-108 | FEAT | Objective submission and plan review | AC-107 | **Submit + review plan** | ⬜ Not started — submission half anticipated by AC-103P |
@@ -113,14 +113,23 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **Deliberately left to `AC-105`:** the operator still pastes the credential, and a production build remains mode-locked (PV1-028). Both are stated in the quickstart rather than left to be discovered.
 - **Hard stop reached.** `AC-105` is not started and requires its own explicit operator authorization.
 
-### AC-105 — Runtime-mode selection and credential handoff at runtime — [FIX] — ⬜ Not started
+### AC-105 — Runtime-mode selection and credential handoff at runtime — [FIX] — ✅ Closed
 
 - **Objective:** Runtime mode selectable at run time rather than build time; remove the copy-a-token-from-stdout step, without building a session system.
 - **Depends on:** AC-104.
 - **Prohibited work:** Sessions, expiry, refresh, logout, user accounts, or any authentication *system*. Embedding a credential in the client bundle. Removing manual credential entry. Weakening `403 actor_mismatch` or the `PrincipalRegistry` boundary.
 - **Operator gate:** Observe mode switching without rebuild, and reach an approval-capable state without reading a token from a terminal.
 - **Stop condition:** Both modes reachable from one artifact and the credential step is automatic. **Hard stop.**
-- **AC-103P interaction:** `e1fa301` made the credential enterable outside a pending approval. Runtime-mode selection and the automatic handoff are **untouched**.
+- **AC-103P interaction:** `e1fa301` made the credential enterable outside a pending approval. Runtime-mode selection and the automatic handoff are **untouched** — both delivered here, so this residue is now cleared.
+
+**Closed 2026-08-03** against `573b1d1`, with defect fix `3e76c70`.
+
+- **Delivered:** per-request runtime-mode resolution from a server-side `FOUNDRY_API_URL` (`force-dynamic`); the local credential handoff (`0600` file, loopback-only route, removed on shutdown); five distinguishable credential states; an always-present credential panel with **Change**/**Clear**; loopback-only binding for both servers; `pnpm verify:runtime-mode`.
+- **Evidence:** `docs/evidence/ac-105/operator-observation.md`. `F-103` and `F-104` satisfied. `verify:runtime-mode` 7/7; `typecheck` 8/8; lint clean; build clean; 988 tests / 0 failures.
+- **Gate, stated precisely:** the operator observed the credential half (automatic handoff with no terminal token, Clear, adopt, invalid-recovery, and a clear occupied-port error). **They did not report observing mode switching without a rebuild**; that half is carried by `verify:runtime-mode` against a real build, not by a human observation.
+- **Defect found during closure and fixed:** the handoff filename was a constant, so concurrent launcher instances clobbered each other's file. Now namespaced by API port, with regression cover in `verify-launch.mjs`.
+- **Prohibited work confirmed not done:** no session system, no credential in the bundle, manual entry retained, `403 actor_mismatch` and `PrincipalRegistry` untouched — no backend file changed.
+- **Hard stop reached.** `AC-106` is not started and requires its own explicit operator authorization.
 
 ### AC-106 — Backend-mode command honesty — [FIX] — ⬜ Not started
 
