@@ -1,0 +1,479 @@
+
+Running 381 tests using 3 workers
+
+  ✓    3 [webkit-5120x1440] › e2e/shell-accessibility.spec.ts:110:3 › Accessibility — keyboard critical path (FBL-033) › the focused control always shows a visible focus indicator (1.3s)
+  ✓    4 [webkit-5120x1440] › e2e/shell-accessibility.spec.ts:136:3 › Accessibility — keyboard critical path (FBL-033) › every canvas object has a navigator equivalent (532ms)
+  ✓    2 [webkit-5120x1440] › e2e/shell-accessibility.spec.ts:52:3 › Accessibility — keyboard critical path (FBL-033) › every critical control is reachable by Tab alone, with no keyboard trap (2.0s)
+  ✓    5 [webkit-5120x1440] › e2e/shell-accessibility.spec.ts:148:3 › Accessibility — keyboard critical path (FBL-033) › mandatory regions expose semantic structure (649ms)
+  ✓    1 [webkit-5120x1440] › e2e/shell-accessibility.spec.ts:80:3 › Accessibility — keyboard critical path (FBL-033) › focus order is stable across repeated traversals (2.5s)
+  ✓    6 [webkit-5120x1440] › e2e/shell-accessibility.spec.ts:166:3 › Reduced motion (FBL-033) › the primary journey communicates the same operational meaning (617ms)
+  ✓    7 [webkit-5120x1440] › e2e/shell-accessibility.spec.ts:180:3 › Reduced motion (FBL-033) › status remains readable without motion cues (436ms)
+  ✓    9 [webkit-5120x1440] › e2e/shell-agents.spec.ts:38:3 › Agent representations (FBL-020) › exactly three agents are mounted, distinct world objects, defaulting to idle (828ms)
+  ✓    8 [webkit-5120x1440] › e2e/shell-agents.spec.ts:23:3 › Agent representations (FBL-020) › renders with no console or page errors (1.4s)
+  ✓   10 [webkit-5120x1440] › e2e/shell-agents.spec.ts:56:3 › Agent representations (FBL-020) › pointer click on the Architect agent selects it (hit target) and syncs navigator + detail panel (1.3s)
+  ✓   11 [webkit-5120x1440] › e2e/shell-agents.spec.ts:87:3 › Agent representations (FBL-020) › selecting an agent from the existing 2D Agents list syncs the 3D object (navigator-to-Canvas sync) (1.1s)
+  ✓   12 [webkit-5120x1440] › e2e/shell-agents.spec.ts:99:3 › Agent representations (FBL-020) › Escape clears agent selection from any focus context (1.1s)
+  ✓   13 [webkit-5120x1440] › e2e/shell-agents.spec.ts:112:3 › Agent representations (FBL-020) › no keyboard trap: Tab still moves focus away from the 3D world after agents were added (795ms)
+  ✓   16 [webkit-5120x1440] › e2e/shell-camera.spec.ts:64:3 › Camera and navigation › shows the canonical position on load and the Reset View control exists outside the canvas (870ms)
+  ✓   17 [webkit-5120x1440] › e2e/shell-camera.spec.ts:73:3 › Camera and navigation › keyboard zoom respects min/max distance limits (1.6s)
+  ✓   18 [webkit-5120x1440] › e2e/shell-camera.spec.ts:85:3 › Camera and navigation › keyboard orbit changes azimuth/elevation and stays within controlled bounds (1.3s)
+  ✓   19 [webkit-5120x1440] › e2e/shell-camera.spec.ts:121:3 › Camera and navigation › keyboard pan moves the target and stays within the neighborhood bounds (1.4s)
+  ✓   15 [webkit-5120x1440] › e2e/shell-agents.spec.ts:155:3 › Agent representations (FBL-020) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.3s)
+  ✓   20 [webkit-5120x1440] › e2e/shell-camera.spec.ts:144:3 › Camera and navigation › Home key and the 2D Reset View button both return to the canonical position (1.7s)
+  ✓   21 [webkit-5120x1440] › e2e/shell-camera.spec.ts:166:3 › Camera and navigation › camera controls keep working after collapsing and resizing panels (1.6s)
+  ✓   22 [webkit-5120x1440] › e2e/shell-camera.spec.ts:180:3 › Camera and navigation › reduced motion: keyboard camera controls still function with no crash (1.2s)
+  ✓   24 [webkit-5120x1440] › e2e/shell-camera.spec.ts:217:3 › Camera and navigation › textual camera instructions are present without relying on pointer gestures (392ms)
+  ✓   25 [webkit-5120x1440] › e2e/shell-controls.spec.ts:10:3 › 2D operational controls — command bar › Pause/Resume are typed, bounded commands with visible feedback (621ms)
+  ✓   23 [webkit-5120x1440] › e2e/shell-camera.spec.ts:196:3 › Camera and navigation › no console or page errors after camera interaction (1.3s)
+  ✓   26 [webkit-5120x1440] › e2e/shell-controls.spec.ts:21:3 › 2D operational controls — command bar › the command bar exposes no free-text/natural-language input (428ms)
+  ✓   27 [webkit-5120x1440] › e2e/shell-controls.spec.ts:30:3 › 2D operational controls — stage/requirement detail (no 3D world) › selecting a stage shows its requirement checklist entirely without any 3D content (1.9s)
+  ✓   14 [webkit-5120x1440] › e2e/shell-agents.spec.ts:129:3 › Agent representations (FBL-020) › no agent is ever visually represented in two locations at once, through a full canonical run (12.4s)
+  ✓   28 [webkit-5120x1440] › e2e/shell-controls.spec.ts:43:3 › 2D operational controls — stage/requirement detail (no 3D world) › the intentional requirement failure is visible, then shows recovered after retry (3.1s)
+  ✓   29 [webkit-5120x1440] › e2e/shell-controls.spec.ts:69:3 › 2D operational controls — approval workflow › keyboard-only path resolves the pending approval (Approve) (6.3s)
+  ✓   30 [webkit-5120x1440] › e2e/shell-controls.spec.ts:92:3 › 2D operational controls — approval workflow › Reject produces a real, visible approval.rejected event and does not fabricate further progress (6.7s)
+  ✓   31 [webkit-5120x1440] › e2e/shell-controls.spec.ts:111:3 › 2D operational controls — approval workflow › Request revision produces the full revision event chain, visible in the timeline (6.3s)
+  ✓   32 [webkit-5120x1440] › e2e/shell-controls.spec.ts:137:3 › 2D operational controls — accessibility › the approval card, command bar, and stage list are all keyboard reachable (2.4s)
+  ✓   33 [webkit-5120x1440] › e2e/shell-environment.spec.ts:12:3 › Spatial environment (ground, lighting, fog) › renders with no console or page errors (1.4s)
+  ✓   34 [webkit-5120x1440] › e2e/shell-environment.spec.ts:27:3 › Spatial environment (ground, lighting, fog) › the canvas shows real rendered content, not a blank/uniform fill (1.4s)
+  ✓   35 [webkit-5120x1440] › e2e/shell-environment.spec.ts:68:3 › Spatial environment (ground, lighting, fog) › environment keeps rendering after a panel-driven resize (1.7s)
+  ✓   37 [webkit-5120x1440] › e2e/shell-event-to-world-mapping.spec.ts:16:3 › Event-to-world mapping (FBL-021) › renders with no console or page errors through a full run (1.4s)
+  ✓   36 [webkit-5120x1440] › e2e/shell-environment.spec.ts:84:3 › Spatial environment (ground, lighting, fog) › maintains a minimally acceptable frame rate (1.9s)
+  ✓   40 [webkit-5120x1440] › e2e/shell-event-to-world-mapping.spec.ts:86:3 › Event-to-world mapping (FBL-021) › the Lighthouse signals attention while the deployment approval is pending, then clears once approved (6.6s)
+  ✓   39 [webkit-5120x1440] › e2e/shell-event-to-world-mapping.spec.ts:52:3 › Event-to-world mapping (FBL-021) › V-05: the vehicle is never in_transit before a real 'Transfer started' timeline row appears, and does move shortly after (9.9s)
+  ✓   38 [webkit-5120x1440] › e2e/shell-event-to-world-mapping.spec.ts:32:3 › Event-to-world mapping (FBL-021) › V-04: Cargo stays blocked while the intentional requirement failure is active, matched by timeline text (11.8s)
+  ✓   41 [webkit-5120x1440] › e2e/shell-event-to-world-mapping.spec.ts:101:3 › Event-to-world mapping (FBL-021) › repair and validation update the Construction Office and QA building status correctly (5.7s)
+  ✓   43 [webkit-5120x1440] › e2e/shell-event-to-world-mapping.spec.ts:152:3 › Event-to-world mapping (FBL-021) › unknown/no-visual-change events (e.g. artifact.* ) still appear as readable timeline rows even though they carry no dedicated 3D representation (1.5s)
+  ✓   42 [webkit-5120x1440] › e2e/shell-event-to-world-mapping.spec.ts:119:3 › Event-to-world mapping (FBL-021) › every meaningful visual transition has a readable timeline equivalent (Required behavior 11) (6.9s)
+  ✓   44 [webkit-5120x1440] › e2e/shell-event-to-world-mapping.spec.ts:162:3 › Event-to-world mapping (FBL-021) › selection stays synchronized on the Warehouse while its status changes across the run (6.2s)
+  ✓   47 [webkit-5120x1440] › e2e/shell-layout.spec.ts:18:3 › Ultrawide application shell › uses the full viewport with no app-wide max-width clipping (670ms)
+  ✓   48 [webkit-5120x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › top system bar region is present and not collapsed (539ms)
+  ✓   49 [webkit-5120x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › left navigation region is present and not collapsed (457ms)
+  ✓   50 [webkit-5120x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › central operational world region is present and not collapsed (438ms)
+  ✓   51 [webkit-5120x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › right live-intelligence region is present and not collapsed (444ms)
+  ✓   52 [webkit-5120x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › bottom event timeline region is present and not collapsed (442ms)
+  ✓   53 [webkit-5120x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › persistent command input region is present and not collapsed (434ms)
+  ✓   54 [webkit-5120x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › selected-object details region is present and not collapsed (438ms)
+  ✓   55 [webkit-5120x1440] › e2e/shell-layout.spec.ts:46:3 › Ultrawide application shell › central world region remains dominant by width (441ms)
+  ✓   46 [webkit-5120x1440] › e2e/shell-event-to-world-mapping.spec.ts:214:3 › Event-to-world mapping (FBL-021) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.3s)
+  ✓   56 [webkit-5120x1440] › e2e/shell-layout.spec.ts:58:3 › Ultrawide application shell › no mandatory region collapses to zero size at this viewport (580ms)
+  ✓   58 [webkit-5120x1440] › e2e/shell-lighthouse.spec.ts:33:3 › Lighthouse › the Lighthouse status is present, accessible as text, and starts healthy (438ms)
+  ✓   57 [webkit-5120x1440] › e2e/shell-lighthouse.spec.ts:18:3 › Lighthouse › renders with no console or page errors (1.4s)
+  ✓   60 [webkit-5120x1440] › e2e/shell-lighthouse.spec.ts:61:3 › Lighthouse › the canvas shows real rendered content (ground and Lighthouse), not a blank fill (1.4s)
+  ✓   45 [webkit-5120x1440] › e2e/shell-event-to-world-mapping.spec.ts:181:3 › Event-to-world mapping (FBL-021) › reduced motion: the same operational sequence is communicated (blocked -> attention -> approved -> completed) (14.8s)
+  ✓   62 [webkit-5120x1440] › e2e/shell-lighthouse.spec.ts:167:3 › Lighthouse › reduced motion: the Lighthouse still renders and its status still updates (2.0s)
+  ✓   61 [webkit-5120x1440] › e2e/shell-lighthouse.spec.ts:89:3 › Lighthouse › the Lighthouse specifically is mounted and rendered at its own reported screen position (4.3s)
+  ✓   59 [webkit-5120x1440] › e2e/shell-lighthouse.spec.ts:42:3 › Lighthouse › the Lighthouse's textual status reflects real runtime state through a full run (6.4s)
+  ✓   65 [webkit-5120x1440] › e2e/shell-operational-buildings.spec.ts:44:3 › Operational buildings (FBL-017) › all five operational buildings are mounted, distinct world objects (678ms)
+  ✓   64 [webkit-5120x1440] › e2e/shell-operational-buildings.spec.ts:29:3 › Operational buildings (FBL-017) › renders with no console or page errors (1.4s)
+  ✓   66 [webkit-5120x1440] › e2e/shell-operational-buildings.spec.ts:51:3 › Operational buildings (FBL-017) › pointer click on the Construction Office selects it (hit target) and syncs navigator + detail panel (1.1s)
+  ✓   68 [webkit-5120x1440] › e2e/shell-operational-buildings.spec.ts:87:3 › Operational buildings (FBL-017) › Escape clears operational building selection from any focus context (1.3s)
+  ✓   67 [webkit-5120x1440] › e2e/shell-operational-buildings.spec.ts:73:3 › Operational buildings (FBL-017) › selecting each operational building from the navigator selects the matching 3D object (2.0s)
+  ✓   70 [webkit-5120x1440] › e2e/shell-operational-buildings.spec.ts:123:3 › Operational buildings (FBL-017) › no keyboard trap: Tab still moves focus away from the 3D world after operational buildings were added (975ms)
+  ✓   63 [webkit-5120x1440] › e2e/shell-lighthouse.spec.ts:176:3 › Lighthouse › existing 2D functionality (command bar, approval workflow) remains unaffected (6.2s)
+  ✘   72 [webkit-5120x1440] › e2e/shell-panels.spec.ts:20:3 › Panel framework keyboard and pointer interaction › Tab-only navigation reaches every panel control in a stable order (1.4s)
+  ✓   73 [webkit-5120x1440] › e2e/shell-panels.spec.ts:48:3 › Panel framework keyboard and pointer interaction › every focused control shows a visible focus indicator (625ms)
+  ✓   74 [webkit-5120x1440] › e2e/shell-panels.spec.ts:62:3 › Panel framework keyboard and pointer interaction › collapse toggle hides panel content and updates aria-expanded, reachable by keyboard alone (498ms)
+  ✓   75 [webkit-5120x1440] › e2e/shell-panels.spec.ts:77:3 › Panel framework keyboard and pointer interaction › keyboard ArrowRight on the left-nav resize handle grows the panel (529ms)
+  ✓   76 [webkit-5120x1440] › e2e/shell-panels.spec.ts:91:3 › Panel framework keyboard and pointer interaction › pointer drag on the event timeline handle resizes the timeline (518ms)
+  ✓   71 [webkit-5120x1440] › e2e/shell-operational-buildings.spec.ts:140:3 › Operational buildings (FBL-017) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.2s)
+  -   78 [webkit-5120x1440] › e2e/shell-realtime-connection.spec.ts:85:3 › FBL-026 realtime connection — disconnected and restored states › disconnect shows the stale banner and disables mutation controls; restore clears both
+  ✓   77 [webkit-5120x1440] › e2e/shell-panels.spec.ts:113:3 › Panel framework keyboard and pointer interaction › Reset layout restores a collapsed panel to expanded (653ms)
+  ✓   80 [webkit-5120x1440] › e2e/shell-residences.spec.ts:37:3 › Residences (FBL-016) › all three residences are mounted, distinct world objects (736ms)
+  ✓   69 [webkit-5120x1440] › e2e/shell-operational-buildings.spec.ts:100:3 › Operational buildings (FBL-017) › the Warehouse starts at level 1 and only reaches level 2 after a real upgrade.completed, at the end of a full run (8.1s)
+  ✓   79 [webkit-5120x1440] › e2e/shell-residences.spec.ts:22:3 › Residences (FBL-016) › renders with no console or page errors (1.4s)
+  ✓   81 [webkit-5120x1440] › e2e/shell-residences.spec.ts:47:3 › Residences (FBL-016) › pointer click on the Architect residence selects it (hit target) and syncs navigator + detail panel (1.0s)
+  ✓   82 [webkit-5120x1440] › e2e/shell-residences.spec.ts:69:3 › Residences (FBL-016) › selecting each residence from the navigator selects the matching 3D object and moves the camera (1.3s)
+  ✓   83 [webkit-5120x1440] › e2e/shell-residences.spec.ts:82:3 › Residences (FBL-016) › Escape clears residence selection from any focus context (1.1s)
+  ✓   84 [webkit-5120x1440] › e2e/shell-residences.spec.ts:95:3 › Residences (FBL-016) › no keyboard trap: Tab still moves focus away from the 3D world after residences were added (838ms)
+  ✓   85 [webkit-5120x1440] › e2e/shell-residences.spec.ts:112:3 › Residences (FBL-016) › residence occupancy reflects real agent events through a run: occupied -> vacant (assigned) -> occupied (returned home) (1.8s)
+  ✓   87 [webkit-5120x1440] › e2e/shell-roads.spec.ts:10:3 › Road network (FBL-018) › renders with no console or page errors (1.4s)
+  ✓   88 [webkit-5120x1440] › e2e/shell-roads.spec.ts:25:3 › Road network (FBL-018) › the road network renders real, non-blank geometry connecting the neighborhood (1.5s)
+  ✓   89 [webkit-5120x1440] › e2e/shell-roads.spec.ts:59:3 › Road network (FBL-018) › the road network survives a panel-driven resize without console/WebGL errors (2.0s)
+  ✓   91 [webkit-5120x1440] › e2e/shell-selection.spec.ts:24:3 › Object selection › pointer click on the Lighthouse selects it (pointer hit target) and syncs navigator + detail panel (1.4s)
+  ✓   86 [webkit-5120x1440] › e2e/shell-residences.spec.ts:135:3 › Residences (FBL-016) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.4s)
+NOTE: camera had already settled before sampling began
+  ✓   92 [webkit-5120x1440] › e2e/shell-selection.spec.ts:58:3 › Object selection › projected coordinates move before the camera settles, and the stable wait outlasts that window (1.4s)
+  ✓   93 [webkit-5120x1440] › e2e/shell-selection.spec.ts:99:3 › Object selection › selecting from the left navigator syncs the Canvas (navigator-to-Canvas sync) (982ms)
+  ✓   94 [webkit-5120x1440] › e2e/shell-selection.spec.ts:111:3 › Object selection › keyboard: Enter while the 3D world has focus selects the Lighthouse (989ms)
+  ✓   95 [webkit-5120x1440] › e2e/shell-selection.spec.ts:131:3 › Object selection › Escape clears the selection from any focus context (847ms)
+  ✓   96 [webkit-5120x1440] › e2e/shell-selection.spec.ts:150:3 › Object selection › selecting the Lighthouse moves the FBL-012 camera to focus on it (1.8s)
+  ✓   90 [webkit-5120x1440] › e2e/shell-roads.spec.ts:75:3 › Road network (FBL-018) › existing selection and 2D functionality (Lighthouse selection, timeline, approval, command bar) remains unaffected (6.8s)
+  ✓   97 [webkit-5120x1440] › e2e/shell-selection.spec.ts:169:3 › Object selection › duplicate selection events do not duplicate timeline records (1.5s)
+  ✓   98 [webkit-5120x1440] › e2e/shell-selection.spec.ts:183:3 › Object selection › reduced motion: selection still works and camera focus snaps instantly (919ms)
+  ✓   99 [webkit-5120x1440] › e2e/shell-selection.spec.ts:207:3 › Object selection › no keyboard trap: Tab still moves focus away from the 3D world (827ms)
+  ✓  102 [webkit-5120x1440] › e2e/shell-timeline.spec.ts:94:3 › Event timeline › event count increases over time without ever decreasing (append-only) (865ms)
+  ✓  101 [webkit-5120x1440] › e2e/shell-timeline.spec.ts:67:3 › Event timeline › events render chronologically as the demo plays, in the correct canonical order (1.9s)
+  ✓  104 [webkit-5120x1440] › e2e/shell-timeline.spec.ts:141:3 › Event timeline › pause autoscroll stops the view from jumping, resume restores it (1.2s)
+  ✓  105 [webkit-5120x1440] › e2e/shell-timeline.spec.ts:168:3 › Event timeline › selecting a row shows its payload and an explicit jump-to-world-object unavailable state (935ms)
+  ✓  100 [webkit-5120x1440] › e2e/shell-selection.spec.ts:224:3 › Object selection › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.2s)
+  ✓  106 [webkit-5120x1440] › e2e/shell-timeline.spec.ts:201:3 › Event timeline › jump to world object selects the declared object and synchronizes world, navigator, and detail (2.1s)
+  ✓  107 [webkit-5120x1440] › e2e/shell-timeline.spec.ts:218:3 › Event timeline › jump to world object is operable by keyboard alone (2.3s)
+  ✓  108 [webkit-5120x1440] › e2e/shell-timeline.spec.ts:233:3 › Event timeline › jumping creates no operational event — navigation is not work (2.2s)
+  ✓  110 [webkit-5120x1440] › e2e/shell-timeline.spec.ts:267:3 › Event timeline › timeline controls and rows are reachable and operable by keyboard alone (817ms)
+  ✓  109 [webkit-5120x1440] › e2e/shell-timeline.spec.ts:252:3 › Event timeline › reduced motion: jumping still selects, without animated camera travel (1.7s)
+  ✓  103 [webkit-5120x1440] › e2e/shell-timeline.spec.ts:108:3 › Event timeline › filtering by severity narrows the visible rows (10.2s)
+  ✓  111 [webkit-5120x1440] › e2e/shell-v1-primary-journey.spec.ts:28:3 › V1 primary journey — complete end-to-end run (FBL-022) › every major transition is comprehensible within ten seconds: running, who's working, blocked, failed, needs approval, completed, upgrade (8.1s)
+  ✓  113 [webkit-5120x1440] › e2e/shell-v1-primary-journey.spec.ts:113:3 › V1 primary journey — complete end-to-end run (FBL-022) › upgrade eligibility, approval, and Level 2 completion are all reachable and reported correctly (8.2s)
+  ✓  112 [webkit-5120x1440] › e2e/shell-v1-primary-journey.spec.ts:80:3 › V1 primary journey — complete end-to-end run (FBL-022) › cargo stays blocked and the vehicle stays parked through the intentional failure, then transfer authorizes and completes (16.6s)
+  ✓  115 [webkit-5120x1440] › e2e/shell-v1-primary-journey.spec.ts:190:3 › V1 primary journey — complete end-to-end run (FBL-022) › selection stays synchronized on the Warehouse across the entire journey through upgrade completion (7.9s)
+  ✓  114 [webkit-5120x1440] › e2e/shell-v1-primary-journey.spec.ts:132:3 › V1 primary journey — complete end-to-end run (FBL-022) › 2D-only comprehension: every major transition is identifiable from the 2D panels alone, without reading the 3D world (15.5s)
+  ✓  116 [webkit-5120x1440] › e2e/shell-v1-primary-journey.spec.ts:210:3 › V1 primary journey — complete end-to-end run (FBL-022) › reduced motion: the complete journey through upgrade completion communicates identical operational meaning (8.4s)
+  ✓  119 [webkit-5120x1440] › e2e/shell-vehicle.spec.ts:17:3 › Utility vehicle (FBL-019) › renders with no console or page errors (1.4s)
+  ✓  120 [webkit-5120x1440] › e2e/shell-vehicle.spec.ts:32:3 › Utility vehicle (FBL-019) › the vehicle is mounted, visible, and defaults to parked (796ms)
+  ✓  121 [webkit-5120x1440] › e2e/shell-vehicle.spec.ts:39:3 › Utility vehicle (FBL-019) › pointer click on the vehicle selects it (hit target) and syncs navigator + detail panel (1.2s)
+  ✓  122 [webkit-5120x1440] › e2e/shell-vehicle.spec.ts:64:3 › Utility vehicle (FBL-019) › selecting the vehicle from the navigator selects the matching 3D object and moves the camera (1.0s)
+  ✓  118 [webkit-5120x1440] › e2e/shell-v1-primary-journey.spec.ts:272:3 › V1 primary journey — complete end-to-end run (FBL-022) › existing 2D functionality (timeline, command bar) remains unaffected by the complete journey (7.5s)
+  ✓  123 [webkit-5120x1440] › e2e/shell-vehicle.spec.ts:78:3 › Utility vehicle (FBL-019) › Escape clears vehicle selection from any focus context (1.2s)
+  ✓  117 [webkit-5120x1440] › e2e/shell-v1-primary-journey.spec.ts:223:3 › V1 primary journey — complete end-to-end run (FBL-022) › duplicate-event safe: replay produces the identical final journey outcome, no duplicated rows or approvals (15.0s)
+  ✓  126 [webkit-5120x1440] › e2e/shell-world.spec.ts:10:3 › Empty React Three Fiber world › mounts a canvas inside the world region with no console or page errors (943ms)
+  ✓  127 [webkit-5120x1440] › e2e/shell-world.spec.ts:38:3 › Empty React Three Fiber world › the canvas fills the world region and tracks it when the region resizes (915ms)
+  ✓  128 [webkit-3840x1080] › e2e/shell-accessibility.spec.ts:52:3 › Accessibility — keyboard critical path (FBL-033) › every critical control is reachable by Tab alone, with no keyboard trap (1.4s)
+  ✓  125 [webkit-5120x1440] › e2e/shell-vehicle.spec.ts:127:3 › Utility vehicle (FBL-019) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.4s)
+  ✓  129 [webkit-3840x1080] › e2e/shell-accessibility.spec.ts:80:3 › Accessibility — keyboard critical path (FBL-033) › focus order is stable across repeated traversals (1.2s)
+  ✓  131 [webkit-3840x1080] › e2e/shell-accessibility.spec.ts:136:3 › Accessibility — keyboard critical path (FBL-033) › every canvas object has a navigator equivalent (443ms)
+  ✓  130 [webkit-3840x1080] › e2e/shell-accessibility.spec.ts:110:3 › Accessibility — keyboard critical path (FBL-033) › the focused control always shows a visible focus indicator (935ms)
+  ✓  132 [webkit-3840x1080] › e2e/shell-accessibility.spec.ts:148:3 › Accessibility — keyboard critical path (FBL-033) › mandatory regions expose semantic structure (401ms)
+  ✓  133 [webkit-3840x1080] › e2e/shell-accessibility.spec.ts:166:3 › Reduced motion (FBL-033) › the primary journey communicates the same operational meaning (406ms)
+  ✓  134 [webkit-3840x1080] › e2e/shell-accessibility.spec.ts:180:3 › Reduced motion (FBL-033) › status remains readable without motion cues (396ms)
+  ✓  136 [webkit-3840x1080] › e2e/shell-agents.spec.ts:38:3 › Agent representations (FBL-020) › exactly three agents are mounted, distinct world objects, defaulting to idle (663ms)
+  ✓  135 [webkit-3840x1080] › e2e/shell-agents.spec.ts:23:3 › Agent representations (FBL-020) › renders with no console or page errors (1.4s)
+  ✓  137 [webkit-3840x1080] › e2e/shell-agents.spec.ts:56:3 › Agent representations (FBL-020) › pointer click on the Architect agent selects it (hit target) and syncs navigator + detail panel (1.0s)
+  ✓  138 [webkit-3840x1080] › e2e/shell-agents.spec.ts:87:3 › Agent representations (FBL-020) › selecting an agent from the existing 2D Agents list syncs the 3D object (navigator-to-Canvas sync) (931ms)
+  ✓  139 [webkit-3840x1080] › e2e/shell-agents.spec.ts:99:3 › Agent representations (FBL-020) › Escape clears agent selection from any focus context (1.0s)
+  ✓  140 [webkit-3840x1080] › e2e/shell-agents.spec.ts:112:3 › Agent representations (FBL-020) › no keyboard trap: Tab still moves focus away from the 3D world after agents were added (736ms)
+  ✓  124 [webkit-5120x1440] › e2e/shell-vehicle.spec.ts:92:3 › Utility vehicle (FBL-019) › the vehicle never reports in_transit at any point during a full run without transfer.started backing it — no fabricated motion (14.8s)
+  ✓  143 [webkit-3840x1080] › e2e/shell-camera.spec.ts:64:3 › Camera and navigation › shows the canonical position on load and the Reset View control exists outside the canvas (989ms)
+  ✓  144 [webkit-3840x1080] › e2e/shell-camera.spec.ts:73:3 › Camera and navigation › keyboard zoom respects min/max distance limits (1.5s)
+  ✓  142 [webkit-3840x1080] › e2e/shell-agents.spec.ts:155:3 › Agent representations (FBL-020) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.6s)
+  ✓  145 [webkit-3840x1080] › e2e/shell-camera.spec.ts:85:3 › Camera and navigation › keyboard orbit changes azimuth/elevation and stays within controlled bounds (1.4s)
+  ✓  146 [webkit-3840x1080] › e2e/shell-camera.spec.ts:121:3 › Camera and navigation › keyboard pan moves the target and stays within the neighborhood bounds (1.5s)
+  ✓  148 [webkit-3840x1080] › e2e/shell-camera.spec.ts:166:3 › Camera and navigation › camera controls keep working after collapsing and resizing panels (1.1s)
+  ✓  147 [webkit-3840x1080] › e2e/shell-camera.spec.ts:144:3 › Camera and navigation › Home key and the 2D Reset View button both return to the canonical position (1.6s)
+  ✓  150 [webkit-3840x1080] › e2e/shell-camera.spec.ts:196:3 › Camera and navigation › no console or page errors after camera interaction (1.2s)
+  ✓  149 [webkit-3840x1080] › e2e/shell-camera.spec.ts:180:3 › Camera and navigation › reduced motion: keyboard camera controls still function with no crash (1.3s)
+  ✓  151 [webkit-3840x1080] › e2e/shell-camera.spec.ts:217:3 › Camera and navigation › textual camera instructions are present without relying on pointer gestures (383ms)
+  ✓  152 [webkit-3840x1080] › e2e/shell-controls.spec.ts:10:3 › 2D operational controls — command bar › Pause/Resume are typed, bounded commands with visible feedback (660ms)
+  ✓  153 [webkit-3840x1080] › e2e/shell-controls.spec.ts:21:3 › 2D operational controls — command bar › the command bar exposes no free-text/natural-language input (395ms)
+  ✓  141 [webkit-3840x1080] › e2e/shell-agents.spec.ts:129:3 › Agent representations (FBL-020) › no agent is ever visually represented in two locations at once, through a full canonical run (12.7s)
+  ✓  154 [webkit-3840x1080] › e2e/shell-controls.spec.ts:30:3 › 2D operational controls — stage/requirement detail (no 3D world) › selecting a stage shows its requirement checklist entirely without any 3D content (1.9s)
+  ✓  155 [webkit-3840x1080] › e2e/shell-controls.spec.ts:43:3 › 2D operational controls — stage/requirement detail (no 3D world) › the intentional requirement failure is visible, then shows recovered after retry (3.0s)
+  ✓  156 [webkit-3840x1080] › e2e/shell-controls.spec.ts:69:3 › 2D operational controls — approval workflow › keyboard-only path resolves the pending approval (Approve) (6.6s)
+  ✓  157 [webkit-3840x1080] › e2e/shell-controls.spec.ts:92:3 › 2D operational controls — approval workflow › Reject produces a real, visible approval.rejected event and does not fabricate further progress (6.5s)
+  ✓  158 [webkit-3840x1080] › e2e/shell-controls.spec.ts:111:3 › 2D operational controls — approval workflow › Request revision produces the full revision event chain, visible in the timeline (6.6s)
+  ✓  160 [webkit-3840x1080] › e2e/shell-environment.spec.ts:12:3 › Spatial environment (ground, lighting, fog) › renders with no console or page errors (1.4s)
+  ✓  159 [webkit-3840x1080] › e2e/shell-controls.spec.ts:137:3 › 2D operational controls — accessibility › the approval card, command bar, and stage list are all keyboard reachable (2.3s)
+  ✓  161 [webkit-3840x1080] › e2e/shell-environment.spec.ts:27:3 › Spatial environment (ground, lighting, fog) › the canvas shows real rendered content, not a blank/uniform fill (1.4s)
+  ✓  162 [webkit-3840x1080] › e2e/shell-environment.spec.ts:68:3 › Spatial environment (ground, lighting, fog) › environment keeps rendering after a panel-driven resize (1.6s)
+  ✓  163 [webkit-3840x1080] › e2e/shell-environment.spec.ts:84:3 › Spatial environment (ground, lighting, fog) › maintains a minimally acceptable frame rate (1.9s)
+  ✓  164 [webkit-3840x1080] › e2e/shell-event-to-world-mapping.spec.ts:16:3 › Event-to-world mapping (FBL-021) › renders with no console or page errors through a full run (1.4s)
+  ✓  167 [webkit-3840x1080] › e2e/shell-event-to-world-mapping.spec.ts:86:3 › Event-to-world mapping (FBL-021) › the Lighthouse signals attention while the deployment approval is pending, then clears once approved (6.5s)
+  ✓  166 [webkit-3840x1080] › e2e/shell-event-to-world-mapping.spec.ts:52:3 › Event-to-world mapping (FBL-021) › V-05: the vehicle is never in_transit before a real 'Transfer started' timeline row appears, and does move shortly after (9.2s)
+  ✓  165 [webkit-3840x1080] › e2e/shell-event-to-world-mapping.spec.ts:32:3 › Event-to-world mapping (FBL-021) › V-04: Cargo stays blocked while the intentional requirement failure is active, matched by timeline text (12.1s)
+  ✓  168 [webkit-3840x1080] › e2e/shell-event-to-world-mapping.spec.ts:101:3 › Event-to-world mapping (FBL-021) › repair and validation update the Construction Office and QA building status correctly (5.3s)
+  ✓  170 [webkit-3840x1080] › e2e/shell-event-to-world-mapping.spec.ts:152:3 › Event-to-world mapping (FBL-021) › unknown/no-visual-change events (e.g. artifact.* ) still appear as readable timeline rows even though they carry no dedicated 3D representation (1.8s)
+  ✓  169 [webkit-3840x1080] › e2e/shell-event-to-world-mapping.spec.ts:119:3 › Event-to-world mapping (FBL-021) › every meaningful visual transition has a readable timeline equivalent (Required behavior 11) (6.8s)
+  ✓  171 [webkit-3840x1080] › e2e/shell-event-to-world-mapping.spec.ts:162:3 › Event-to-world mapping (FBL-021) › selection stays synchronized on the Warehouse while its status changes across the run (6.0s)
+  ✓  174 [webkit-3840x1080] › e2e/shell-layout.spec.ts:18:3 › Ultrawide application shell › uses the full viewport with no app-wide max-width clipping (428ms)
+  ✓  175 [webkit-3840x1080] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › top system bar region is present and not collapsed (404ms)
+  ✓  176 [webkit-3840x1080] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › left navigation region is present and not collapsed (420ms)
+  ✓  177 [webkit-3840x1080] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › central operational world region is present and not collapsed (414ms)
+  ✓  178 [webkit-3840x1080] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › right live-intelligence region is present and not collapsed (399ms)
+  ✓  179 [webkit-3840x1080] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › bottom event timeline region is present and not collapsed (594ms)
+  ✓  180 [webkit-3840x1080] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › persistent command input region is present and not collapsed (405ms)
+  ✓  181 [webkit-3840x1080] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › selected-object details region is present and not collapsed (416ms)
+  ✓  173 [webkit-3840x1080] › e2e/shell-event-to-world-mapping.spec.ts:214:3 › Event-to-world mapping (FBL-021) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.1s)
+  ✓  182 [webkit-3840x1080] › e2e/shell-layout.spec.ts:46:3 › Ultrawide application shell › central world region remains dominant by width (405ms)
+  ✓  183 [webkit-3840x1080] › e2e/shell-layout.spec.ts:58:3 › Ultrawide application shell › no mandatory region collapses to zero size at this viewport (528ms)
+  ✓  185 [webkit-3840x1080] › e2e/shell-lighthouse.spec.ts:33:3 › Lighthouse › the Lighthouse status is present, accessible as text, and starts healthy (415ms)
+  ✓  184 [webkit-3840x1080] › e2e/shell-lighthouse.spec.ts:18:3 › Lighthouse › renders with no console or page errors (1.4s)
+  ✓  187 [webkit-3840x1080] › e2e/shell-lighthouse.spec.ts:61:3 › Lighthouse › the canvas shows real rendered content (ground and Lighthouse), not a blank fill (1.4s)
+  ✓  172 [webkit-3840x1080] › e2e/shell-event-to-world-mapping.spec.ts:181:3 › Event-to-world mapping (FBL-021) › reduced motion: the same operational sequence is communicated (blocked -> attention -> approved -> completed) (15.0s)
+  ✓  188 [webkit-3840x1080] › e2e/shell-lighthouse.spec.ts:89:3 › Lighthouse › the Lighthouse specifically is mounted and rendered at its own reported screen position (3.3s)
+  ✓  186 [webkit-3840x1080] › e2e/shell-lighthouse.spec.ts:42:3 › Lighthouse › the Lighthouse's textual status reflects real runtime state through a full run (6.2s)
+  ✓  189 [webkit-3840x1080] › e2e/shell-lighthouse.spec.ts:167:3 › Lighthouse › reduced motion: the Lighthouse still renders and its status still updates (1.8s)
+  ✓  191 [webkit-3840x1080] › e2e/shell-operational-buildings.spec.ts:29:3 › Operational buildings (FBL-017) › renders with no console or page errors (1.4s)
+  ✓  192 [webkit-3840x1080] › e2e/shell-operational-buildings.spec.ts:44:3 › Operational buildings (FBL-017) › all five operational buildings are mounted, distinct world objects (664ms)
+  ✓  193 [webkit-3840x1080] › e2e/shell-operational-buildings.spec.ts:51:3 › Operational buildings (FBL-017) › pointer click on the Construction Office selects it (hit target) and syncs navigator + detail panel (897ms)
+  ✓  194 [webkit-3840x1080] › e2e/shell-operational-buildings.spec.ts:73:3 › Operational buildings (FBL-017) › selecting each operational building from the navigator selects the matching 3D object (1.7s)
+  ✓  195 [webkit-3840x1080] › e2e/shell-operational-buildings.spec.ts:87:3 › Operational buildings (FBL-017) › Escape clears operational building selection from any focus context (1.1s)
+  ✓  197 [webkit-3840x1080] › e2e/shell-operational-buildings.spec.ts:123:3 › Operational buildings (FBL-017) › no keyboard trap: Tab still moves focus away from the 3D world after operational buildings were added (688ms)
+  ✓  190 [webkit-3840x1080] › e2e/shell-lighthouse.spec.ts:176:3 › Lighthouse › existing 2D functionality (command bar, approval workflow) remains unaffected (6.6s)
+  ✘  199 [webkit-3840x1080] › e2e/shell-panels.spec.ts:20:3 › Panel framework keyboard and pointer interaction › Tab-only navigation reaches every panel control in a stable order (1.4s)
+  ✓  200 [webkit-3840x1080] › e2e/shell-panels.spec.ts:48:3 › Panel framework keyboard and pointer interaction › every focused control shows a visible focus indicator (557ms)
+  ✓  201 [webkit-3840x1080] › e2e/shell-panels.spec.ts:62:3 › Panel framework keyboard and pointer interaction › collapse toggle hides panel content and updates aria-expanded, reachable by keyboard alone (471ms)
+  ✓  202 [webkit-3840x1080] › e2e/shell-panels.spec.ts:77:3 › Panel framework keyboard and pointer interaction › keyboard ArrowRight on the left-nav resize handle grows the panel (475ms)
+  ✓  203 [webkit-3840x1080] › e2e/shell-panels.spec.ts:91:3 › Panel framework keyboard and pointer interaction › pointer drag on the event timeline handle resizes the timeline (601ms)
+  ✓  198 [webkit-3840x1080] › e2e/shell-operational-buildings.spec.ts:140:3 › Operational buildings (FBL-017) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.2s)
+  -  205 [webkit-3840x1080] › e2e/shell-realtime-connection.spec.ts:85:3 › FBL-026 realtime connection — disconnected and restored states › disconnect shows the stale banner and disables mutation controls; restore clears both
+  ✓  204 [webkit-3840x1080] › e2e/shell-panels.spec.ts:113:3 › Panel framework keyboard and pointer interaction › Reset layout restores a collapsed panel to expanded (658ms)
+  ✓  196 [webkit-3840x1080] › e2e/shell-operational-buildings.spec.ts:100:3 › Operational buildings (FBL-017) › the Warehouse starts at level 1 and only reaches level 2 after a real upgrade.completed, at the end of a full run (7.7s)
+  ✓  207 [webkit-3840x1080] › e2e/shell-residences.spec.ts:37:3 › Residences (FBL-016) › all three residences are mounted, distinct world objects (677ms)
+  ✓  208 [webkit-3840x1080] › e2e/shell-residences.spec.ts:47:3 › Residences (FBL-016) › pointer click on the Architect residence selects it (hit target) and syncs navigator + detail panel (707ms)
+  ✓  206 [webkit-3840x1080] › e2e/shell-residences.spec.ts:22:3 › Residences (FBL-016) › renders with no console or page errors (1.4s)
+  ✓  209 [webkit-3840x1080] › e2e/shell-residences.spec.ts:69:3 › Residences (FBL-016) › selecting each residence from the navigator selects the matching 3D object and moves the camera (1.2s)
+  ✓  211 [webkit-3840x1080] › e2e/shell-residences.spec.ts:95:3 › Residences (FBL-016) › no keyboard trap: Tab still moves focus away from the 3D world after residences were added (719ms)
+  ✓  210 [webkit-3840x1080] › e2e/shell-residences.spec.ts:82:3 › Residences (FBL-016) › Escape clears residence selection from any focus context (1.1s)
+  ✓  212 [webkit-3840x1080] › e2e/shell-residences.spec.ts:112:3 › Residences (FBL-016) › residence occupancy reflects real agent events through a run: occupied -> vacant (assigned) -> occupied (returned home) (1.3s)
+  ✓  214 [webkit-3840x1080] › e2e/shell-roads.spec.ts:10:3 › Road network (FBL-018) › renders with no console or page errors (1.4s)
+  ✓  215 [webkit-3840x1080] › e2e/shell-roads.spec.ts:25:3 › Road network (FBL-018) › the road network renders real, non-blank geometry connecting the neighborhood (1.4s)
+  ✓  216 [webkit-3840x1080] › e2e/shell-roads.spec.ts:59:3 › Road network (FBL-018) › the road network survives a panel-driven resize without console/WebGL errors (2.1s)
+  ✓  218 [webkit-3840x1080] › e2e/shell-selection.spec.ts:24:3 › Object selection › pointer click on the Lighthouse selects it (pointer hit target) and syncs navigator + detail panel (892ms)
+NOTE: camera had already settled before sampling began
+  ✓  219 [webkit-3840x1080] › e2e/shell-selection.spec.ts:58:3 › Object selection › projected coordinates move before the camera settles, and the stable wait outlasts that window (1.1s)
+  ✓  213 [webkit-3840x1080] › e2e/shell-residences.spec.ts:135:3 › Residences (FBL-016) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.6s)
+  ✓  220 [webkit-3840x1080] › e2e/shell-selection.spec.ts:99:3 › Object selection › selecting from the left navigator syncs the Canvas (navigator-to-Canvas sync) (943ms)
+  ✓  221 [webkit-3840x1080] › e2e/shell-selection.spec.ts:111:3 › Object selection › keyboard: Enter while the 3D world has focus selects the Lighthouse (737ms)
+  ✓  222 [webkit-3840x1080] › e2e/shell-selection.spec.ts:131:3 › Object selection › Escape clears the selection from any focus context (994ms)
+  ✓  224 [webkit-3840x1080] › e2e/shell-selection.spec.ts:169:3 › Object selection › duplicate selection events do not duplicate timeline records (1.2s)
+  ✓  223 [webkit-3840x1080] › e2e/shell-selection.spec.ts:150:3 › Object selection › selecting the Lighthouse moves the FBL-012 camera to focus on it (1.6s)
+  ✓  217 [webkit-3840x1080] › e2e/shell-roads.spec.ts:75:3 › Road network (FBL-018) › existing selection and 2D functionality (Lighthouse selection, timeline, approval, command bar) remains unaffected (6.4s)
+  ✓  226 [webkit-3840x1080] › e2e/shell-selection.spec.ts:207:3 › Object selection › no keyboard trap: Tab still moves focus away from the 3D world (693ms)
+  ✓  225 [webkit-3840x1080] › e2e/shell-selection.spec.ts:183:3 › Object selection › reduced motion: selection still works and camera focus snaps instantly (936ms)
+  ✓  229 [webkit-3840x1080] › e2e/shell-timeline.spec.ts:94:3 › Event timeline › event count increases over time without ever decreasing (append-only) (862ms)
+  ✓  228 [webkit-3840x1080] › e2e/shell-timeline.spec.ts:67:3 › Event timeline › events render chronologically as the demo plays, in the correct canonical order (1.8s)
+  ✓  231 [webkit-3840x1080] › e2e/shell-timeline.spec.ts:141:3 › Event timeline › pause autoscroll stops the view from jumping, resume restores it (736ms)
+  ✓  232 [webkit-3840x1080] › e2e/shell-timeline.spec.ts:168:3 › Event timeline › selecting a row shows its payload and an explicit jump-to-world-object unavailable state (789ms)
+  ✓  233 [webkit-3840x1080] › e2e/shell-timeline.spec.ts:201:3 › Event timeline › jump to world object selects the declared object and synchronizes world, navigator, and detail (2.0s)
+  ✓  227 [webkit-3840x1080] › e2e/shell-selection.spec.ts:224:3 › Object selection › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.6s)
+  ✓  234 [webkit-3840x1080] › e2e/shell-timeline.spec.ts:218:3 › Event timeline › jump to world object is operable by keyboard alone (1.8s)
+  ✓  235 [webkit-3840x1080] › e2e/shell-timeline.spec.ts:233:3 › Event timeline › jumping creates no operational event — navigation is not work (1.9s)
+  ✓  237 [webkit-3840x1080] › e2e/shell-timeline.spec.ts:267:3 › Event timeline › timeline controls and rows are reachable and operable by keyboard alone (718ms)
+  ✓  236 [webkit-3840x1080] › e2e/shell-timeline.spec.ts:252:3 › Event timeline › reduced motion: jumping still selects, without animated camera travel (2.0s)
+  ✓  230 [webkit-3840x1080] › e2e/shell-timeline.spec.ts:108:3 › Event timeline › filtering by severity narrows the visible rows (10.0s)
+  ✓  238 [webkit-3840x1080] › e2e/shell-v1-primary-journey.spec.ts:28:3 › V1 primary journey — complete end-to-end run (FBL-022) › every major transition is comprehensible within ten seconds: running, who's working, blocked, failed, needs approval, completed, upgrade (7.7s)
+  ✓  240 [webkit-3840x1080] › e2e/shell-v1-primary-journey.spec.ts:113:3 › V1 primary journey — complete end-to-end run (FBL-022) › upgrade eligibility, approval, and Level 2 completion are all reachable and reported correctly (7.8s)
+  ✓  239 [webkit-3840x1080] › e2e/shell-v1-primary-journey.spec.ts:80:3 › V1 primary journey — complete end-to-end run (FBL-022) › cargo stays blocked and the vehicle stays parked through the intentional failure, then transfer authorizes and completes (16.3s)
+  ✓  242 [webkit-3840x1080] › e2e/shell-v1-primary-journey.spec.ts:190:3 › V1 primary journey — complete end-to-end run (FBL-022) › selection stays synchronized on the Warehouse across the entire journey through upgrade completion (8.1s)
+  ✓  241 [webkit-3840x1080] › e2e/shell-v1-primary-journey.spec.ts:132:3 › V1 primary journey — complete end-to-end run (FBL-022) › 2D-only comprehension: every major transition is identifiable from the 2D panels alone, without reading the 3D world (15.2s)
+  ✓  243 [webkit-3840x1080] › e2e/shell-v1-primary-journey.spec.ts:210:3 › V1 primary journey — complete end-to-end run (FBL-022) › reduced motion: the complete journey through upgrade completion communicates identical operational meaning (7.9s)
+  ✓  246 [webkit-3840x1080] › e2e/shell-vehicle.spec.ts:17:3 › Utility vehicle (FBL-019) › renders with no console or page errors (1.4s)
+  ✓  247 [webkit-3840x1080] › e2e/shell-vehicle.spec.ts:32:3 › Utility vehicle (FBL-019) › the vehicle is mounted, visible, and defaults to parked (635ms)
+  ✓  248 [webkit-3840x1080] › e2e/shell-vehicle.spec.ts:39:3 › Utility vehicle (FBL-019) › pointer click on the vehicle selects it (hit target) and syncs navigator + detail panel (1.0s)
+  ✓  249 [webkit-3840x1080] › e2e/shell-vehicle.spec.ts:64:3 › Utility vehicle (FBL-019) › selecting the vehicle from the navigator selects the matching 3D object and moves the camera (945ms)
+  ✓  250 [webkit-3840x1080] › e2e/shell-vehicle.spec.ts:78:3 › Utility vehicle (FBL-019) › Escape clears vehicle selection from any focus context (1.2s)
+  ✓  245 [webkit-3840x1080] › e2e/shell-v1-primary-journey.spec.ts:272:3 › V1 primary journey — complete end-to-end run (FBL-022) › existing 2D functionality (timeline, command bar) remains unaffected by the complete journey (7.8s)
+  ✓  244 [webkit-3840x1080] › e2e/shell-v1-primary-journey.spec.ts:223:3 › V1 primary journey — complete end-to-end run (FBL-022) › duplicate-event safe: replay produces the identical final journey outcome, no duplicated rows or approvals (15.4s)
+  ✓  253 [webkit-3840x1080] › e2e/shell-world.spec.ts:10:3 › Empty React Three Fiber world › mounts a canvas inside the world region with no console or page errors (955ms)
+  ✓  254 [webkit-3840x1080] › e2e/shell-world.spec.ts:38:3 › Empty React Three Fiber world › the canvas fills the world region and tracks it when the region resizes (835ms)
+  ✓  255 [webkit-2560x1440] › e2e/shell-accessibility.spec.ts:52:3 › Accessibility — keyboard critical path (FBL-033) › every critical control is reachable by Tab alone, with no keyboard trap (1.3s)
+  ✓  252 [webkit-3840x1080] › e2e/shell-vehicle.spec.ts:127:3 › Utility vehicle (FBL-019) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.6s)
+  ✓  256 [webkit-2560x1440] › e2e/shell-accessibility.spec.ts:80:3 › Accessibility — keyboard critical path (FBL-033) › focus order is stable across repeated traversals (1.1s)
+  ✓  258 [webkit-2560x1440] › e2e/shell-accessibility.spec.ts:136:3 › Accessibility — keyboard critical path (FBL-033) › every canvas object has a navigator equivalent (408ms)
+  ✓  257 [webkit-2560x1440] › e2e/shell-accessibility.spec.ts:110:3 › Accessibility — keyboard critical path (FBL-033) › the focused control always shows a visible focus indicator (890ms)
+  ✓  259 [webkit-2560x1440] › e2e/shell-accessibility.spec.ts:148:3 › Accessibility — keyboard critical path (FBL-033) › mandatory regions expose semantic structure (412ms)
+  ✓  260 [webkit-2560x1440] › e2e/shell-accessibility.spec.ts:166:3 › Reduced motion (FBL-033) › the primary journey communicates the same operational meaning (437ms)
+  ✓  261 [webkit-2560x1440] › e2e/shell-accessibility.spec.ts:180:3 › Reduced motion (FBL-033) › status remains readable without motion cues (427ms)
+  ✓  263 [webkit-2560x1440] › e2e/shell-agents.spec.ts:38:3 › Agent representations (FBL-020) › exactly three agents are mounted, distinct world objects, defaulting to idle (638ms)
+  ✓  262 [webkit-2560x1440] › e2e/shell-agents.spec.ts:23:3 › Agent representations (FBL-020) › renders with no console or page errors (1.4s)
+  ✓  264 [webkit-2560x1440] › e2e/shell-agents.spec.ts:56:3 › Agent representations (FBL-020) › pointer click on the Architect agent selects it (hit target) and syncs navigator + detail panel (993ms)
+  ✓  265 [webkit-2560x1440] › e2e/shell-agents.spec.ts:87:3 › Agent representations (FBL-020) › selecting an agent from the existing 2D Agents list syncs the 3D object (navigator-to-Canvas sync) (957ms)
+  ✓  266 [webkit-2560x1440] › e2e/shell-agents.spec.ts:99:3 › Agent representations (FBL-020) › Escape clears agent selection from any focus context (996ms)
+  ✓  267 [webkit-2560x1440] › e2e/shell-agents.spec.ts:112:3 › Agent representations (FBL-020) › no keyboard trap: Tab still moves focus away from the 3D world after agents were added (712ms)
+  ✓  251 [webkit-3840x1080] › e2e/shell-vehicle.spec.ts:92:3 › Utility vehicle (FBL-019) › the vehicle never reports in_transit at any point during a full run without transfer.started backing it — no fabricated motion (14.3s)
+  ✓  270 [webkit-2560x1440] › e2e/shell-camera.spec.ts:64:3 › Camera and navigation › shows the canonical position on load and the Reset View control exists outside the canvas (971ms)
+  ✓  271 [webkit-2560x1440] › e2e/shell-camera.spec.ts:73:3 › Camera and navigation › keyboard zoom respects min/max distance limits (1.3s)
+  ✓  272 [webkit-2560x1440] › e2e/shell-camera.spec.ts:85:3 › Camera and navigation › keyboard orbit changes azimuth/elevation and stays within controlled bounds (1.3s)
+  ✓  269 [webkit-2560x1440] › e2e/shell-agents.spec.ts:155:3 › Agent representations (FBL-020) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.6s)
+  ✓  273 [webkit-2560x1440] › e2e/shell-camera.spec.ts:121:3 › Camera and navigation › keyboard pan moves the target and stays within the neighborhood bounds (1.2s)
+  ✓  274 [webkit-2560x1440] › e2e/shell-camera.spec.ts:144:3 › Camera and navigation › Home key and the 2D Reset View button both return to the canonical position (1.5s)
+  ✓  275 [webkit-2560x1440] › e2e/shell-camera.spec.ts:166:3 › Camera and navigation › camera controls keep working after collapsing and resizing panels (1.1s)
+  ✓  276 [webkit-2560x1440] › e2e/shell-camera.spec.ts:180:3 › Camera and navigation › reduced motion: keyboard camera controls still function with no crash (1.3s)
+  ✓  277 [webkit-2560x1440] › e2e/shell-camera.spec.ts:196:3 › Camera and navigation › no console or page errors after camera interaction (1.2s)
+  ✓  278 [webkit-2560x1440] › e2e/shell-camera.spec.ts:217:3 › Camera and navigation › textual camera instructions are present without relying on pointer gestures (386ms)
+  ✓  279 [webkit-2560x1440] › e2e/shell-controls.spec.ts:10:3 › 2D operational controls — command bar › Pause/Resume are typed, bounded commands with visible feedback (620ms)
+  ✓  280 [webkit-2560x1440] › e2e/shell-controls.spec.ts:21:3 › 2D operational controls — command bar › the command bar exposes no free-text/natural-language input (399ms)
+  ✓  281 [webkit-2560x1440] › e2e/shell-controls.spec.ts:30:3 › 2D operational controls — stage/requirement detail (no 3D world) › selecting a stage shows its requirement checklist entirely without any 3D content (2.4s)
+  ✓  268 [webkit-2560x1440] › e2e/shell-agents.spec.ts:129:3 › Agent representations (FBL-020) › no agent is ever visually represented in two locations at once, through a full canonical run (12.7s)
+  ✓  282 [webkit-2560x1440] › e2e/shell-controls.spec.ts:43:3 › 2D operational controls — stage/requirement detail (no 3D world) › the intentional requirement failure is visible, then shows recovered after retry (2.9s)
+  ✓  283 [webkit-2560x1440] › e2e/shell-controls.spec.ts:69:3 › 2D operational controls — approval workflow › keyboard-only path resolves the pending approval (Approve) (6.6s)
+  ✓  284 [webkit-2560x1440] › e2e/shell-controls.spec.ts:92:3 › 2D operational controls — approval workflow › Reject produces a real, visible approval.rejected event and does not fabricate further progress (6.5s)
+  ✓  285 [webkit-2560x1440] › e2e/shell-controls.spec.ts:111:3 › 2D operational controls — approval workflow › Request revision produces the full revision event chain, visible in the timeline (6.5s)
+  ✓  287 [webkit-2560x1440] › e2e/shell-environment.spec.ts:12:3 › Spatial environment (ground, lighting, fog) › renders with no console or page errors (1.4s)
+  ✓  288 [webkit-2560x1440] › e2e/shell-environment.spec.ts:27:3 › Spatial environment (ground, lighting, fog) › the canvas shows real rendered content, not a blank/uniform fill (1.4s)
+  ✓  286 [webkit-2560x1440] › e2e/shell-controls.spec.ts:137:3 › 2D operational controls — accessibility › the approval card, command bar, and stage list are all keyboard reachable (2.4s)
+  ✓  289 [webkit-2560x1440] › e2e/shell-environment.spec.ts:68:3 › Spatial environment (ground, lighting, fog) › environment keeps rendering after a panel-driven resize (1.5s)
+  ✓  291 [webkit-2560x1440] › e2e/shell-event-to-world-mapping.spec.ts:16:3 › Event-to-world mapping (FBL-021) › renders with no console or page errors through a full run (1.4s)
+  ✓  290 [webkit-2560x1440] › e2e/shell-environment.spec.ts:84:3 › Spatial environment (ground, lighting, fog) › maintains a minimally acceptable frame rate (1.9s)
+  ✓  294 [webkit-2560x1440] › e2e/shell-event-to-world-mapping.spec.ts:86:3 › Event-to-world mapping (FBL-021) › the Lighthouse signals attention while the deployment approval is pending, then clears once approved (6.4s)
+  ✓  293 [webkit-2560x1440] › e2e/shell-event-to-world-mapping.spec.ts:52:3 › Event-to-world mapping (FBL-021) › V-05: the vehicle is never in_transit before a real 'Transfer started' timeline row appears, and does move shortly after (9.1s)
+  ✓  292 [webkit-2560x1440] › e2e/shell-event-to-world-mapping.spec.ts:32:3 › Event-to-world mapping (FBL-021) › V-04: Cargo stays blocked while the intentional requirement failure is active, matched by timeline text (11.7s)
+  ✓  295 [webkit-2560x1440] › e2e/shell-event-to-world-mapping.spec.ts:101:3 › Event-to-world mapping (FBL-021) › repair and validation update the Construction Office and QA building status correctly (5.3s)
+  ✓  297 [webkit-2560x1440] › e2e/shell-event-to-world-mapping.spec.ts:152:3 › Event-to-world mapping (FBL-021) › unknown/no-visual-change events (e.g. artifact.* ) still appear as readable timeline rows even though they carry no dedicated 3D representation (1.4s)
+  ✓  296 [webkit-2560x1440] › e2e/shell-event-to-world-mapping.spec.ts:119:3 › Event-to-world mapping (FBL-021) › every meaningful visual transition has a readable timeline equivalent (Required behavior 11) (6.7s)
+  ✓  298 [webkit-2560x1440] › e2e/shell-event-to-world-mapping.spec.ts:162:3 › Event-to-world mapping (FBL-021) › selection stays synchronized on the Warehouse while its status changes across the run (6.0s)
+  ✓  301 [webkit-2560x1440] › e2e/shell-layout.spec.ts:18:3 › Ultrawide application shell › uses the full viewport with no app-wide max-width clipping (409ms)
+  ✓  302 [webkit-2560x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › top system bar region is present and not collapsed (407ms)
+  ✓  303 [webkit-2560x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › left navigation region is present and not collapsed (405ms)
+  ✓  304 [webkit-2560x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › central operational world region is present and not collapsed (402ms)
+  ✓  305 [webkit-2560x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › right live-intelligence region is present and not collapsed (401ms)
+  ✓  306 [webkit-2560x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › bottom event timeline region is present and not collapsed (413ms)
+  ✓  307 [webkit-2560x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › persistent command input region is present and not collapsed (414ms)
+  ✓  308 [webkit-2560x1440] › e2e/shell-layout.spec.ts:35:5 › Ultrawide application shell › selected-object details region is present and not collapsed (401ms)
+  ✓  309 [webkit-2560x1440] › e2e/shell-layout.spec.ts:46:3 › Ultrawide application shell › central world region remains dominant by width (407ms)
+  ✓  310 [webkit-2560x1440] › e2e/shell-layout.spec.ts:58:3 › Ultrawide application shell › no mandatory region collapses to zero size at this viewport (430ms)
+  ✓  300 [webkit-2560x1440] › e2e/shell-event-to-world-mapping.spec.ts:214:3 › Event-to-world mapping (FBL-021) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.6s)
+  ✓  312 [webkit-2560x1440] › e2e/shell-lighthouse.spec.ts:33:3 › Lighthouse › the Lighthouse status is present, accessible as text, and starts healthy (412ms)
+  ✓  311 [webkit-2560x1440] › e2e/shell-lighthouse.spec.ts:18:3 › Lighthouse › renders with no console or page errors (1.4s)
+  ✓  314 [webkit-2560x1440] › e2e/shell-lighthouse.spec.ts:61:3 › Lighthouse › the canvas shows real rendered content (ground and Lighthouse), not a blank fill (1.4s)
+  ✓  299 [webkit-2560x1440] › e2e/shell-event-to-world-mapping.spec.ts:181:3 › Event-to-world mapping (FBL-021) › reduced motion: the same operational sequence is communicated (blocked -> attention -> approved -> completed) (15.0s)
+  ✓  315 [webkit-2560x1440] › e2e/shell-lighthouse.spec.ts:89:3 › Lighthouse › the Lighthouse specifically is mounted and rendered at its own reported screen position (3.3s)
+  ✓  316 [webkit-2560x1440] › e2e/shell-lighthouse.spec.ts:167:3 › Lighthouse › reduced motion: the Lighthouse still renders and its status still updates (1.8s)
+  ✓  313 [webkit-2560x1440] › e2e/shell-lighthouse.spec.ts:42:3 › Lighthouse › the Lighthouse's textual status reflects real runtime state through a full run (6.3s)
+  ✓  319 [webkit-2560x1440] › e2e/shell-operational-buildings.spec.ts:44:3 › Operational buildings (FBL-017) › all five operational buildings are mounted, distinct world objects (725ms)
+  ✓  318 [webkit-2560x1440] › e2e/shell-operational-buildings.spec.ts:29:3 › Operational buildings (FBL-017) › renders with no console or page errors (1.4s)
+  ✓  320 [webkit-2560x1440] › e2e/shell-operational-buildings.spec.ts:51:3 › Operational buildings (FBL-017) › pointer click on the Construction Office selects it (hit target) and syncs navigator + detail panel (977ms)
+  ✓  321 [webkit-2560x1440] › e2e/shell-operational-buildings.spec.ts:73:3 › Operational buildings (FBL-017) › selecting each operational building from the navigator selects the matching 3D object (1.5s)
+  ✓  322 [webkit-2560x1440] › e2e/shell-operational-buildings.spec.ts:87:3 › Operational buildings (FBL-017) › Escape clears operational building selection from any focus context (1.1s)
+  ✓  324 [webkit-2560x1440] › e2e/shell-operational-buildings.spec.ts:123:3 › Operational buildings (FBL-017) › no keyboard trap: Tab still moves focus away from the 3D world after operational buildings were added (871ms)
+  ✓  317 [webkit-2560x1440] › e2e/shell-lighthouse.spec.ts:176:3 › Lighthouse › existing 2D functionality (command bar, approval workflow) remains unaffected (6.2s)
+  ✘  326 [webkit-2560x1440] › e2e/shell-panels.spec.ts:20:3 › Panel framework keyboard and pointer interaction › Tab-only navigation reaches every panel control in a stable order (1.1s)
+  ✓  327 [webkit-2560x1440] › e2e/shell-panels.spec.ts:48:3 › Panel framework keyboard and pointer interaction › every focused control shows a visible focus indicator (547ms)
+  ✓  328 [webkit-2560x1440] › e2e/shell-panels.spec.ts:62:3 › Panel framework keyboard and pointer interaction › collapse toggle hides panel content and updates aria-expanded, reachable by keyboard alone (471ms)
+  ✓  329 [webkit-2560x1440] › e2e/shell-panels.spec.ts:77:3 › Panel framework keyboard and pointer interaction › keyboard ArrowRight on the left-nav resize handle grows the panel (491ms)
+  ✓  330 [webkit-2560x1440] › e2e/shell-panels.spec.ts:91:3 › Panel framework keyboard and pointer interaction › pointer drag on the event timeline handle resizes the timeline (597ms)
+  ✓  331 [webkit-2560x1440] › e2e/shell-panels.spec.ts:113:3 › Panel framework keyboard and pointer interaction › Reset layout restores a collapsed panel to expanded (670ms)
+  -  332 [webkit-2560x1440] › e2e/shell-realtime-connection.spec.ts:85:3 › FBL-026 realtime connection — disconnected and restored states › disconnect shows the stale banner and disables mutation controls; restore clears both
+  ✓  325 [webkit-2560x1440] › e2e/shell-operational-buildings.spec.ts:140:3 › Operational buildings (FBL-017) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.6s)
+  ✓  323 [webkit-2560x1440] › e2e/shell-operational-buildings.spec.ts:100:3 › Operational buildings (FBL-017) › the Warehouse starts at level 1 and only reaches level 2 after a real upgrade.completed, at the end of a full run (7.7s)
+  ✓  333 [webkit-2560x1440] › e2e/shell-residences.spec.ts:22:3 › Residences (FBL-016) › renders with no console or page errors (1.4s)
+  ✓  334 [webkit-2560x1440] › e2e/shell-residences.spec.ts:37:3 › Residences (FBL-016) › all three residences are mounted, distinct world objects (695ms)
+  ✓  335 [webkit-2560x1440] › e2e/shell-residences.spec.ts:47:3 › Residences (FBL-016) › pointer click on the Architect residence selects it (hit target) and syncs navigator + detail panel (961ms)
+  ✓  337 [webkit-2560x1440] › e2e/shell-residences.spec.ts:82:3 › Residences (FBL-016) › Escape clears residence selection from any focus context (1.0s)
+  ✓  338 [webkit-2560x1440] › e2e/shell-residences.spec.ts:95:3 › Residences (FBL-016) › no keyboard trap: Tab still moves focus away from the 3D world after residences were added (716ms)
+  ✓  336 [webkit-2560x1440] › e2e/shell-residences.spec.ts:69:3 › Residences (FBL-016) › selecting each residence from the navigator selects the matching 3D object and moves the camera (1.6s)
+  ✓  339 [webkit-2560x1440] › e2e/shell-residences.spec.ts:112:3 › Residences (FBL-016) › residence occupancy reflects real agent events through a run: occupied -> vacant (assigned) -> occupied (returned home) (1.6s)
+  ✓  341 [webkit-2560x1440] › e2e/shell-roads.spec.ts:10:3 › Road network (FBL-018) › renders with no console or page errors (1.4s)
+  ✓  342 [webkit-2560x1440] › e2e/shell-roads.spec.ts:25:3 › Road network (FBL-018) › the road network renders real, non-blank geometry connecting the neighborhood (1.4s)
+  ✓  343 [webkit-2560x1440] › e2e/shell-roads.spec.ts:59:3 › Road network (FBL-018) › the road network survives a panel-driven resize without console/WebGL errors (2.1s)
+  ✓  345 [webkit-2560x1440] › e2e/shell-selection.spec.ts:24:3 › Object selection › pointer click on the Lighthouse selects it (pointer hit target) and syncs navigator + detail panel (898ms)
+NOTE: camera had already settled before sampling began
+  ✓  346 [webkit-2560x1440] › e2e/shell-selection.spec.ts:58:3 › Object selection › projected coordinates move before the camera settles, and the stable wait outlasts that window (1.0s)
+  ✓  340 [webkit-2560x1440] › e2e/shell-residences.spec.ts:135:3 › Residences (FBL-016) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.2s)
+  ✓  347 [webkit-2560x1440] › e2e/shell-selection.spec.ts:99:3 › Object selection › selecting from the left navigator syncs the Canvas (navigator-to-Canvas sync) (707ms)
+  ✓  348 [webkit-2560x1440] › e2e/shell-selection.spec.ts:111:3 › Object selection › keyboard: Enter while the 3D world has focus selects the Lighthouse (746ms)
+  ✓  349 [webkit-2560x1440] › e2e/shell-selection.spec.ts:131:3 › Object selection › Escape clears the selection from any focus context (895ms)
+  ✓  351 [webkit-2560x1440] › e2e/shell-selection.spec.ts:169:3 › Object selection › duplicate selection events do not duplicate timeline records (1.1s)
+  ✓  350 [webkit-2560x1440] › e2e/shell-selection.spec.ts:150:3 › Object selection › selecting the Lighthouse moves the FBL-012 camera to focus on it (1.6s)
+  ✓  352 [webkit-2560x1440] › e2e/shell-selection.spec.ts:183:3 › Object selection › reduced motion: selection still works and camera focus snaps instantly (754ms)
+  ✓  353 [webkit-2560x1440] › e2e/shell-selection.spec.ts:207:3 › Object selection › no keyboard trap: Tab still moves focus away from the 3D world (675ms)
+  ✓  344 [webkit-2560x1440] › e2e/shell-roads.spec.ts:75:3 › Road network (FBL-018) › existing selection and 2D functionality (Lighthouse selection, timeline, approval, command bar) remains unaffected (6.4s)
+  ✓  356 [webkit-2560x1440] › e2e/shell-timeline.spec.ts:94:3 › Event timeline › event count increases over time without ever decreasing (append-only) (854ms)
+  ✓  355 [webkit-2560x1440] › e2e/shell-timeline.spec.ts:67:3 › Event timeline › events render chronologically as the demo plays, in the correct canonical order (1.8s)
+  ✓  358 [webkit-2560x1440] › e2e/shell-timeline.spec.ts:141:3 › Event timeline › pause autoscroll stops the view from jumping, resume restores it (743ms)
+  ✓  359 [webkit-2560x1440] › e2e/shell-timeline.spec.ts:168:3 › Event timeline › selecting a row shows its payload and an explicit jump-to-world-object unavailable state (715ms)
+  ✓  360 [webkit-2560x1440] › e2e/shell-timeline.spec.ts:201:3 › Event timeline › jump to world object selects the declared object and synchronizes world, navigator, and detail (2.0s)
+  ✓  354 [webkit-2560x1440] › e2e/shell-selection.spec.ts:224:3 › Object selection › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.6s)
+  ✓  361 [webkit-2560x1440] › e2e/shell-timeline.spec.ts:218:3 › Event timeline › jump to world object is operable by keyboard alone (2.0s)
+  ✓  362 [webkit-2560x1440] › e2e/shell-timeline.spec.ts:233:3 › Event timeline › jumping creates no operational event — navigation is not work (1.9s)
+  ✓  364 [webkit-2560x1440] › e2e/shell-timeline.spec.ts:267:3 › Event timeline › timeline controls and rows are reachable and operable by keyboard alone (656ms)
+  ✓  363 [webkit-2560x1440] › e2e/shell-timeline.spec.ts:252:3 › Event timeline › reduced motion: jumping still selects, without animated camera travel (2.0s)
+  ✓  357 [webkit-2560x1440] › e2e/shell-timeline.spec.ts:108:3 › Event timeline › filtering by severity narrows the visible rows (10.1s)
+  ✓  365 [webkit-2560x1440] › e2e/shell-v1-primary-journey.spec.ts:28:3 › V1 primary journey — complete end-to-end run (FBL-022) › every major transition is comprehensible within ten seconds: running, who's working, blocked, failed, needs approval, completed, upgrade (7.8s)
+  ✓  367 [webkit-2560x1440] › e2e/shell-v1-primary-journey.spec.ts:113:3 › V1 primary journey — complete end-to-end run (FBL-022) › upgrade eligibility, approval, and Level 2 completion are all reachable and reported correctly (8.0s)
+  ✓  366 [webkit-2560x1440] › e2e/shell-v1-primary-journey.spec.ts:80:3 › V1 primary journey — complete end-to-end run (FBL-022) › cargo stays blocked and the vehicle stays parked through the intentional failure, then transfer authorizes and completes (16.3s)
+  ✓  369 [webkit-2560x1440] › e2e/shell-v1-primary-journey.spec.ts:190:3 › V1 primary journey — complete end-to-end run (FBL-022) › selection stays synchronized on the Warehouse across the entire journey through upgrade completion (7.9s)
+  ✓  368 [webkit-2560x1440] › e2e/shell-v1-primary-journey.spec.ts:132:3 › V1 primary journey — complete end-to-end run (FBL-022) › 2D-only comprehension: every major transition is identifiable from the 2D panels alone, without reading the 3D world (15.5s)
+  ✓  370 [webkit-2560x1440] › e2e/shell-v1-primary-journey.spec.ts:210:3 › V1 primary journey — complete end-to-end run (FBL-022) › reduced motion: the complete journey through upgrade completion communicates identical operational meaning (7.4s)
+  ✓  373 [webkit-2560x1440] › e2e/shell-vehicle.spec.ts:17:3 › Utility vehicle (FBL-019) › renders with no console or page errors (1.3s)
+  ✓  374 [webkit-2560x1440] › e2e/shell-vehicle.spec.ts:32:3 › Utility vehicle (FBL-019) › the vehicle is mounted, visible, and defaults to parked (645ms)
+  ✓  375 [webkit-2560x1440] › e2e/shell-vehicle.spec.ts:39:3 › Utility vehicle (FBL-019) › pointer click on the vehicle selects it (hit target) and syncs navigator + detail panel (1.0s)
+  ✓  376 [webkit-2560x1440] › e2e/shell-vehicle.spec.ts:64:3 › Utility vehicle (FBL-019) › selecting the vehicle from the navigator selects the matching 3D object and moves the camera (742ms)
+  ✓  377 [webkit-2560x1440] › e2e/shell-vehicle.spec.ts:78:3 › Utility vehicle (FBL-019) › Escape clears vehicle selection from any focus context (1.0s)
+  ✓  372 [webkit-2560x1440] › e2e/shell-v1-primary-journey.spec.ts:272:3 › V1 primary journey — complete end-to-end run (FBL-022) › existing 2D functionality (timeline, command bar) remains unaffected by the complete journey (7.8s)
+  ✓  371 [webkit-2560x1440] › e2e/shell-v1-primary-journey.spec.ts:223:3 › V1 primary journey — complete end-to-end run (FBL-022) › duplicate-event safe: replay produces the identical final journey outcome, no duplicated rows or approvals (15.0s)
+  ✓  380 [webkit-2560x1440] › e2e/shell-world.spec.ts:10:3 › Empty React Three Fiber world › mounts a canvas inside the world region with no console or page errors (945ms)
+  ✓  381 [webkit-2560x1440] › e2e/shell-world.spec.ts:38:3 › Empty React Three Fiber world › the canvas fills the world region and tracks it when the region resizes (889ms)
+  ✓  379 [webkit-2560x1440] › e2e/shell-vehicle.spec.ts:127:3 › Utility vehicle (FBL-019) › existing 2D functionality (timeline, approval, command bar) remains unaffected (6.1s)
+  ✓  378 [webkit-2560x1440] › e2e/shell-vehicle.spec.ts:92:3 › Utility vehicle (FBL-019) › the vehicle never reports in_transit at any point during a full run without transfer.started backing it — no fabricated motion (14.7s)
+
+
+  1) [webkit-5120x1440] › e2e/shell-panels.spec.ts:20:3 › Panel framework keyboard and pointer interaction › Tab-only navigation reaches every panel control in a stable order 
+
+    Error: expected to tab through "Reset layout"
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected value: "Reset layout"
+    Received array: ["Resize left navigation", "Resize right live-intelligence", "Resize event timeline", "Filter by severity", "Filter by entity type", …]
+
+      42 |
+      43 |     for (const expectedName of PANEL_CONTROL_NAMES) {
+    > 44 |       expect(reachedNames, `expected to tab through "${expectedName}"`).toContain(expectedName);
+         |                                                                         ^
+      45 |     }
+      46 |   });
+      47 |
+        at /Users/macmini/Documents/GitHub/Foundry/apps/agent-city/e2e/shell-panels.spec.ts:44:73
+
+    Error Context: ../../../../../../../private/tmp/claude-501/-Users-macmini-Documents-GitHub-Foundry/bdd9b7aa-8cae-4a46-99e1-8ab735a671ae/scratchpad/ac103/full/shell-panels-Panel-framewo-e34eb-l-control-in-a-stable-order-webkit-5120x1440/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../../../../../../private/tmp/claude-501/-Users-macmini-Documents-GitHub-Foundry/bdd9b7aa-8cae-4a46-99e1-8ab735a671ae/scratchpad/ac103/full/shell-panels-Panel-framewo-e34eb-l-control-in-a-stable-order-webkit-5120x1440/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace ../../../../../../../private/tmp/claude-501/-Users-macmini-Documents-GitHub-Foundry/bdd9b7aa-8cae-4a46-99e1-8ab735a671ae/scratchpad/ac103/full/shell-panels-Panel-framewo-e34eb-l-control-in-a-stable-order-webkit-5120x1440/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [webkit-3840x1080] › e2e/shell-panels.spec.ts:20:3 › Panel framework keyboard and pointer interaction › Tab-only navigation reaches every panel control in a stable order 
+
+    Error: expected to tab through "Reset layout"
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected value: "Reset layout"
+    Received array: ["Resize left navigation", "Resize right live-intelligence", "Resize event timeline", "Filter by severity", "Filter by entity type", …]
+
+      42 |
+      43 |     for (const expectedName of PANEL_CONTROL_NAMES) {
+    > 44 |       expect(reachedNames, `expected to tab through "${expectedName}"`).toContain(expectedName);
+         |                                                                         ^
+      45 |     }
+      46 |   });
+      47 |
+        at /Users/macmini/Documents/GitHub/Foundry/apps/agent-city/e2e/shell-panels.spec.ts:44:73
+
+    Error Context: ../../../../../../../private/tmp/claude-501/-Users-macmini-Documents-GitHub-Foundry/bdd9b7aa-8cae-4a46-99e1-8ab735a671ae/scratchpad/ac103/full/shell-panels-Panel-framewo-e34eb-l-control-in-a-stable-order-webkit-3840x1080/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../../../../../../private/tmp/claude-501/-Users-macmini-Documents-GitHub-Foundry/bdd9b7aa-8cae-4a46-99e1-8ab735a671ae/scratchpad/ac103/full/shell-panels-Panel-framewo-e34eb-l-control-in-a-stable-order-webkit-3840x1080/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace ../../../../../../../private/tmp/claude-501/-Users-macmini-Documents-GitHub-Foundry/bdd9b7aa-8cae-4a46-99e1-8ab735a671ae/scratchpad/ac103/full/shell-panels-Panel-framewo-e34eb-l-control-in-a-stable-order-webkit-3840x1080/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [webkit-2560x1440] › e2e/shell-panels.spec.ts:20:3 › Panel framework keyboard and pointer interaction › Tab-only navigation reaches every panel control in a stable order 
+
+    Error: expected to tab through "Reset layout"
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected value: "Reset layout"
+    Received array: ["Resize left navigation", "Resize right live-intelligence", "Resize event timeline", "Filter by severity", "Filter by entity type", …]
+
+      42 |
+      43 |     for (const expectedName of PANEL_CONTROL_NAMES) {
+    > 44 |       expect(reachedNames, `expected to tab through "${expectedName}"`).toContain(expectedName);
+         |                                                                         ^
+      45 |     }
+      46 |   });
+      47 |
+        at /Users/macmini/Documents/GitHub/Foundry/apps/agent-city/e2e/shell-panels.spec.ts:44:73
+
+    Error Context: ../../../../../../../private/tmp/claude-501/-Users-macmini-Documents-GitHub-Foundry/bdd9b7aa-8cae-4a46-99e1-8ab735a671ae/scratchpad/ac103/full/shell-panels-Panel-framewo-e34eb-l-control-in-a-stable-order-webkit-2560x1440/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../../../../../../private/tmp/claude-501/-Users-macmini-Documents-GitHub-Foundry/bdd9b7aa-8cae-4a46-99e1-8ab735a671ae/scratchpad/ac103/full/shell-panels-Panel-framewo-e34eb-l-control-in-a-stable-order-webkit-2560x1440/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace ../../../../../../../private/tmp/claude-501/-Users-macmini-Documents-GitHub-Foundry/bdd9b7aa-8cae-4a46-99e1-8ab735a671ae/scratchpad/ac103/full/shell-panels-Panel-framewo-e34eb-l-control-in-a-stable-order-webkit-2560x1440/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    [webkit-5120x1440] › e2e/shell-panels.spec.ts:20:3 › Panel framework keyboard and pointer interaction › Tab-only navigation reaches every panel control in a stable order 
+    [webkit-3840x1080] › e2e/shell-panels.spec.ts:20:3 › Panel framework keyboard and pointer interaction › Tab-only navigation reaches every panel control in a stable order 
+    [webkit-2560x1440] › e2e/shell-panels.spec.ts:20:3 › Panel framework keyboard and pointer interaction › Tab-only navigation reaches every panel control in a stable order 
+  3 skipped
+  375 passed (6.4m)

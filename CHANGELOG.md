@@ -6,6 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — AC-103: Finding 6 diagnosed and remediated (awaiting operator acceptance)
+
+The three Playwright-WebKit failures accepted at `FBL-035` without diagnosis are **worker-contention artifacts of an unpinned worker count**, not product defects.
+
+`FBL-034` measured this class and repaired it for Chromium by requesting the real GPU. Those are Chromium switches — **WebKit ignores them**, so a WebKit run is always software-rasterized, which is the regime where `FBL-034` measured 1 worker ~12 s against 8 workers ~42 s for the demo to reach the approval gate. The compensating `--workers=3` cap existed only as **prose in the README**, so the `FBL-035` WebKit run used Playwright's default of half the cores.
+
+**Reproduced in both directions**, which is what makes this a diagnosis rather than an observation that it passes now. At the cap: 375 passed / 3 failed, with all six Finding 6 test-instances green. At the default 6 workers: a **fourth failure of the same class** appears — `shell-v1-primary-journey.spec.ts:28`, the ten-second-comprehension spec. Contention moved the failure to a different member of the same family, which is what a load race does and what a real defect in camera focus or timeline correspondence would not.
+
+**Remediation:** `workers: 3` pinned in **both** `playwright.webkit.config.ts` and `playwright.config.ts`. No timeout was raised, no test was skipped, deleted, retried, or reclassified, and `retries: 0` is unchanged. `F-131` requires reliability to be a property of the suite rather than of the machine; a cap in prose was a property of whoever remembered to type it. Resolves `PV1-041`.
+
+**Retained reproduction evidence:** three full run logs under `docs/evidence/ac-103/runs/`, closing `PV1-043`'s specific complaint that no reproduction record existed anywhere in the repository.
+
+**Not claimed:** WebKit automation is not 100% green. Three `shell-panels.spec.ts:20` failures remain across all viewports — **Finding 3a**, classified at `FBL-035` as Safari configuration-dependent on the strength of the operator's real-Safari observation. Not reopened here.
+
+**`AC-103` is diagnosed and remediated but not closed** — its gate is the operator's acceptance of closure against Decision 5's standard. Recorded in `docs/evidence/ac-103/finding-6-diagnosis.md`.
+
 ### Observed — AC-110 closed: the execution authorization gate (documentation only)
 
 The operator approved the rung and stated the basis themselves, item by item. The stop condition — *"authorization gate proven in both directions, hard stop before the real run"* — is satisfied, so **`AC-110` is closed.**

@@ -40,9 +40,22 @@ const PORT = 4300;
 const gpuArgs =
   process.platform === "darwin" ? ["--use-angle=metal", "--ignore-gpu-blocklist"] : [];
 
+// AC-103 / PV1-041 — the worker cap belongs in configuration.
+//
+// The GPU request above removes most of the contention for Chromium, but
+// the cap the README documents in prose (`--workers=3`) was still the
+// difference between a reliable run and a contended one, and prose is not
+// applied by anyone who forgets to type it. Pinning it here makes the
+// suite's reliability a property of the suite (`F-131`) rather than of
+// the invocation. Playwright's default is half the cores, which
+// over-subscribes a machine already spending a core per browser on a
+// ~3.1M-pixel canvas.
+const WORKERS = 3;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
+  workers: WORKERS,
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: "list",
