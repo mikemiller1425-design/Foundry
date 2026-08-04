@@ -37,7 +37,7 @@ This is the **authoritative V1.1 Build Ladder**. Before this document existed, t
 | AC-104 | HARD | One-command local operation | AC-102 | **Launch it** | ✅ **Closed** (`4e7d0f6`) |
 | AC-105 | FIX | Runtime-mode and credential handoff at runtime | AC-104 | Observe | ✅ **Closed** (`573b1d1`, `3e76c70`) |
 | AC-106 | FIX | Backend-mode command honesty | AC-105 | Observe | ✅ **Closed** (`ceca998`) |
-| AC-107 | FEAT | Bounded-objective contract | AC-106 | Review contract | ⬜ Not started — substantially anticipated by AC-103P |
+| AC-107 | FEAT | Bounded-objective contract | AC-106 | Review contract | ✅ **Closed** (`1a184f1`, `29dbcbc`) |
 | AC-108 | FEAT | Objective submission and plan review | AC-107 | **Submit + review plan** | ⬜ Not started — submission half anticipated by AC-103P |
 | AC-109 | FEAT | Backend orchestration of a build (mock executor) | AC-108 | Observe | ⬜ Not started |
 | AC-110 | FEAT | Execution authorization gate | AC-109 | **Authorize** | ⬜ Not started |
@@ -150,14 +150,23 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **Prohibited work confirmed not done:** no `demo.*` command type added, no free-text command input, no orchestration, no backend file changed.
 - **Hard stop reached.** `AC-107` is not started and requires its own explicit operator authorization.
 
-### AC-107 — Bounded-objective contract — [FEAT] — ⬜ Not started
+### AC-107 — Bounded-objective contract — [FEAT] — ✅ Closed
 
 - **Objective:** Define, in `packages/contracts` and `packages/event-types` first, the typed vocabulary for an operator objective, a structured plan, and an execution authorization. Contract only — no behaviour.
 - **Depends on:** AC-106.
 - **Prohibited work:** Any orchestrator, UI, or executor. Widening `V1RiskClassSchema` beyond R0–R2. Adding a stage name outside the seven. Loosening the closed command vocabulary.
 - **Operator gate:** Review the objective envelope and confirm it bounds what was intended.
 - **Stop condition:** Contracts and amendments merged with tests green. **Hard stop** before any consumer is written.
-- **AC-103P interaction:** The **objective** envelope exists (`ObjectiveSubmissionSchema`). The **plan** and **authorization** contracts do not. The specification amendments this rung owns are unmade, and `AC-103P` introduced one unrecorded amendment now logged in the scope document.
+- **AC-103P interaction:** The objective envelope existed; the plan and authorization contracts did not, and the amendments this rung owns were unmade. **All now delivered** — see below.
+
+**Closed 2026-08-03** against `1a184f1` with corrections in `29dbcbc`, on the operator's contract approval.
+
+- **Approved contract decisions** (operator, verbatim in substance): objectives 12–500 printable single-line characters; workspace Foundry-managed only; risk R0–R2 only; the seven-stage vocabulary and order fixed; plain-text acceptance criteria appropriate for V1.1; plan review and execution authorization remain separate decisions; every issued `ExecutionAuthorization` requires a positive finite `maxBudgetUsd` capped at **$25**; `planRevision` is a **non-security change indicator only**; **`AC-110` must implement the backend-generated SHA-256 canonical plan-content hash, persist it, require it on authorization, and compare it server-side**; Claude Code may appear **only once and only for `backend_implementation`**; **no execution is authorized by this approval**.
+- **Review history:** first review returned *approved with required corrections*; all three (budget, plan binding, Claude Code allocation) were applied before approval.
+- **Evidence:** `docs/evidence/ac-107/operator-approval.md` and `docs/evidence/ac-107/contract-boundary.md`. `F-107` satisfied. typecheck 8/8, lint clean, build clean, **1121 tests / 0 failures**.
+- **Amendments made:** `domain-model.md` Build ("demo objective fixed" superseded; `currentStageId` nullable confirmed), `domain-model.md` per-command parameter schemas, `event-model.md` operator decision events, `principles.md` 3a status statement, plus `F-113a` and the `AC-110` binding amendment added at review.
+- **Prohibited work confirmed not done:** no orchestrator, UI, or executor; `V1RiskClassSchema` not widened; no stage added outside the seven; the closed command vocabulary unchanged.
+- **Hard stop reached.** `AC-108` is not started and requires its own explicit operator authorization. `AC-110`'s amended binding requirement is recorded above and is **not** implemented.
 
 ### AC-108 — Objective submission and plan review — [FEAT] — ⬜ Not started
 
@@ -247,6 +256,7 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 | AC-103 | **Accept** Finding 6's closure against the chosen standard |
 | AC-104 | **Launch** Foundry from a clean clone with one command ✅ |
 | AC-106 | Press every backend-mode control and see a truthful result ✅ |
+| AC-107 | **Review** the objective envelope and confirm it bounds what was intended ✅ |
 | AC-108 | **Submit** a real objective and **review** the plan unassisted |
 | AC-110 | **Authorize** one controlled execution |
 | AC-111 | **Authorize the real run**, watch it, review its evidence |

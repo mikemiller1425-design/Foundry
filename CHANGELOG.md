@@ -6,6 +6,34 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Approved — AC-107 closed: operator approved the V1.1 contract boundary (documentation only)
+
+The operator reviewed the contract package against `29dbcbc` and **approved it**, closing `AC-107`. The first review had returned *approved with required corrections*; all three — budget, plan binding, Claude Code allocation — were applied before this approval.
+
+**The approved contract decisions**, recorded in `docs/evidence/ac-107/operator-approval.md`:
+
+- Objectives are **12–500 printable single-line characters**.
+- Workspace remains **Foundry-managed only**.
+- Risk classes remain **R0–R2 only**.
+- The **seven-stage plan vocabulary and order are fixed**.
+- **Plain-text acceptance criteria** are appropriate for V1.1.
+- **Plan review and execution authorization remain separate decisions.**
+- Every issued `ExecutionAuthorization` requires a **positive finite `maxBudgetUsd` capped at $25**.
+- **`planRevision` is a non-security change indicator only.**
+- **`AC-110` must implement the backend-generated SHA-256 canonical plan-content hash**, persist it, require it on authorization, and compare it **server-side**.
+- **Claude Code may appear only once and only for `backend_implementation`.**
+- **No execution is authorized by this approval.**
+
+The record states plainly where each decision is enforced today and which are **forward obligations** rather than claims about anything implemented: decision 9 binds `AC-110`, which may not close until that hash exists, is persisted, is required, and is compared server-side.
+
+**Stop condition satisfied** — *"contracts and amendments merged with tests green; hard stop before any consumer is written."* No Architect step, no plan production or persistence, no plan review UI, no authorization gate, no orchestration, no execution.
+
+**Gates re-verified at `29dbcbc`:** typecheck 8/8 · lint clean · build clean · **1121 passed / 91 files / 0 failures**.
+
+**`AC-103P` residue cleared:** plan and authorization contracts now exist, and all four amendments `AC-107` owned are made. **Still owed:** the Architect step, plan persistence, plan review panel, `parseCommandParams` wiring, and `operator.plan_reviewed`'s entry into the runtime vocabulary (`AC-108`); the authorization gate, single-use enforcement, the SHA-256 binding, and `operator.execution_authorized`'s entry (`AC-110`).
+
+`AC-108` is not started. Finding 6 (`AC-103`), D-8, N-03, N-05, and N-06 are unchanged.
+
 ### Fixed — AC-107 corrections from the operator contract review
 
 Three required corrections. `AC-107` remains **open** pending final review.
