@@ -32,7 +32,11 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** Where the credential handoff lives. Git-ignored; removed on shutdown. */
+/**
+ * Where the credential handoff lives. Git-ignored; removed on shutdown.
+ * The API port is appended so concurrent launchers never share a file —
+ * see `writeCredentialHandoff`.
+ */
 const HANDOFF_DIR = ".foundry";
 const HANDOFF_FILE = "operator-credential";
 let handoffFileToRemove = null;
@@ -393,7 +397,7 @@ async function main() {
   //    through a file only this user can read (AC-105). This is what
   //    removes the read-a-token-out-of-a-terminal step; the credential
   //    never enters a build, and the browser fetches it over loopback.
-  const handoffPath = config.apiUrl ? writeCredentialHandoff() : null;
+  const handoffPath = config.apiUrl ? writeCredentialHandoff(config.apiPort) : null;
 
   // 5. Only now the frontend — deterministic ordering, so it never renders
   //    against a backend that is not yet answering.
@@ -475,11 +479,18 @@ function captureCredential(line) {
  * copied between two processes owned by the same user on the same machine
  * — not a session, not a token service, and not something that survives
  * the run that created it.
+ *
+ * **The filename carries the API port.** A fixed name made the file shared
+ * state between launcher instances: a second `pnpm dev` (or a
+ * `pnpm verify:launch` run) overwrote the first one's credential and then
+ * deleted it on its own shutdown, silently disarming the handoff of a
+ * session that was still running. Instances are now disjoint by
+ * construction, and each removes only the file it wrote.
  */
-function writeCredentialHandoff() {
+function writeCredentialHandoff(apiPort) {
   if (!operatorCredential) return null;
   const dir = join(ROOT, HANDOFF_DIR);
-  const path = join(dir, HANDOFF_FILE);
+  const path = join(dir, `${HANDOFF_FILE}-${apiPort}`);
   try {
     mkdirSync(dir, { recursive: true, mode: 0o700 });
     writeFileSync(path, operatorCredential.token, { mode: 0o600 });

@@ -21,6 +21,7 @@
  */
 
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { createServer } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -161,6 +162,22 @@ async function main() {
   await sleep(1500);
   check("API port released after shutdown", await portFree(API_PORT), `port ${API_PORT}`);
   check("frontend port released after shutdown", await portFree(WEB_PORT), `port ${WEB_PORT}`);
+
+  /**
+   * The handoff file must be per-instance.
+   *
+   * A fixed name made it shared state: running this check while a real
+   * `pnpm dev` session was up overwrote that session's credential and then
+   * deleted it on shutdown, disarming a running session's handoff. Pinned
+   * here because this script is exactly what exposed it.
+   */
+  const ownHandoff = join(ROOT, ".foundry", `operator-credential-${API_PORT}`);
+  const defaultHandoff = join(ROOT, ".foundry", "operator-credential-4000");
+  check(
+    "the handoff file is namespaced by API port, not shared between instances",
+    ownHandoff !== defaultHandoff && !existsSync(ownHandoff),
+    "this run's file is removed; a default-port session's file is untouched",
+  );
 
   finish();
 }
