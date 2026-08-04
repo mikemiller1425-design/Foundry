@@ -41,7 +41,7 @@ This is the **authoritative V1.1 Build Ladder**. Before this document existed, t
 | AC-108 | FEAT | Objective submission and plan review | AC-107 | **Submit + review plan** | ✅ **Closed** (`2843b53`) |
 | AC-109 | FEAT | Backend orchestration of a build (mock executor) | AC-108 | Observe | ✅ **Closed** (`ae0b762`) |
 | AC-110 | FEAT | Execution authorization gate | AC-109 | **Authorize** | ✅ **Closed** (`a82fcf4`) |
-| AC-111 | FEAT | Real controlled Builder execution | AC-110 | **Authorize the run** | ⬜ Not started |
+| AC-111 | FEAT | Real controlled Builder execution | AC-110 | **Authorize the run** | 🟡 Constructed offline — no run dispatched |
 | AC-112 | FEAT | Independent Inspector validation of real output | AC-111 | Observe rejection + pass | ⬜ Not started |
 | AC-113 | FEAT | Approval, transfer, and completion on the real path | AC-112 | **Approve and reject** | ⬜ Not started |
 | AC-114 | HARD | Restart, recovery, and idempotency on the real path | AC-113 | Observe | ⬜ Not started |
@@ -243,11 +243,23 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **Amendments:** `domain-model.md` (`Plan.Authorize`, the binding, the `Plan` record's new fields); `event-model.md` (`operator.execution_authorized` in the runtime vocabulary, `planContentHash` required).
 - **Hard stop reached.** No real execution occurred, no runtime is wired, no money was spent. `AC-111` is not started and requires its own explicit operator authorization — it is the first rung at which real money can be spent, and nothing in this approval authorizes that.
 
-### AC-111 — Real controlled Builder execution — [FEAT] — ⬜ Not started
+### AC-111 — Real controlled Builder execution — [FEAT] — 🟡 Constructed offline, no run dispatched
 
 - **Depends on:** AC-110, **and AC-103 closed**.
 - **Operator gate:** **Authorize the real run**, watch it, review its evidence.
 - **Stop condition:** One successful real stage with reviewed evidence. **Hard stop** — the authorization is spent.
+
+**Constructed and hardened offline 2026-08-04** at commit `f59c144`. **No run has been dispatched. Not closed.**
+
+- **All six manifest prerequisites addressed.** `M-1` operational persistence with reservation before spawn; `M-2` budget from the persisted authorization only; `M-3` actual spend parsed, failing closed, ceiling and actual recorded; `M-4` the objective decision made; `M-5` binary identity as a pre-dispatch refusal; `M-6` write paths from the template.
+- **The objective decision:** exactly one declared template, `task-store-module-v1`, matched by a **deterministic keyword conjunction over normalised text** — no model, no fuzzy matching, no synonyms, no scoring. Unsupported objectives are refused at `Plan.Authorize`, **before an authorization can exist**. General objective-to-independent-test generation is **deferred beyond V1.1**, because a generated objective needs a generated test suite and the Builder must never write its own validation.
+- **Nothing was executed.** No Claude Code invoked — not even `--version` — no process spawned, no model called, no authorization consumed, no money spent. All 29 dispatcher tests use a substituted backend; the real adapter is never constructed.
+- **`F-114`'s unauthorized-dispatch half is complete offline**, with the whole persisted store asserted byte-equal before and after.
+- **Two defects found by test before commit:** workspace disposal ran in `finally`, which executes after the return value is built, so every destroyed workspace reported `retained`; and terminal `AgentRun` events omitted the required `evidenceIds`, so failed runs stayed `running` forever.
+- **Unverified and stated:** the exact cost field name in Claude Code's JSON result could not be confirmed without a real invocation. Three candidates are accepted and an unrecognised shape **fails the run** — the correct direction, and the most likely correction the first real run will produce.
+- **No HTTP route dispatches a run.** Wiring an operator-facing control is deferred until after the first authorized run is reviewed.
+- **Records:** `docs/evidence/ac-111/construction-record.md`; manifest and before-run gate in `docs/audits/ac-111-run-manifest.md`.
+- **Gates:** typecheck 8/8, lint clean, build clean, **1368 tests / 0 failures**, `v1-canonical-run.json` byte-identical.
 
 ### AC-112 — Independent Inspector validation of real output — [FEAT] — ⬜ Not started
 

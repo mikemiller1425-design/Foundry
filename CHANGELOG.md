@@ -6,6 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Proposed — AC-111 run manifest and before-run operator gate
+
+Supersedes the preflight, which recorded six blocking prerequisites; **all six are now addressed**. The preflight is retained unedited as the record of what was true then.
+
+Documents exactly what one run would do: the literal argument vector, the fresh `mkdtemp` workspace, the one writable file, the independent test file the Builder may neither modify nor run, the process-group timeout, and the currently installed binary's SHA-256 for pinning.
+
+**What would be spent, stated plainly:** real money up to the chosen ceiling, irreversibly; and the authorization itself, **consumed at reservation** — before the process starts, not refunded on failure, timeout, or crash.
+
+**What is still unverified, stated plainly:** the exact cost field name in Claude Code's JSON result. Confirming it requires a real invocation. Three candidates are accepted and an unrecognised shape **fails the run** — so the first real run may fail on this having still spent money. That is the correct failure direction and the most likely correction the first run produces.
+
+**No HTTP route dispatches a run.** A button that spends money should not exist before the mechanism behind it has been watched once.
+
+An **eight-point before-run review gate** is included. Any "no" should stop the run. **Nothing in the document is an authorization.**
+
+Recorded in `docs/audits/ac-111-run-manifest.md`.
+
 ### Added — AC-111 offline construction and pre-run hardening (no run dispatched)
 
 The real-execution dispatch path, built and proven **entirely offline**. **No Claude Code was invoked — not even `--version`. No process was spawned, no model called, no authorization consumed, no money spent.** Every test supplies a substituted execution backend; the real adapter is never constructed.
