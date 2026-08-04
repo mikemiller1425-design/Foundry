@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — AC-108 closed: operator submitted an objective and reviewed the plan (documentation only)
+
+The operator ran the observation environment against `2843b53` and reported the rung **observed and approved**. The stop condition — *"operator has submitted an objective and reviewed a plan"* — is satisfied, so **`AC-108` is closed.**
+
+Recorded in `docs/evidence/ac-108/operator-observation.md` as an **operator-reported observation**, with one precision stated rather than glossed: the operator reported the rung as approved **as a whole** and did not enumerate individual checklist items. Each item is separately carried by automated tests and by the live run; that evidence is not a substitute for the human observation, and the observation is not a substitute for it. Both are on the record, separately.
+
+**`AC-103P` residue cleared.** The Architect step, the `BuildPlan`, and the plan review panel — the three things `AC-107`'s record listed as owed here — now exist. `parseCommandParams` is wired, `operator.plan_reviewed` is in the runtime vocabulary, and PV1-052's *empty world* half is resolved.
+
+**Gates at closure:** typecheck 8/8 · lint clean · **1170 passed / 94 files / 0 failures**. `pnpm build` was verified clean at this commit immediately before push and deliberately **not** re-run at closure, because the operator's observation session was still running and a production build writes into the same `.next` directory the live dev server uses.
+
+**Operator data preserved:** the pre-`AC-108` database was renamed, not deleted, to `apps/api/data/foundry.sqlite.pre-ac108-20260803-231037`.
+
+`AC-109` is not started and requires its own explicit operator authorization. **Still owed to `AC-110`:** the execution authorization gate, single-use enforcement, the backend-generated SHA-256 plan binding required by `F-113a`, and `operator.execution_authorized`'s vocabulary entry. Finding 6 (`AC-103`), D-8, N-03, N-05, and N-06 are unchanged.
+
 ### Added — AC-108: Persisted BuildPlan and operator plan review
 
 The Architect creates one schema-valid `BuildPlan` for the active Build, it is persisted as backend truth, the frontend displays it, and the operator records a review of it.

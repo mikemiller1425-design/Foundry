@@ -38,7 +38,7 @@ This is the **authoritative V1.1 Build Ladder**. Before this document existed, t
 | AC-105 | FIX | Runtime-mode and credential handoff at runtime | AC-104 | Observe | ✅ **Closed** (`573b1d1`, `3e76c70`) |
 | AC-106 | FIX | Backend-mode command honesty | AC-105 | Observe | ✅ **Closed** (`ceca998`) |
 | AC-107 | FEAT | Bounded-objective contract | AC-106 | Review contract | ✅ **Closed** (`1a184f1`, `29dbcbc`) |
-| AC-108 | FEAT | Objective submission and plan review | AC-107 | **Submit + review plan** | ⬜ Not started — submission half anticipated by AC-103P |
+| AC-108 | FEAT | Objective submission and plan review | AC-107 | **Submit + review plan** | ✅ **Closed** (`2843b53`) |
 | AC-109 | FEAT | Backend orchestration of a build (mock executor) | AC-108 | Observe | ⬜ Not started |
 | AC-110 | FEAT | Execution authorization gate | AC-109 | **Authorize** | ⬜ Not started |
 | AC-111 | FEAT | Real controlled Builder execution | AC-110 | **Authorize the run** | ⬜ Not started |
@@ -168,14 +168,25 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **Prohibited work confirmed not done:** no orchestrator, UI, or executor; `V1RiskClassSchema` not widened; no stage added outside the seven; the closed command vocabulary unchanged.
 - **Hard stop reached.** `AC-108` is not started and requires its own explicit operator authorization. `AC-110`'s amended binding requirement is recorded above and is **not** implemented.
 
-### AC-108 — Objective submission and plan review — [FEAT] — ⬜ Not started
+### AC-108 — Objective submission and plan review — [FEAT] — ✅ Closed
 
 - **Objective:** The operator submits one bounded objective **and reads back a structured plan**.
 - **Depends on:** AC-107.
 - **Prohibited work:** Executing anything. Free-text natural-language shell or autonomous planning input. Auto-advancing past plan review. Bypassing `CommandHandler`.
 - **Operator gate:** **Submit** a real objective and **review** the plan unassisted.
 - **Stop condition:** Operator has submitted an objective **and reviewed a plan**. **Hard stop.**
-- **AC-103P interaction:** Submission is proven. **No Architect step, no `BuildPlan`, and no plan review panel exist**, so this rung's stop condition is unmet and the rung is not started.
+- **AC-103P interaction:** Submission was proven; the Architect step, the `BuildPlan`, and the plan review panel did not exist. **All three now delivered** — see below.
+
+**Closed 2026-08-03** against commit `2843b53`, on the operator's observation and approval.
+
+- **Delivered:** `parseCommandParams` wired through `CommandHandler`; `Build.Plan` persisting a schema-valid plan; the new `Plan.Review` command; `operator.plan_reviewed` in the runtime vocabulary; a deterministic template-driven Architect step; a plan review surface with five distinct states; `WorldState.currentPlan`.
+- **"Proceed" authorizes nothing** — enforced in the handler, the reducer, the panel's wording, and a test asserting zero `BuildStage`/`Task`/`AgentRun`/`Artifact`/`Approval` records after a `proceed` decision.
+- **Evidence:** `docs/evidence/ac-108/operator-observation.md` and `docs/evidence/ac-108/plan-review-record.md`. `F-108`, `F-109`, and the plan portion of `V-101` satisfied. typecheck 8/8, lint clean, **1170 tests / 0 failures**.
+- **Gate, stated precisely:** the operator reported the rung "observed and approved" as a whole and **did not enumerate individual checklist items**; each item is separately carried by automated tests and the live run.
+- **Two defects found by live verification** and fixed before commit: the reported `planId` was the build id, and the `Plan.Review` authorization refusal was worded for approvals.
+- **Amendments:** `domain-model.md` (`Plan.Review` command, `Plan` record and invariants); `event-model.md` (`operator.plan_reviewed` vocabulary entry, `build.planned`'s optional `plan` field).
+- **PV1-052:** the *empty world* half is resolved — a plan is visibly represented without pretending work has begun. A world showing *running* work is `AC-109`'s.
+- **Hard stop reached.** `AC-109` is not started and requires its own explicit operator authorization. No execution authorization exists; no Claude Code was invoked.
 
 ### AC-109 — Backend orchestration of a build (mock executor) — [FEAT] — ⬜ Not started
 
@@ -257,7 +268,7 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 | AC-104 | **Launch** Foundry from a clean clone with one command ✅ |
 | AC-106 | Press every backend-mode control and see a truthful result ✅ |
 | AC-107 | **Review** the objective envelope and confirm it bounds what was intended ✅ |
-| AC-108 | **Submit** a real objective and **review** the plan unassisted |
+| AC-108 | **Submit** a real objective and **review** the plan unassisted ✅ |
 | AC-110 | **Authorize** one controlled execution |
 | AC-111 | **Authorize the real run**, watch it, review its evidence |
 | AC-113 | **Approve** one real artifact, and separately **reject** one |
