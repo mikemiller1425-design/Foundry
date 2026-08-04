@@ -39,7 +39,7 @@ This is the **authoritative V1.1 Build Ladder**. Before this document existed, t
 | AC-106 | FIX | Backend-mode command honesty | AC-105 | Observe | ✅ **Closed** (`ceca998`) |
 | AC-107 | FEAT | Bounded-objective contract | AC-106 | Review contract | ✅ **Closed** (`1a184f1`, `29dbcbc`) |
 | AC-108 | FEAT | Objective submission and plan review | AC-107 | **Submit + review plan** | ✅ **Closed** (`2843b53`) |
-| AC-109 | FEAT | Backend orchestration of a build (mock executor) | AC-108 | Observe | ⬜ Not started |
+| AC-109 | FEAT | Backend orchestration of a build (mock executor) | AC-108 | Observe | ✅ **Closed** (`ae0b762`) |
 | AC-110 | FEAT | Execution authorization gate | AC-109 | **Authorize** | ⬜ Not started |
 | AC-111 | FEAT | Real controlled Builder execution | AC-110 | **Authorize the run** | ⬜ Not started |
 | AC-112 | FEAT | Independent Inspector validation of real output | AC-111 | Observe rejection + pass | ⬜ Not started |
@@ -188,10 +188,23 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **PV1-052:** the *empty world* half is resolved — a plan is visibly represented without pretending work has begun. A world showing *running* work is `AC-109`'s.
 - **Hard stop reached.** `AC-109` is not started and requires its own explicit operator authorization. No execution authorization exists; no Claude Code was invoked.
 
-### AC-109 — Backend orchestration of a build (mock executor) — [FEAT] — ⬜ Not started
+### AC-109 — Backend orchestration of a build (mock executor) — [FEAT] — ✅ Closed
 
 - **Prohibited work:** Any direct `appendEvent` from the orchestrator. Any second write path. Any real Claude Code invocation. Reordering the canonical sequence. Modifying the mock runtime or its canonical fixture.
 - **Stop condition:** Orchestrated mock-executor build reaches the approval gate. **Hard stop** before any real execution.
+
+**Closed 2026-08-04** against commit `ae0b762`, on the operator's observation and approval.
+
+- **Delivered:** `BuildOrchestrator` — a client of `CommandHandler` and nothing else; `POST /builds/{id}/start`; the `Build.Start` guard (authenticated operator, plan reviewed `proceed` at the current revision, build still `planned`); `waiting_for_approval` derived from `approval.requested`; and the `BuildRunPanel`.
+- **Six stages complete, the seventh is never created.** The run stops at the approval gate with one pending `Approval`, no transfer, no execution authorization, and no real invocation. Resolving that approval records a decision and advances nothing — said in the approval's own `recommendedAction` so it is not a silent no-op (`F-105`).
+- **Nothing executed.** Every `AgentRun` is `runtimeType: "mock"`, including the stage the plan allocated to `claude_code`; `claude_code` runs: **0**. The mock is stated in five places in the interface, not one.
+- **Evidence:** `docs/evidence/ac-109/operator-observation.md` and `docs/evidence/ac-109/orchestration-record.md`. `F-110`, `F-111`, `F-112`, and the orchestrated-build portions of `V-101`/`V-102` satisfied. typecheck 8/8, lint clean, **1239 tests / 0 failures**.
+- **Gate, stated precisely:** the operator reported the rung "observed and approved" as a whole and **did not enumerate individual checklist items**; each item is separately carried by automated tests and the live run.
+- **Two defects found by test** and fixed before commit: the duplicate-start refusal named a state machine rather than the operator's act, and the `F-111` source tripwire was defeated by the module's own prose.
+- **Amendments:** `event-model.md` (`approval.requested` derives `waiting_for_approval`); `domain-model.md` (`Build.Start` preconditions and actor requirement, recorded as **not** an execution authorization). **No new event type and no new command type.**
+- **Preserved, checked not assumed:** `v1-canonical-run.json` byte-identical to `HEAD`; the mock runtime's behaviour files untouched.
+- **PV1-052 fully resolved** — the world now shows *running* work, every visual change driven by a declared backend event.
+- **Hard stop reached.** `AC-110` is not started and requires its own explicit operator authorization. No execution authorization exists; no Claude Code was invoked.
 
 ### AC-110 — Execution authorization gate — [FEAT] — ⬜ Not started
 
@@ -269,6 +282,7 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 | AC-106 | Press every backend-mode control and see a truthful result ✅ |
 | AC-107 | **Review** the objective envelope and confirm it bounds what was intended ✅ |
 | AC-108 | **Submit** a real objective and **review** the plan unassisted ✅ |
+| AC-109 | **Observe** an orchestrated build reach the approval gate, and that nothing real ran ✅ |
 | AC-110 | **Authorize** one controlled execution |
 | AC-111 | **Authorize the real run**, watch it, review its evidence |
 | AC-113 | **Approve** one real artifact, and separately **reject** one |

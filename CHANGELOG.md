@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — AC-109 closed: an orchestrated build reaches the approval gate (documentation only)
+
+The operator ran the observation environment against `ae0b762` and reported the rung **observed and approved**. The stop condition — *"orchestrated mock-executor build reaches the approval gate, hard stop before any real execution"* — is satisfied in both halves, so **`AC-109` is closed.**
+
+Recorded in `docs/evidence/ac-109/operator-observation.md` as an **operator-reported observation**, with the same precision the previous rungs carry: the operator reported the rung approved **as a whole** and did not enumerate individual checklist items. Each item is separately carried by automated tests and by the live run; that evidence is not a substitute for the human observation, and the observation is not a substitute for it. Both are on the record, separately.
+
+**PV1-052 is fully resolved.** `AC-108` made a plan visible without pretending work had begun; this rung makes a world that shows *running* work — stages advancing, agents travelling, artifacts produced, a gate closing — with every visual change driven by a declared backend event and none of it real execution.
+
+**One fact recorded rather than smoothed over:** at hand-off, the database behind the previous session held only 18 `building.selected` events — no objective, build, or plan — despite `AC-108` having been observed against that environment. How that came to be is not established, and the record does not guess. Nothing identifiable as work was lost; the session was restarted in place rather than renamed. The pre-`AC-108` database remains preserved at `apps/api/data/foundry.sqlite.pre-ac108-20260803-231037`.
+
+**Gates at closure:** typecheck 8/8 · lint clean · **1239 passed / 89 files / 0 failures**. `v1-canonical-run.json` re-checked **byte-identical to `HEAD`**. `pnpm build` was verified clean at this commit immediately before push and deliberately **not** re-run at closure, because the operator's observation session was still using the same `.next` directory.
+
+`AC-110` is not started and requires its own explicit operator authorization. **Still owed to it:** the execution authorization gate, single-use enforcement against persisted state, the backend-generated SHA-256 plan binding required by `F-113a`, and `operator.execution_authorized`'s vocabulary entry. Finding 6 (`AC-103`), D-8, N-03, N-05, and N-06 are unchanged.
+
 ### Added — AC-109: backend orchestration of a build with the mock executor
 
 A reviewed `BuildPlan` is now advanced through the fixed stage sequence by the deterministic mock executor, and the run stops at the approval gate. This is the first time backend mode shows work advancing at all — before this rung the world went quiet after a plan was reviewed.
