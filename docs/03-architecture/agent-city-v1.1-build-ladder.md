@@ -36,7 +36,7 @@ This is the **authoritative V1.1 Build Ladder**. Before this document existed, t
 | AC-103 | FIX | Finding 6 resolution | AC-102 | **Accept closure** | ⬜ Not started |
 | AC-104 | HARD | One-command local operation | AC-102 | **Launch it** | ✅ **Closed** (`4e7d0f6`) |
 | AC-105 | FIX | Runtime-mode and credential handoff at runtime | AC-104 | Observe | ✅ **Closed** (`573b1d1`, `3e76c70`) |
-| AC-106 | FIX | Backend-mode command honesty | AC-105 | Observe | ⬜ Not started — substantially anticipated by AC-103P |
+| AC-106 | FIX | Backend-mode command honesty | AC-105 | Observe | ✅ **Closed** (`ceca998`) |
 | AC-107 | FEAT | Bounded-objective contract | AC-106 | Review contract | ⬜ Not started — substantially anticipated by AC-103P |
 | AC-108 | FEAT | Objective submission and plan review | AC-107 | **Submit + review plan** | ⬜ Not started — submission half anticipated by AC-103P |
 | AC-109 | FEAT | Backend orchestration of a build (mock executor) | AC-108 | Observe | ⬜ Not started |
@@ -131,14 +131,24 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 - **Prohibited work confirmed not done:** no session system, no credential in the bundle, manual entry retained, `403 actor_mismatch` and `PrincipalRegistry` untouched — no backend file changed.
 - **Hard stop reached.** `AC-106` is not started and requires its own explicit operator authorization.
 
-### AC-106 — Backend-mode command honesty — [FIX] — ⬜ Not started
+### AC-106 — Backend-mode command honesty — [FIX] — ✅ Closed
 
 - **Objective:** Eliminate every silent no-op in backend mode.
 - **Depends on:** AC-105.
 - **Prohibited work:** Adding a `demo.*` command type without a specification amendment. Introducing a free-text command input. Any orchestration behaviour.
 - **Operator gate:** Press every backend-mode control and see a truthful result.
 - **Stop condition:** Zero silent no-ops; F-07 holds in both modes. **Hard stop** before any objective work.
-- **AC-103P interaction:** `9a6f7ee` and `9345a04` addressed PV1-012 and PV1-052. **PV1-013 (`building.selected` in backend mode) and the demo-control disposition remain owed.**
+- **AC-103P interaction:** `9a6f7ee` and `9345a04` addressed PV1-012 and PV1-052. PV1-013 and the demo-control disposition were owed here and are now **delivered** — see below.
+
+**Closed 2026-08-03** against commit `ceca998`.
+
+- **Delivered:** six classified failure kinds (`unsupported`, `validation`, `unauthorized`, `blocked`, `unreachable`, `server_error`), each with a title, the backend's reason verbatim, and a corrective action rendered in the 2D strip; demo controls disabled in backend mode with a stated reason; `building.selected` emitted backend-side via the declared `Building.Select`; `runtimeMode` stated on the context rather than inferred.
+- **Evidence:** `docs/evidence/ac-106/operator-observation.md` and `docs/evidence/ac-106/control-dispositions.md`. `F-105` and `F-106` satisfied. typecheck 8/8, lint clean, build clean, **1033 tests / 0 failures**; live verification classified all six backend cases as expected.
+- **Gate, stated precisely:** the operator observed demo controls, unauthorized, credential restore, validation, selection, and mock mode — six of seven items PASS. They recorded **`unreachable` as not manually repeated** (covered by live verification) and did not report exercising **`blocked`**; both are carried by tests and the live run, not by a human observation.
+- **Correction during the rung:** the first implementation classified purely on HTTP status, which mis-filed a missing credential as `blocked` because `CommandHandler`'s authorization guards answer `200`. Corrected before commit; rationale in the decision record.
+- **Residue cleared:** PV1-012, PV1-013, and the demo-control disposition. PV1-052's *inoperable* half is closed here; its *empty* half remains with `AC-108`.
+- **Prohibited work confirmed not done:** no `demo.*` command type added, no free-text command input, no orchestration, no backend file changed.
+- **Hard stop reached.** `AC-107` is not started and requires its own explicit operator authorization.
 
 ### AC-107 — Bounded-objective contract — [FEAT] — ⬜ Not started
 
@@ -227,7 +237,7 @@ Established the V1.1 mission, scope, exclusions, decision record, acceptance spe
 | AC-102 | **Ratify or decline** the V1.1 baseline ✅ |
 | AC-103 | **Accept** Finding 6's closure against the chosen standard |
 | AC-104 | **Launch** Foundry from a clean clone with one command ✅ |
-| AC-106 | Press every backend-mode control and see a truthful result |
+| AC-106 | Press every backend-mode control and see a truthful result ✅ |
 | AC-108 | **Submit** a real objective and **review** the plan unassisted |
 | AC-110 | **Authorize** one controlled execution |
 | AC-111 | **Authorize the real run**, watch it, review its evidence |

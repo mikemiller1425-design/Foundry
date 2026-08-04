@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Observed — AC-106 closed: operator confirmed every backend-mode control is truthful (documentation only)
+
+The operator exercised the backend-mode controls against `ceca998` and reported **six PASS items**: demo controls, missing credential giving **Not authorized**, *Use this session's credential* restoring access, a too-short objective giving field validation, building selection being immediate without duplicating its timeline event, and mock mode retaining working demo controls with no credential panel. The stop condition — *"Zero silent no-ops; F-07 holds in both modes"* — is satisfied, so **`AC-106` is closed.**
+
+The **Not authorized** item is the one that matters most here: it confirms in the running application the correction made during the rung, where a missing credential had been mis-filed as *"Blocked by current state"* because `CommandHandler`'s authorization guards answer `200` rather than `403`.
+
+Recorded in `docs/evidence/ac-106/operator-observation.md` as an **operator-reported observation**, with one precision stated rather than glossed: **two of the six failure kinds were not personally observed.** The operator recorded `unreachable` as covered by the rung's live verification rather than repeated by hand, and did not report exercising `blocked`. Both are carried by automated tests and the live run, not by a human observation.
+
+**AC-103P residue assigned to this rung is cleared:** PV1-012, PV1-013, and the demo-control disposition. PV1-052's *inoperable* half closes here; its *empty* half remains with `AC-108`.
+
+**Gates re-verified at `ceca998`:** typecheck 8/8 · lint clean · build clean · **1033 passed / 85 files / 0 failures**.
+
+`AC-107` is not started. Finding 6 (`AC-103`), D-8, N-03, N-05, N-06, and the remaining `AC-103P` residue (`AC-107`, `AC-108`) are unchanged. One new item is on the record: having the authorization guards answer `403` rather than `200` would remove the classification exception this rung had to accept, and is noted as a candidate for a later rung owning the API surface.
+
 ### Fixed — AC-106: Backend-mode command honesty
 
 Every control in backend mode now either performs its declared action or states, specifically, why it cannot.
