@@ -6,6 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Verified — clean full regression pass at `8e8f0f7`
+
+Measured on a clean tree after the queue's three preceding items, because "should not have regressed anything" is a prediction and this is the measurement.
+
+**typecheck 8/8 · lint clean · build 2/2 · 1324 passed / 92 files / 0 failures · Chromium 378 passed / 0 failed · WebKit 375 passed / 3 failed.**
+
+`v1-canonical-run.json` hashes to `7775b5ce…`, **identical to the hash recorded at the `AC-109` closure**. That matters more than usual today: `AC-119` established that `pnpm format:write` would have rewritten this file, so the hash confirms the exclusion landed before any such command could.
+
+**V1 non-regression:** the V1 primary-journey and acceptance-invariant suites pass 29/29, and the Chromium browser suite's 378 matches the figure in `docs/evidence/fbl-035/v1-acceptance-report.md`.
+
+**WebKit improved from 372/6 to 375/3.** The three Finding 6 failures are gone (`AC-103`); the remaining three are Finding 3a, classified at `FBL-035` and not reopened.
+
+Not run, and stated so the record is not overread: the performance suite (`AC-117` owns the fresh baseline), screenshot baselines (six stale, `N-06`), and any real-path execution suite — `AC-111` has not begun, no Claude Code was invoked, and no money was spent anywhere in this queue.
+
+Recorded in `docs/evidence/ac-119/regression-verification-2026-08-04.md`.
+
 ### Fixed — AC-119: repository and evidence hygiene (partial; two items need an operator decision)
 
 **The `AC-110` evidence header, verified and clarified** *(operator-requested)*. `b7891b0` is the closure commit's **parent**, not the closure; the actual closure commit is **`f955327`**. A file cannot contain the hash of the commit that introduces it, so the record could only name its base — labelling that base "Closed at" was the error. The clarification is **appended** (46 lines added, 0 removed). Nothing about the approval, its basis, the evidence, or the closed status changes.
