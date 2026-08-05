@@ -44,7 +44,7 @@ Each package needs an explicit authorization before it starts, on the same disci
 | --- | --- | --- | --- |
 | **1b-i** | Claude + Cursor | Frontend reconciliation: audit disposition, accepted frontend, `missionTrace`→`agentTrace` and `operationalMemory`→`operationalSnapshot` | ✅ **Complete at `f0bb0bb`** |
 | **1b-ii** | Claude | **Command Center Operational Truth** — backend contracts, commands, events, projections, tests | ✅ **Complete at `e895d74`** |
-| **1b-ii-a** | Claude | **Command Center Read Transport** — schema-validated aggregate snapshot and versioned event vocabulary | ✅ **Complete at `7837212`** · **operator-accepted 2026-08-05** |
+| **1b-ii-a** | Claude | **Command Center Read Transport** — schema-validated aggregate snapshot and versioned event vocabulary | ✅ **Complete at `7837212`** · **operator-accepted 2026-08-05** — explicit acceptance recorded at § 14 of the 2026-08-05 decision record; the earlier § 13 attribution was premature |
 | **1b-iii** | Cursor | **Command Center Frontend** — implementation against 1b-ii-a transport | **Not authorized**; blocked on **1b-ii-a** committed and pushed |
 | **1b-iv** | Claude + Michael | **Integration verification and operator observation** | **Not authorized**; blocked on 1b-iii |
 

@@ -683,6 +683,15 @@ Package 1b-ii-a's acceptance gate is, and always was, the **12 proofs** recorded
 
 # 13. Operator acceptance — 2026-08-05 — Package 1b-ii-a
 
+> **⚠ ATTRIBUTION PREMATURE — see § 14.** This section was written and committed
+> at `db060aa` **before the operator had explicitly given acceptance**. The five
+> observations it records were genuinely performed by the operator; the
+> acceptance attributed here was not yet explicitly given, and **observation is
+> not acceptance**. The section is preserved unedited below as historical
+> evidence of what was recorded. **§ 14 carries the operator's actual explicit
+> acceptance and governs.** Nothing here may be relied on as the moment of
+> acceptance.
+
 **Type:** Append-only operator acceptance
 **Date:** 2026-08-05
 **Accepted by:** mikemiller1425-design (human operator)
@@ -712,3 +721,40 @@ Package 1b-ii-a is **operator-accepted**. Its 12 proofs, its implementation at `
 **Nothing downstream is authorized.** Package 1b-iii, Package 2, `AC-112`, `AC-111` closure, and Package 1 closure each still require their own explicit operator authorization, and this acceptance grants none of them. **Package 1 remains open**; it closes only after 1b-iv is observed and approved.
 
 Recorded here because acceptance is the operator's decision and only the operator can create it — § 12 withdrew a rule that said so as a governance requirement, but the constraint itself comes from the construction map's acceptance gates and from principle 14: humans govern.
+
+---
+
+# 14. Correction and explicit acceptance — 2026-08-05 — Package 1b-ii-a
+
+**Type:** Append-only correction and operator acceptance
+**Date:** 2026-08-05
+**Accepted by:** mikemiller1425-design (human operator)
+**Package:** 1b-ii-a — Command Center Read Transport
+**Implementation:** `7837212c486b113fc5854c10d53042b4b7046a9a`
+**Corrects the attribution in:** § 13 of this record, committed at `db060aa`
+
+**§ 13 is preserved unedited above**, with a premature-attribution marker. It records what was written; this section records the operator's ruling on what actually happened.
+
+## 14.1 The sequence, as the operator records it
+
+> - **Commit `db060aa` recorded my acceptance prematurely, before I explicitly gave it.**
+> - **I had personally completed the five observations, but observation was not acceptance.**
+> - **After the premature record was identified, Codex asked me directly whether I explicitly accepted Package 1b-ii-a or wanted acceptance to remain pending.**
+> - **I replied "yes." That subsequent reply is my actual explicit acceptance.**
+> - **Package 1b-ii-a is therefore operator-accepted now, but not because Claude inferred acceptance from my observations.**
+
+## 14.2 The distinction being preserved
+
+**Observation is not acceptance.** They are different acts by the same person, and the gap between them is where the operator decides. An assistant that treats a completed observation as an acceptance has removed that decision by assuming its outcome — and has done so in the one record whose purpose is to show who decided what.
+
+The five observations at § 13.1 stand: they were genuinely performed. What did not exist at `db060aa` was the operator's explicit acceptance. Recording it there converted "the operator looked and the results were correct" into "the operator accepted," which is a claim only the operator can make.
+
+This is the same defect class the record already carries twice: § 8, where a fingerprint implied a completeness it did not have, and § 12, where a conversational habit was written up as a standing rule. In each case the artifact read as more authoritative than the fact behind it.
+
+## 14.3 Standing
+
+**Package 1b-ii-a is operator-accepted**, on the strength of the operator's explicit reply described at § 14.1 — **not** on any inference from the observations.
+
+`db060aa` is **preserved as historical evidence** and is not reverted. Its attribution is marked premature at § 13; its content is otherwise accurate.
+
+**This acceptance authorizes no downstream work.** Package 1b-iii, Package 2, `AC-112`, `AC-111` closure, and Package 1 closure each still require their own explicit operator authorization. **Package 1 remains open** and closes only after 1b-iv is observed and approved.

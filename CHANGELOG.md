@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — the acceptance at `db060aa` was recorded before the operator explicitly gave it
+
+The entry below records Package 1b-ii-a as operator-accepted. **That record was premature.** The operator had personally completed the five observations, but **observation was not acceptance** — and the acceptance was written into the record before it had been explicitly given.
+
+After the premature record was identified, Codex asked the operator directly whether they explicitly accepted Package 1b-ii-a or wanted acceptance to remain pending. The operator replied "yes." **That subsequent reply is the actual explicit acceptance.** Package 1b-ii-a is operator-accepted now — but not because acceptance was inferred from the observations.
+
+**Observation and acceptance are different acts by the same person, and the gap between them is where the operator decides.** Treating a completed observation as an acceptance removes that decision by assuming its outcome, in the one record whose purpose is to show who decided what. It is the same defect class the record already carries twice: § 8, where a fingerprint implied a completeness it did not have, and § 12, where a conversational habit was written up as a standing rule. Each time, the artifact read as more authoritative than the fact behind it.
+
+`db060aa` is **preserved as historical evidence** and not reverted; the five observations it records genuinely occurred. Its attribution is marked premature at § 13 of the 2026-08-05 decision record, and § 14 carries the correction and the explicit acceptance.
+
+**This acceptance authorizes no downstream work.** Package 1b-iii, Package 2, `AC-112`, `AC-111` closure, and Package 1 closure each still require their own explicit authorization. **Package 1 remains open.**
+
 ### Accepted — Package 1b-ii-a, operator-observed and accepted 2026-08-05
 
 The operator personally observed Package 1b-ii-a (`7837212`) and accepted it. Recorded at § 13 of the 2026-08-05 decision record.
