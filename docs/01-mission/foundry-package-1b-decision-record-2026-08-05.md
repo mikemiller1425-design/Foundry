@@ -597,3 +597,35 @@ Silent fallback is prohibited for the same reason a fabricated `external_action.
 > **Sections 10.1–10.5, the construction-map amendment, and the 1b-ii-a acceptance gate are governance only.**
 
 Package 1b-ii-a, 1b-iii, and 1b-iv each still require their own explicit operator authorization. No contract, endpoint, event, or transport was created here.
+
+---
+
+# 11. Standing governance rule — 2026-08-05 — dual checklists
+
+**Type:** Append-only standing rule
+**Date:** 2026-08-05
+**Decided by:** mikemiller1425-design (human operator)
+**Applies from:** Package 1b-ii-a onward
+
+**Nothing above this line is rewritten.**
+
+> Every package maintains and reports **two synchronized checklists**, and every operator item cross-references its engineering proof.
+>
+> **A — Engineering execution checklist.** Per requirement: identifier · implementation status · exact files and symbols · technical evidence · the relevant test or verification command · exclusions or unresolved dependencies.
+>
+> **B — Operator understanding checklist.** In concise plain English: what useful capability the item adds · what Foundry could do before · what it can do afterward · whether anything visibly changes · what remains unavailable, `not_recorded`, `not_available`, or `not_connected` · what is deliberately excluded · exact steps the operator can perform to verify it themselves · any remaining drift risk.
+>
+> **Statuses:** `PROPOSED` · `AUTHORIZED` · `IMPLEMENTED` · `TECHNICALLY VERIFIED` · `OPERATOR OBSERVATION REQUIRED` · `OPERATOR ACCEPTED` · `DEFERRED` · `BLOCKED`.
+>
+> **Only the operator may mark an item `OPERATOR OBSERVED` or `OPERATOR ACCEPTED`.**
+
+**What this settles.** Package reporting had been engineering-shaped: proofs, gate results, test counts. That is necessary and it is not sufficient. A passing suite demonstrates that the code agrees with its own tests; it does not tell the person who has to operate the system what changed, what is now visible, what is still missing, or how to check any of it without reading the diff.
+
+The second list is not a summary of the first. It answers different questions, and the cross-reference requirement is what keeps it honest — a plain-English claim with no engineering proof behind it is exactly the kind of statement this project has repeatedly had to correct.
+
+**Consequences.**
+- Both checklists are reported at package completion, not on request.
+- Every operator item names the engineering item that proves it.
+- A package may mark its own work `IMPLEMENTED` and `TECHNICALLY VERIFIED`. It may **never** mark it `OPERATOR OBSERVED` or `OPERATOR ACCEPTED`; doing so misreports the record.
+- `DEFERRED` and `BLOCKED` are first-class outcomes and are reported as plainly as completion.
+- Completion reporting separates: genuinely implemented and verified · technically present but not yet visible · requiring operator observation · unavailable or historically unrecorded · remaining work · exact personal verification commands with expected results.

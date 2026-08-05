@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Package 1b-ii-a: Command Center Read Transport (backend only; no UI)
+
+**1620 tests passing**, frontend tree object `06dbb4c9` byte-identical before and after.
+
+`GET /command-center` serves one schema-validated aggregate, published from `@foundry/contracts` so a consumer parses it without importing the backend. It **composes and does not derive** — a test reads `snapshotRoute.ts` and asserts it calls the seven accepted 1b-ii projections while containing no domain arithmetic or classification of its own, because a figure computed in a transport would be truth invented by a layer with no authority to create it.
+
+**Reads cannot change what they read.** Ten consecutive snapshot reads leave the event log, every entity, and the briefing cursor identical, and the briefing stays unacknowledged. Absent facts stay absent: autonomy `not_recorded` with a reason, unintegrated sources `not_connected` and never `checked`, the batch policy unconfigured rather than defaulted.
+
+**Vocabulary negotiation refuses rather than degrades.** Absent parameter keeps frozen V1 behaviour; `vocabulary=command-center-v1` adds the Command Center events as a strict superset; every unknown value — including the empty string, which is a supplied value and not an absence — is a `400` naming the supported set. A client served a narrower vocabulary than it asked for would believe it had seen everything, which is the same false-coverage claim a fabricated `external_action.none` would make. The stream refuses before writing stream headers, so a refusal is an ordinary 400 rather than an error mid-stream.
+
+**Raw entity reads remain available and are not the contract.** `GET /entities/briefings` still works, and a test shows the raw entity lacks `cursor`, `proposedNextInterval`, and `intervalIsEmpty` — fields the snapshot carries. Reading raw entities is not reading the contract.
+
+**Unauthenticated, consistent with `world-state`, `entities`, `events`, and the stream** (Decision 10.4, explicitly provisional).
+
+**Standing governance rule adopted:** every package from here on reports **two synchronized checklists** — engineering execution and operator understanding — with every operator item cross-referenced to its engineering proof, and only the operator may mark an item `OPERATOR OBSERVED` or `OPERATOR ACCEPTED`.
+
+**Gates:** typecheck 5/5 · lint clean · production build clean · 1620 passed / 0 failures · all 18 O-1 shell tests · `git diff --check` clean · fixture `7775b5ce…` 64,759 bytes · operational database unchanged at 135 events / 39 entities, `8dd834d7…`.
+
+**Not delivered:** no UI, no `apps/agent-city` change, no new event, command, entity type, or domain truth, no change to 1b-ii projection logic, no NAS access, no Package 2, no `AC-112`, no `AC-111` closure, no Package 1 closure.
+
 ### Added — Package 1b-ii-a sequencing amendment and four rulings (governance only)
 
 **This documentation authorizes no implementation.** 1b-ii-a, 1b-iii, and 1b-iv each still require their own explicit authorization.

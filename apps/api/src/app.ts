@@ -1,4 +1,5 @@
-import { isV1Event } from "@foundry/event-types";
+import { handleCommandCenterGet } from "./commandCenter/snapshotRoute";
+import { VOCABULARY_PARAM, eventFilterFor, resolveVocabulary } from "./commandCenter/eventVocabulary";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { CommandRequestSchema, WorldStateSchema, type PersistedPlan } from "@foundry/contracts";
 import {
@@ -173,14 +174,39 @@ async function handleRequest(
     return;
   }
 
+  /**
+   * Package 1b-ii-a — the Command Center read contract.
+   *
+   * Unauthenticated, consistent with every other read surface (Decision 10.4,
+   * explicitly provisional). Composed entirely from accepted 1b-ii
+   * projections; it derives nothing.
+   */
+  if (method === "GET" && segments.length === 1 && segments[0] === "command-center") {
+    handleCommandCenterGet(persistence, res);
+    return;
+  }
+
   if (method === "GET" && segments.length === 1 && segments[0] === "events") {
-    // Package 1b-ii: same V1-only filter the SSE stream applies. The
-    // frontend reconciles against this endpoint after an outage, so serving
-    // it an event type it cannot parse would turn a reconnect into a refusal.
+    /**
+     * Package 1b-ii-a — vocabulary negotiation (Decision 10.5).
+     *
+     * Absent parameter keeps the frozen V1 behaviour, because the frontend
+     * reconciles against this endpoint after an outage and an event type it
+     * cannot parse would turn a reconnect into a refusal. An unknown value is
+     * refused rather than quietly downgraded: a client served less than it
+     * asked for would believe it had seen everything.
+     */
+    const vocabulary = resolveVocabulary(url.searchParams.get(VOCABULARY_PARAM));
+    if (!vocabulary.ok) {
+      sendJson(res, 400, vocabulary.refusal);
+      return;
+    }
     sendJson(
       res,
       200,
-      persistence.getEventsSince(url.searchParams.get("since")).filter(isV1Event),
+      persistence
+        .getEventsSince(url.searchParams.get("since"))
+        .filter(eventFilterFor(vocabulary.vocabulary)),
     );
     return;
   }

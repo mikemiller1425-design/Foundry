@@ -44,7 +44,7 @@ Each package needs an explicit authorization before it starts, on the same disci
 | --- | --- | --- | --- |
 | **1b-i** | Claude + Cursor | Frontend reconciliation: audit disposition, accepted frontend, `missionTrace`→`agentTrace` and `operationalMemory`→`operationalSnapshot` | ✅ **Complete at `f0bb0bb`** |
 | **1b-ii** | Claude | **Command Center Operational Truth** — backend contracts, commands, events, projections, tests | ✅ **Complete at `e895d74`** |
-| **1b-ii-a** | Claude | **Command Center Read Transport** — schema-validated aggregate snapshot and versioned event vocabulary | **Not authorized** |
+| **1b-ii-a** | Claude | **Command Center Read Transport** — schema-validated aggregate snapshot and versioned event vocabulary | ✅ **Complete at `3b1e267`** |
 | **1b-iii** | Cursor | **Command Center Frontend** — implementation against 1b-ii-a transport | **Not authorized**; blocked on **1b-ii-a** committed and pushed |
 | **1b-iv** | Claude + Michael | **Integration verification and operator observation** | **Not authorized**; blocked on 1b-iii |
 
@@ -247,6 +247,22 @@ Michael must personally observe: briefing truth · scheduled decisions · active
 ```
 
 `3` needs `1a`'s guard and `2`'s located material. `4` and `5` both need `1b`'s supervision surface and `3`'s verified facts.
+
+## Standing governance rule — dual checklists
+
+**Adopted 2026-08-05.** Every package from Package 1b-ii-a onward maintains and reports **two synchronized checklists**, and every operator item cross-references its engineering proof.
+
+**A — Engineering execution checklist.** Per requirement: identifier · implementation status · exact files and symbols · technical evidence · the test or verification command · exclusions and unresolved dependencies.
+
+**B — Operator understanding checklist.** Per item, in plain English: what useful capability it adds · what Foundry could do before · what it can do afterward · whether anything visibly changes · what remains unavailable, `not_recorded`, `not_available`, or `not_connected` · what is deliberately excluded · the exact steps the operator can run to verify it themselves · any remaining drift risk.
+
+**Statuses.** `PROPOSED` · `AUTHORIZED` · `IMPLEMENTED` · `TECHNICALLY VERIFIED` · `OPERATOR OBSERVATION REQUIRED` · `OPERATOR ACCEPTED` · `DEFERRED` · `BLOCKED`.
+
+**Only the operator may mark an item `OPERATOR OBSERVED` or `OPERATOR ACCEPTED`.** Neither Claude nor Cursor may advance an item into either state, and a package that reports its own work as accepted has misreported it.
+
+**Why this exists.** A passing test proves a machine agrees with itself. It does not tell the person who has to live with the system what changed, what is now visible, or what is still missing — and "1603 tests pass" is not an answer to "what can I do now that I could not do yesterday." The two lists are kept side by side so neither can quietly drift from the other.
+
+---
 
 ## Standing constraints across every package
 

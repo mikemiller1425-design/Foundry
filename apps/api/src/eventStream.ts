@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { isV1Event, type FoundryEvent } from "@foundry/event-types";
+import type { PersistedEvent } from "@foundry/event-types";
+import { VOCABULARY_PARAM, eventFilterFor, resolveVocabulary } from "./commandCenter/eventVocabulary";
 import type { PersistenceService } from "@foundry/persistence";
 
 // SSE is the transport ADR/ladder recommendation (foundry-build-ladder.md
@@ -31,6 +32,19 @@ export function handleEventStream(
   const url = new URL(req.url ?? "/", "http://localhost");
   const lastEventId =
     req.headers["last-event-id"] ?? url.searchParams.get("lastEventId") ?? null;
+
+  /**
+   * Package 1b-ii-a — vocabulary negotiation (Decision 10.5), resolved before
+   * the stream headers are written so a refusal is an ordinary 400 rather
+   * than an error mid-stream that a client would have to interpret.
+   */
+  const vocabulary = resolveVocabulary(url.searchParams.get(VOCABULARY_PARAM));
+  if (!vocabulary.ok) {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(vocabulary.refusal));
+    return { close: () => {} };
+  }
+  const passes = eventFilterFor(vocabulary.vocabulary);
 
   res.writeHead(200, {
     "Content-Type": "text/event-stream; charset=utf-8",
@@ -64,11 +78,11 @@ export function handleEventStream(
    * pushed at a client built before they existed.
    */
   for (const event of backlog) {
-    if (isV1Event(event)) writeEvent(res, event);
+    if (passes(event)) writeEvent(res, event);
   }
 
   const unsubscribe = persistence.subscribe((event) => {
-    if (isV1Event(event)) writeEvent(res, event);
+    if (passes(event)) writeEvent(res, event);
   });
 
   // Keeps intermediaries from closing an idle connection, and gives the
@@ -88,7 +102,7 @@ export function handleEventStream(
   return { close };
 }
 
-function writeEvent(res: ServerResponse, event: FoundryEvent): void {
+function writeEvent(res: ServerResponse, event: PersistedEvent): void {
   // One write per frame: an SSE frame split across chunks is legal on the
   // wire but makes readers (and tests) reassemble it needlessly.
   // `id:` is what drives the browser's Last-Event-ID on reconnect.
