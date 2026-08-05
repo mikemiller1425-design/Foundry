@@ -9,3 +9,4 @@ export * from "./supportedObjective";
 export * from "./runEvidence";
 export * from "./nasCatalog";
 export * from "./intentCandidate";
+export * from "./commandCenter";

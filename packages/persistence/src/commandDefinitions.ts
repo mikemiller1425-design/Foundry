@@ -1,5 +1,5 @@
 import type { CommandType } from "@foundry/contracts";
-import type { FoundryEvent } from "@foundry/event-types";
+import type { PersistedEvent } from "@foundry/event-types";
 import type { EntityType } from "./reducer";
 
 export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
@@ -20,12 +20,14 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
   buildings: "Building",
   vehicles: "Vehicle",
   stageValidations: "StageValidation",
+  briefings: "Briefing",
+  decisionBatchPolicies: "DecisionBatchPolicy",
 };
 
 export interface CommandDefinition {
   entityType: EntityType;
-  /** The FoundryEvent type this command produces on success, or `null` if no V1 event backs it (always denied). */
-  eventType: FoundryEvent["type"] | null;
+  /** The PersistedEvent type this command produces on success, or `null` if no V1 event backs it (always denied). */
+  eventType: PersistedEvent["type"] | null;
   /** True when the target entity is not expected to already exist (a creation command). */
   isCreate?: boolean;
   /** Fixed reason shown when `eventType` is null. */
@@ -54,6 +56,15 @@ const TASK_DENY = NO_EVENT(
 );
 
 export const COMMAND_DEFINITIONS: Record<CommandType, CommandDefinition> = {
+  // Package 1b-ii — Command Center. No `toStatus`: neither entity has a
+  // status field, so there is no transition to police (cf. Building.Select).
+  "Briefing.Create": { entityType: "briefings", eventType: "briefing.created", isCreate: true },
+  "Briefing.Acknowledge": { entityType: "briefings", eventType: "briefing.acknowledged" },
+  "DecisionBatchPolicy.Configure": {
+    entityType: "decisionBatchPolicies",
+    eventType: "decisionbatch.policy_configured",
+    isCreate: false,
+  },
   "Agent.Assign": { entityType: "agents", eventType: "agent.assigned", toStatus: "assigned" },
   "Agent.Depart": { entityType: "agents", eventType: "agent.departed", toStatus: "traveling" },
   "Agent.Arrive": { entityType: "agents", eventType: "agent.arrived", toStatus: "traveling" },

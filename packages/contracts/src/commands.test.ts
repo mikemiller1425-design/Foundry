@@ -65,10 +65,16 @@ describe("COMMAND_PARAM_SCHEMAS (AC-107)", () => {
     // AC-107 declared three; AC-108 added `Plan.Review`, AC-110 added
     // `Plan.Authorize`, and AC-111 added `AgentRun.RecordEvidence` — each
     // when it introduced the command. Everything else stays envelope-only.
+    // Package 1b-ii added `Briefing.Create`, `Briefing.Acknowledge`, and
+    // `DecisionBatchPolicy.Configure` — each when it introduced the command,
+    // and each with a real emitter behind it.
     expect(Object.keys(COMMAND_PARAM_SCHEMAS).sort()).toEqual([
       "AgentRun.RecordEvidence",
+      "Briefing.Acknowledge",
+      "Briefing.Create",
       "Build.Create",
       "Build.Plan",
+      "DecisionBatchPolicy.Configure",
       "Plan.Authorize",
       "Plan.Review",
       "Project.Create",

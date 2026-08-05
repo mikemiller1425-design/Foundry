@@ -6,6 +6,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Package 1b-ii: Command Center Operational Truth (backend only; no UI)
+
+Eight backend surfaces, **1603 tests passing**, and the frontend byte-identical: `apps/agent-city` tree object `06dbb4c9` before and after.
+
+**Six of the eight deliverables added no events at all.** Mission, external actions, money, coverage, autonomy, and recommendations are projections over events that already existed. Only briefing and decision-batch policy needed a real emitter, so exactly **three** events joined the vocabulary — `briefing.created`, `briefing.acknowledged`, `decisionbatch.policy_configured` — each with an operator-gated command, a persistence path, and a test that drives it (operator Amendment 3).
+
+**Evidence-bearing absence.** `Attested<T>` makes a recorded value require at least one `EvidenceRef`, so a figure cannot enter a projection without naming the event it came from — which turns "every level-2 figure reaches level-3 evidence" into a type-level property rather than a review checklist. Historical missions report autonomy as `not_recorded` with a stated reason; inferring one from observed behaviour would have manufactured a governance fact about a run that is already finished (Amendment 2).
+
+**One real run stays one action.** The external-action classifier is a versioned registry over event types plus payload predicates, not a judgement: `agentrun.started` qualifies when `runtimeType` is `claude_code` and does not when it is `mock`. Lifecycle events fold by stable run identity, so Foundry's single real Claude Code invocation classifies as **one** external action rather than two. Authorization does not qualify at all — it is the most consequential thing an operator does and changes nothing outside Foundry.
+
+**Money cannot be conflated.** `MonetaryOutcome` has no `total`, `netRevenue`, or `balance` field; summing requires naming a status. The `AC-111` cost projects as **spent**, `received` is empty, and no sample revenue was written anywhere.
+
+**A collision worth recording.** Adding backend events widened `FoundryEvent["type"]`, which broke an exhaustive projection-map type in the reconciled frontend — a file Amendment 1 forbids touching. Rather than edit the frontend or drop the emitters, the vocabulary is now split: `FoundryEvent` is the frozen **V1** union the frontend is built against, and `PersistedEvent` is what the backend persists. The SSE stream and `/events` filter down to V1, because the frontend treats a contract-invalid frame as a possible gap in canonical history and would close the stream rather than degrade. Package 1b-iii widens the frontend and that filter together, as one change.
+
+**Obligation O-1 discharged.** The full `apps/api` suite ran in a provisioned environment: **208 passed, including all 18 `dispatchRealRunCli.shell.test.ts` tests** that were recorded as *not verified* at `7d7fff6`.
+
+**Gates:** typecheck 5/5 · lint clean · production build clean · 1603 passed / 0 failures · `git diff --check` clean · `v1-canonical-run.json` byte-identical (`7775b5ce…`, 64,759 bytes) · operational database unchanged at 135 events / 39 entities, `8dd834d7…` — tests ran against temporary databases only (Amendment 5).
+
+**Contract-only or `not_recorded`, and reported as such:** autonomy on every projected mission · the five monetary statuses other than `spent` · `unavailable`/`excluded`/`uncertain` coverage states, since the only connected source is Foundry's own ledger · mission constraints and agent roles on historical builds.
+
+**Not delivered, and not claimed:** no UI, no Command Center surface, no email or calendar integration, no model-generated prioritizer, no NAS access, no Package 2, no `AC-112`, no `AC-111` closure, no Package 1 closure.
+
 ### Added — Package 1b sequencing amendment, decisions C-6 and C-7, and acceptance gates (governance only)
 
 **This documentation authorizes no implementation.** Creating a numbered slot and writing its gate is not the same as authorizing the work in it.

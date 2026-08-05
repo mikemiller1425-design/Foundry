@@ -112,6 +112,11 @@ export const COMMAND_TYPES = [
   "Upgrade.Start",
   "Upgrade.Complete",
   "Upgrade.Fail",
+  // Package 1b-ii — Command Center. Each has a real emitter and an
+  // authenticated-operator gate; see COMMAND_DEFINITIONS and commandHandler.
+  "Briefing.Create",
+  "Briefing.Acknowledge",
+  "DecisionBatchPolicy.Configure",
 ] as const;
 
 export const CommandTypeSchema = z.enum(COMMAND_TYPES);
@@ -280,6 +285,53 @@ export const COMMAND_PARAM_SCHEMAS = {
       /** What the operator read. Compared, never trusted. */
       acknowledgedContentHash: z.string().min(1),
       note: z.string().max(500).optional(),
+    })
+    .strict(),
+  /**
+   * Produces `briefing.created` (C-7). Both interval bounds are supplied by
+   * the caller and validated here; `capturedEndSequence` is captured once at
+   * creation and never recomputed on a later read.
+   */
+  "Briefing.Create": z
+    .object({
+      briefingId: IdSchema,
+      previousAcknowledgedSequence: z.number().int().nonnegative(),
+      capturedEndSequence: z.number().int().nonnegative(),
+      sourceCoverageIds: z.array(z.string().min(1)).default([]),
+      externalActionClassifierVersion: z.number().int().positive(),
+    })
+    .strict(),
+
+  /**
+   * Produces `briefing.acknowledged` (C-7) — the only cursor advance.
+   *
+   * `acknowledgedBy` is deliberately absent: authority comes from the
+   * credential, and a payload that could name a different operator would let
+   * a caller acknowledge on someone else's behalf.
+   */
+  "Briefing.Acknowledge": z
+    .object({
+      briefingId: IdSchema,
+    })
+    .strict(),
+
+  /** Produces `decisionbatch.policy_configured`. Operator-authenticated. */
+  "DecisionBatchPolicy.Configure": z
+    .object({
+      timezone: z.string().min(1).nullable(),
+      schedule: z.discriminatedUnion("kind", [
+        z.object({ kind: z.literal("unconfigured") }),
+        z.object({
+          kind: z.literal("daily"),
+          atLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+        }),
+        z.object({
+          kind: z.literal("weekdays"),
+          atLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+        }),
+      ]),
+      enabled: z.boolean(),
+      nextExpectedBatchAt: z.iso.datetime().nullable(),
     })
     .strict(),
 } as const satisfies Partial<Record<CommandType, z.ZodType>>;

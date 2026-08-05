@@ -1,3 +1,4 @@
+import { isV1Event } from "@foundry/event-types";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { CommandRequestSchema, WorldStateSchema, type PersistedPlan } from "@foundry/contracts";
 import {
@@ -173,7 +174,14 @@ async function handleRequest(
   }
 
   if (method === "GET" && segments.length === 1 && segments[0] === "events") {
-    sendJson(res, 200, persistence.getEventsSince(url.searchParams.get("since")));
+    // Package 1b-ii: same V1-only filter the SSE stream applies. The
+    // frontend reconciles against this endpoint after an outage, so serving
+    // it an event type it cannot parse would turn a reconnect into a refusal.
+    sendJson(
+      res,
+      200,
+      persistence.getEventsSince(url.searchParams.get("since")).filter(isV1Event),
+    );
     return;
   }
 

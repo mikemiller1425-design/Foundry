@@ -17,7 +17,9 @@ export {
   PersistenceService,
   type AppendEventResult,
   type ReconcileResult,
+  type SequencedEvent,
 } from "./persistenceService";
+export * from "./commandCenter";
 export {
   COMMAND_DEFINITIONS,
   ENTITY_TYPE_LABELS,

@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { FoundryEvent } from "@foundry/event-types";
+import { isV1Event, type FoundryEvent } from "@foundry/event-types";
 import type { PersistenceService } from "@foundry/persistence";
 
 // SSE is the transport ADR/ladder recommendation (foundry-build-ladder.md
@@ -48,12 +48,27 @@ export function handleEventStream(
   const backlog = persistence.getEventsSince(
     typeof lastEventId === "string" && lastEventId.length > 0 ? lastEventId : null,
   );
+  /**
+   * Package 1b-ii: the stream carries the **V1 vocabulary only**.
+   *
+   * The reconciled frontend validates every frame against `FoundryEventSchema`
+   * and, since the projection-honesty checkpoint, treats a contract-invalid
+   * frame as a possible gap in canonical history — it marks the projection
+   * stale and reconciles. Streaming a `briefing.created` to a client that has
+   * never heard of one would therefore not degrade gracefully; it would close
+   * the stream.
+   *
+   * So backend-only events stay backend-side until Package 1b-iii widens the
+   * frontend and this filter together, as one change. They are persisted,
+   * replayed, and projected exactly as any other event — they are simply not
+   * pushed at a client built before they existed.
+   */
   for (const event of backlog) {
-    writeEvent(res, event);
+    if (isV1Event(event)) writeEvent(res, event);
   }
 
   const unsubscribe = persistence.subscribe((event) => {
-    writeEvent(res, event);
+    if (isV1Event(event)) writeEvent(res, event);
   });
 
   // Keeps intermediaries from closing an idle connection, and gives the

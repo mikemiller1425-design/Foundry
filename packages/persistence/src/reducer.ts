@@ -1,6 +1,8 @@
 import type {
   Agent,
   AgentRun,
+  BriefingRecord,
+  DecisionBatchPolicy,
   Approval,
   Artifact,
   Build,
@@ -26,7 +28,7 @@ import {
   WAREHOUSE_LEVEL_2_SEEDED_PACKAGE_COUNT,
   capacityCapability,
 } from "@foundry/contracts";
-import type { FoundryEvent } from "@foundry/event-types";
+import type { PersistedEvent } from "@foundry/event-types";
 import { planRevision as planRevisionOf } from "@foundry/contracts";
 import { planContentHash } from "./planContentHash";
 import { WORLD_AGENTS, WORLD_BUILDINGS, WORLD_VEHICLE } from "@foundry/world-model";
@@ -165,6 +167,10 @@ export interface EntityState {
   agentRunEvidence: Record<string, PersistedRunEvidence>;
   /** FBL-029 Inspector decision history, keyed by stage id. */
   stageValidations: Record<string, StageValidationHistory>;
+  /** Package 1b-ii (C-7): persisted briefing records, keyed by briefing id. */
+  briefings: Record<string, BriefingRecord>;
+  /** Package 1b-ii: the operator-owned decision-batch policy, keyed by policy id. */
+  decisionBatchPolicies: Record<string, DecisionBatchPolicy>;
   inventoryCounts: Record<string, number>;
   health: HealthSummary;
   lastProcessedEventId: string | null;
@@ -205,6 +211,8 @@ export const ENTITY_TYPES: readonly EntityType[] = [
   "buildings",
   "vehicles",
   "stageValidations",
+  "briefings",
+  "decisionBatchPolicies",
 ];
 
 export interface EntityRef {
@@ -235,6 +243,8 @@ export function createInitialEntityState(): EntityState {
     agentRunEvidence: {},
     upgrades: {},
     stageValidations: {},
+    briefings: {},
+    decisionBatchPolicies: {},
     agents: Object.fromEntries(
       WORLD_AGENTS.map((a) => [
         a.id,
@@ -314,7 +324,7 @@ function touch(touched: EntityRef[], entityType: EntityType, entityId: string): 
  * Returns which entities changed so the caller can persist only the delta.
  * Duplicate event ids are a no-op (idempotency — required invariant 6).
  */
-export function reduceEntities(prev: EntityState, event: FoundryEvent): ReduceResult {
+export function reduceEntities(prev: EntityState, event: PersistedEvent): ReduceResult {
   if (prev.seenEventIds.has(event.id)) {
     return { state: prev, touched: [], applied: false };
   }
@@ -528,8 +538,58 @@ function updateVehicle(state: EntityState, touched: EntityRef[], patch: Partial<
   touch(touched, "vehicles", id);
 }
 
-function applyEvent(state: EntityState, event: FoundryEvent, touched: EntityRef[]): void {
+function applyEvent(state: EntityState, event: PersistedEvent, touched: EntityRef[]): void {
   switch (event.type) {
+    /**
+     * Package 1b-ii (C-7). Both interval bounds are written from the event
+     * and never recomputed, so re-reading a briefing cannot change the set of
+     * events it covers.
+     */
+    case "briefing.created": {
+      state.briefings[event.payload.briefingId] = {
+        briefingId: event.payload.briefingId,
+        interval: {
+          previousAcknowledgedSequence: event.payload.previousAcknowledgedSequence,
+          capturedEndSequence: event.payload.capturedEndSequence,
+        },
+        createdAt: event.occurredAt,
+        acknowledgement: null,
+        sourceCoverageIds: [...event.payload.sourceCoverageIds],
+        externalActionClassifierVersion: event.payload.externalActionClassifierVersion,
+      };
+      return;
+    }
+
+    /**
+     * The only cursor advance. Idempotent by construction: a second
+     * acknowledgement of an already-acknowledged briefing leaves the first
+     * one standing, so duplicate and concurrent calls advance it once.
+     */
+    case "briefing.acknowledged": {
+      const briefing = state.briefings[event.payload.briefingId];
+      if (!briefing) return;
+      if (briefing.acknowledgement) return;
+      briefing.acknowledgement = {
+        acknowledgedAt: event.occurredAt,
+        acknowledgedBy: event.payload.acknowledgedBy,
+      };
+      return;
+    }
+
+    case "decisionbatch.policy_configured": {
+      state.decisionBatchPolicies[event.entityId] = {
+        timezone: event.payload.timezone,
+        schedule: event.payload.schedule,
+        nextExpectedBatchAt: event.payload.nextExpectedBatchAt,
+        enabled: event.payload.enabled,
+        immediateInterruptionCategories:
+          event.payload.immediateInterruptionCategories as DecisionBatchPolicy["immediateInterruptionCategories"],
+        configuredAt: event.occurredAt,
+        configuredBy: event.payload.configuredBy,
+      };
+      return;
+    }
+
     case "system.health_changed": {
       state.health = { status: event.payload.newHealth, reasons: event.payload.reasons };
       return;

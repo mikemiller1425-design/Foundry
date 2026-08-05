@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
-import type { CommandRequest, CommandType } from "@foundry/contracts";
-import { FoundryEventSchema, type ActorType, type FoundryEvent } from "@foundry/event-types";
+import {
+  DEFAULT_IMMEDIATE_INTERRUPTION_CATEGORIES,
+  type CommandRequest,
+  type CommandType,
+} from "@foundry/contracts";
+import { PersistedEventSchema, type ActorType, type PersistedEvent } from "@foundry/event-types";
 import {
   BUILD_STAGE_SEQUENCE,
   CLAUDE_CODE_STAGE,
@@ -45,7 +49,7 @@ export interface CommandOutcome {
   entityId?: string;
   reason?: string;
   correctiveAction?: string;
-  event?: FoundryEvent;
+  event?: PersistedEvent;
 }
 
 const INSPECTOR_AGENT_ID = WORLD_AGENTS.find((a) => a.role === "inspector")?.id;
@@ -112,6 +116,21 @@ export function executionAuthorizationId(planId: string): string {
  * Pause, resume, cancel, fail, and complete are unchanged.
  */
 const OPERATOR_BUILD_COMMANDS = new Set<CommandType>(["Build.Start"]);
+
+/**
+ * Package 1b-ii. Opening and acknowledging a briefing, and configuring the
+ * decision-batch policy, are operator acts.
+ *
+ * Acknowledgement in particular: it is the only thing that advances the
+ * briefing cursor, so allowing an agent or an unauthenticated caller to send
+ * it would let something other than the operator declare that the operator
+ * has read their briefing.
+ */
+const OPERATOR_COMMAND_CENTER_COMMANDS = new Set<CommandType>([
+  "Briefing.Create",
+  "Briefing.Acknowledge",
+  "DecisionBatchPolicy.Configure",
+]);
 
 /**
  * Project statuses that still count as open work (`ProjectStatusSchema`).
@@ -190,6 +209,11 @@ export class CommandHandler {
     }
 
     if (OPERATOR_PLAN_COMMANDS.has(commandType)) {
+      const authorization = this.requireAuthorizedOperator(commandType, entityId, actor);
+      if (authorization) return authorization;
+    }
+
+    if (OPERATOR_COMMAND_CENTER_COMMANDS.has(commandType)) {
       const authorization = this.requireAuthorizedOperator(commandType, entityId, actor);
       if (authorization) return authorization;
     }
@@ -318,7 +342,7 @@ export class CommandHandler {
     if (guardFailure) return guardFailure;
 
     const event = this.buildEvent(eventType, def.entityType, entityId, params, actor);
-    const parsed = FoundryEventSchema.safeParse(event);
+    const parsed = PersistedEventSchema.safeParse(event);
     if (!parsed.success) {
       return this.deny(
         commandType,
@@ -341,7 +365,14 @@ export class CommandHandler {
 
   /** Requirement.Start may target a requirement that doesn't exist yet — `reducer.ts` lazily creates it, defaulting to `pending`, exactly as it does when applying an event directly. */
   private isLazilyCreatable(commandType: CommandType, def: CommandDefinition): boolean {
-    return def.entityType === "requirements" && commandType === "Requirement.Start";
+    if (def.entityType === "requirements" && commandType === "Requirement.Start") return true;
+    /**
+     * Package 1b-ii: the decision-batch policy is a singleton the operator
+     * upserts. Treating the first configure as a create and every later one
+     * as an update would make "already exists" a refusal for the ordinary
+     * act of changing your own schedule.
+     */
+    return commandType === "DecisionBatchPolicy.Configure";
   }
 
   /** Invariant 8 exception: a `completed` BuildStage may return to `running` only when an open Revision authorizes it. */
@@ -1408,7 +1439,7 @@ export class CommandHandler {
   }
 
   private buildEvent(
-    eventType: FoundryEvent["type"],
+    eventType: PersistedEvent["type"],
     entityType: EntityType,
     entityId: string,
     params: Record<string, unknown>,
@@ -1418,6 +1449,29 @@ export class CommandHandler {
     const occurredAt = new Date().toISOString();
     if (eventType === "build.completed" || eventType === "stage.completed") {
       (payload as Record<string, unknown>).completedAt = occurredAt;
+    }
+    /**
+     * Package 1b-ii — authority-bearing fields written from the authenticated
+     * principal, never from the payload. Same standard as `resolvedBy` on
+     * approval resolution: the credential establishes who acted, and a
+     * payload field that could name someone else would let a caller
+     * acknowledge a briefing, or configure the operator's policy, on another
+     * operator's behalf.
+     */
+    if (eventType === "briefing.acknowledged") {
+      (payload as Record<string, unknown>).acknowledgedBy = actor.actorId;
+    }
+    if (eventType === "decisionbatch.policy_configured") {
+      (payload as Record<string, unknown>).configuredBy = actor.actorId;
+      /**
+       * Backend-owned, and deliberately not a command parameter: the
+       * immediate-interruption categories decide when Foundry may bypass the
+       * batch, so a client that could send its own list could manufacture
+       * urgency.
+       */
+      (payload as Record<string, unknown>).immediateInterruptionCategories = [
+        ...DEFAULT_IMMEDIATE_INTERRUPTION_CATEGORIES,
+      ];
     }
     return {
       id: randomUUID(),

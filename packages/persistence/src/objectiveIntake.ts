@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { ObjectiveSubmissionSchema } from "@foundry/contracts";
-import type { FoundryEvent } from "@foundry/event-types";
+import type { PersistedEvent } from "@foundry/event-types";
 import type { CommandActor, CommandHandler, CommandOutcome } from "./commandHandler";
 
 /**
@@ -53,7 +53,7 @@ export interface ObjectiveIntakeResult {
    */
   planRejection?: string;
   /** The events the accepted submission produced, in order. */
-  events?: FoundryEvent[];
+  events?: PersistedEvent[];
 }
 
 /** Mints the ids for a submission. Injectable so tests are deterministic. */
@@ -212,7 +212,7 @@ export class ObjectiveIntake {
       planId: planOutcome?.accepted ? plannedId : undefined,
       planRejection: planOutcome && !planOutcome.accepted ? planOutcome.reason : undefined,
       events: [projectOutcome.event, buildOutcome.event, planOutcome?.event].filter(
-        (event): event is FoundryEvent => event !== undefined,
+        (event): event is PersistedEvent => event !== undefined,
       ),
     };
   }

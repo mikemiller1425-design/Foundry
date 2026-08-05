@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import type { Agent, Approval, Build, Building, WorldState } from "@foundry/contracts";
-import { FoundryEventSchema, type FoundryEvent } from "@foundry/event-types";
+import { PersistedEventSchema, type PersistedEvent } from "@foundry/event-types";
 import {
   createInitialEntityState,
   reduceEntities,
@@ -10,6 +10,12 @@ import {
 import { SCHEMA_SQL, type EventRow } from "./schema";
 import { projectWorldState } from "./worldStateProjection";
 
+/** One log row: the event plus the sequence the append-only log assigned it. */
+export interface SequencedEvent {
+  sequence: number;
+  event: PersistedEvent;
+}
+
 export interface AppendEventResult {
   /** False when `event.id` had already been persisted — idempotent no-op, nothing mutated (required invariant 6 / F-09). */
   applied: boolean;
@@ -17,7 +23,7 @@ export interface AppendEventResult {
 
 export interface ReconcileResult {
   snapshot: WorldState;
-  missedEvents: FoundryEvent[];
+  missedEvents: PersistedEvent[];
 }
 
 /**
@@ -31,7 +37,7 @@ export class PersistenceService {
   private readonly db: DatabaseSync;
   private state: EntityState;
   private closed = false;
-  private readonly subscribers = new Set<(event: FoundryEvent) => void>();
+  private readonly subscribers = new Set<(event: PersistedEvent) => void>();
 
   constructor(path: string) {
     this.db = new DatabaseSync(path);
@@ -52,7 +58,7 @@ export class PersistenceService {
   }
 
   /** Transactional, idempotent append: the event and every entity it touches are written atomically, or not at all. */
-  appendEvent(event: FoundryEvent): AppendEventResult {
+  appendEvent(event: PersistedEvent): AppendEventResult {
     const alreadyExists = this.db.prepare("SELECT 1 FROM events WHERE id = ?").get(event.id);
     if (alreadyExists) {
       return { applied: false };
@@ -124,7 +130,7 @@ export class PersistenceService {
    * is a no-op here too, so a subscriber can never be told about the same
    * event twice by this path.
    */
-  subscribe(listener: (event: FoundryEvent) => void): () => void {
+  subscribe(listener: (event: PersistedEvent) => void): () => void {
     this.subscribers.add(listener);
     return () => {
       this.subscribers.delete(listener);
@@ -160,13 +166,35 @@ export class PersistenceService {
     return projectWorldState(this.state);
   }
 
-  getAllEvents(): FoundryEvent[] {
+  getAllEvents(): PersistedEvent[] {
     const rows = this.db.prepare("SELECT * FROM events ORDER BY sequence ASC").all() as unknown as EventRow[];
     return rows.map(rowToEvent);
   }
 
+  /**
+   * The log with its sequence numbers (Package 1b-ii, Decision C-7).
+   *
+   * Briefing membership is defined by sequence, not by wall-clock time, so a
+   * projection over an interval needs the number the log assigned — not the
+   * position of the event in an array a caller happened to build.
+   */
+  getSequencedEvents(): SequencedEvent[] {
+    const rows = this.db
+      .prepare("SELECT * FROM events ORDER BY sequence ASC")
+      .all() as unknown as EventRow[];
+    return rows.map((row) => ({ sequence: row.sequence, event: rowToEvent(row) }));
+  }
+
+  /** Highest assigned sequence, or 0 for an empty log. The first briefing starts after 0. */
+  getLatestSequence(): number {
+    const row = this.db.prepare("SELECT MAX(sequence) AS maxSeq FROM events").get() as unknown as
+      | { maxSeq: number | null }
+      | undefined;
+    return row?.maxSeq ?? 0;
+  }
+
   /** Events strictly after `lastProcessedEventId` (or the full log if it's null/unknown) — the "later events" half of snapshot reconciliation. */
-  getEventsSince(lastProcessedEventId: string | null): FoundryEvent[] {
+  getEventsSince(lastProcessedEventId: string | null): PersistedEvent[] {
     if (lastProcessedEventId === null) {
       return this.getAllEvents();
     }
@@ -203,7 +231,7 @@ export class PersistenceService {
   }
 }
 
-function rowToEvent(row: EventRow): FoundryEvent {
+function rowToEvent(row: EventRow): PersistedEvent {
   const raw = {
     id: row.id,
     type: row.type,
@@ -218,5 +246,5 @@ function rowToEvent(row: EventRow): FoundryEvent {
     schemaVersion: row.schema_version,
     payload: JSON.parse(row.payload) as unknown,
   };
-  return FoundryEventSchema.parse(raw);
+  return PersistedEventSchema.parse(raw);
 }
