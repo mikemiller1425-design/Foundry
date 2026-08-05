@@ -34,19 +34,48 @@ Each package needs an explicit authorization before it starts, on the same disci
 
 **Clarified later on 2026-08-05** (§ 7 of the same record): `operationalMemory` → `operationalSnapshot` **is authorized** for 1b-i, with the "purely derived" precondition verified as holding; and coverage is ruled to be **four orthogonal dimensions**, not one enum. **Coverage-contract implementation is explicitly out of 1b-i scope** — it belongs to the later Claude backend-concepts package. 1b-i may only remove misleading coverage language and preserve honest states already backed by truth.
 
-**Two phases, in order:**
+**Sequencing amended 2026-08-05.** The original two-phase split (audit, then Command Center) proved too coarse: it gave the Command Center no separate backend-truth slot, and no gate between backend truth and the UI built on it. Package 1b is now **four numbered slots, in order**. Each needs its own explicit authorization.
 
-**1b-i — Read-only audit.** Review the in-flight redesign against the mission and the realignment record. Decide per subsystem: **accept**, **amend**, or **reject**. Produces a written disposition; changes nothing.
+*Historical note: 1b-i was originally scoped as a read-only audit producing a written disposition and changing nothing. It became the audit plus the operator-authorized frontend reconciliation — accepting the audited tree and applying the two ratified renames. The paragraph above is preserved as the original framing.*
 
-**1b-ii — Command Center.** Only after 1b-i. Integrate into whatever shell 1b-i settled on, reusing the accepted mission model rather than adding one.
+### The four slots
+
+| Slot | Owner | What it is | State |
+| --- | --- | --- | --- |
+| **1b-i** | Claude + Cursor | Frontend reconciliation: audit disposition, accepted frontend, `missionTrace`→`agentTrace` and `operationalMemory`→`operationalSnapshot` | ✅ **Complete at `f0bb0bb`** |
+| **1b-ii** | Claude | **Command Center Operational Truth** — backend contracts, commands, events, projections, tests | **Not authorized** |
+| **1b-iii** | Cursor | **Command Center Frontend** — implementation against 1b-ii truth | **Not authorized**; blocked on 1b-ii committed and pushed |
+| **1b-iv** | Claude + Michael | **Integration verification and operator observation** | **Not authorized**; blocked on 1b-iii |
+
+**Package 1 remains open until 1b-iv is observed and approved by the operator.**
+
+### 1b-ii — Command Center Operational Truth
 
 | | |
 | --- | --- |
-| **Depends on** | 1a; **an operator disposition on the in-flight frontend** — ratified 2026-08-05 in `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md` (C-1–C-4 decided with acceptance criteria; C-5 and `operationalMemory` open) |
-| **Acceptance gate** | Operator confirms the audit disposition, then observes the Command Center |
-| **Measurable outcome** | Eleven required surfaces present; every figure traceable to a persisted event; coverage naming unintegrated sources; ledger reachable behind the summary |
-| **Hard requirements** | No visual progress without a recorded event · no "nothing was missed" · autonomy levels never enlarge backend authority · approval-gated actions stay approval-gated |
-| **Risk** | The largest scope-creep surface in the plan. The Command Center can honestly cover only Foundry's own data until later integrations exist |
+| **Depends on** | 1a; 1b-i (`f0bb0bb`); decisions C-1–C-4, C-6, C-7 |
+| **Scope** | Operational-mission foundation · scheduled decision batches · persisted briefing record and cursor · external-action projection · monetary outcomes · source coverage · autonomy level · recommended priorities |
+| **Acceptance gate** | The 27 proofs in § *Package 1b acceptance gates* below |
+| **Hard requirements** | Backend owns all truth · no event that nothing can emit · autonomy never enlarges authority · no fictional revenue · no global coverage claim · no `external_action.none` |
+| **Explicitly excluded** | Any UI · email/calendar integration · model-generated prioritization · NAS access · Package 2 work |
+| **Risk** | Eight surfaces at once. Each is a place where a plausible-looking number could be shown without a recorded fact behind it |
+
+### 1b-iii — Command Center Frontend
+
+| | |
+| --- | --- |
+| **Depends on** | 1b-ii **committed and pushed** |
+| **Acceptance gate** | Consumes backend projections and invents nothing — see § *Package 1b acceptance gates* |
+| **Hard requirements** | Normal operation usable through world-glance and tactical-mission levels; evidence/audit reachable but never required for ordinary operation |
+
+### 1b-iv — Integration verification and operator observation
+
+| | |
+| --- | --- |
+| **Depends on** | 1b-iii |
+| **Scope** | **Seams only**, between the accepted 1a, 1b-i, 1b-ii, and 1b-iii commits |
+| **Acceptance gate** | Michael personally observes the eleven items in § *Package 1b acceptance gates* |
+| **Hard requirement** | A repair is limited to an integration defect. If closure would require a new contract, event, authority change, or behavior, **stop and open another package** rather than widening the gate |
 
 ---
 
@@ -110,6 +139,73 @@ The first external micro-offer: a small set of qualified local prospects, source
 ## Later packages (not planned in detail)
 
 External integrations (email, calendar, bills) · repeatable supervised workflows · subscriptions · economic buildings, rentals, ownership, revenue participation. Each needs its own authorization, and the economic ones touch money, ownership, and possibly law — **deliberately unplanned here**.
+
+---
+
+## Package 1b acceptance gates
+
+Recorded 2026-08-05. Each item is a **proof obligation**, not a checklist tick: closure requires demonstrating it, not asserting it.
+
+### 1b-ii — 27 proofs
+
+**Operational mission**
+1. A new mission type declares unique stages **without changing a shared enum**.
+2. Existing software-build events project into one operational mission **without rewriting history**.
+3. Agent spatial tracing (`agentTrace`) remains separate from operational mission truth.
+4. The frontend has **no authoring path** for mission truth.
+
+**Scheduled decision batches**
+5. Decision-batch policy is persisted and operator-authenticated.
+6. Immediate-interruption categories are backend-owned and visible.
+
+**Briefing interval and cursor**
+7. Interval membership uses `(previousAcknowledgedSequence, capturedEndSequence]`.
+8. Rendering or refreshing a briefing **cannot** advance the cursor.
+9. Acknowledgement advances it **once**; duplicate and concurrent calls are idempotent.
+10. Events recorded after the captured end appear only in the **next** briefing.
+
+**External actions**
+11. The existing real Claude Code invocation classifies as **one** external action, not two.
+12. Authorization, preflight, and dry-run **do not** classify as external actions.
+13. "No qualifying external actions were recorded…" derives from zero classified actions in the exact interval.
+14. **No `external_action.none` event exists.**
+
+**Money**
+15. Monetary statuses cannot be conflated.
+16. AC-111 actual cost projects as **spent**, not revenue.
+17. Zero revenue is shown honestly when no received record exists.
+
+**Coverage**
+18. Coverage dimensions remain orthogonal.
+19. Excluded and uncertain states require reasons.
+20. Cancelled or incomplete work **cannot** report complete coverage from counters alone.
+
+**Autonomy and recommendations**
+21. Autonomy changes **do not** enlarge backend authority.
+22. Recommendations trace to evidence and **cannot execute**.
+
+**Disclosure**
+23. Level-2 mission data exposes objective, agents, autonomy, loadout, authority, stages/checkpoints, blockers, decisions, cost, and artifacts.
+24. Every level-2 figure can reach supporting level-3 evidence.
+
+**Regression and gates**
+25. Existing approval, budget, command, AC-111, mock mode, backend mode, and canonical fixtures remain unchanged.
+26. The full `apps/api` suite runs in a correctly provisioned environment, **including all 18 O-1 shell tests** — discharging Obligation O-1.
+27. Typecheck, lint, production build, full tests, `git diff --check`, canonical-fixture byte identity, and operational-database nonmutation all pass.
+
+### 1b-iii — frontend gate
+
+Cursor may build only after 1b-ii is **committed and pushed**. The frontend consumes backend projections and **must not invent** any of: mission progress · coverage · decisions · external actions · money · autonomy · recommendations · briefing cursor · urgency.
+
+Normal operation must remain usable through **world-glance** and **tactical-mission** levels. Evidence/audit detail stays reachable but is **not required** for ordinary operation.
+
+### 1b-iv — integration and observation gate
+
+Claude verifies **seams only**, between the accepted 1a, 1b-i, 1b-ii, and 1b-iii commits. A repair is limited to an integration defect; anything requiring a new contract, event, authority change, or behavior **opens another package** instead.
+
+Michael must personally observe: briefing truth · scheduled decisions · active mission · autonomy without authority enlargement · external-action accounting · monetary honesty · source coverage · recommendations · progressive disclosure · evidence access · unchanged existing modes.
+
+**Package 1 closes only after that observation.**
 
 ---
 

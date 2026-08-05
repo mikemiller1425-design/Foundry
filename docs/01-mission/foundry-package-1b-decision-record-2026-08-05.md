@@ -400,3 +400,118 @@ Its four retained hunks — the fixture-journey and `runtimeSource` work held ba
 ## 8.6 Why this is recorded rather than quietly fixed
 
 A fingerprint's purpose is to make silent change detectable. A fingerprint over an incomplete set does that job for the files it covers and says nothing about the rest — while *reading* as though it covered everything. Reported as "all 82 remaining dirty paths byte-identical," it implied a completeness it did not have. Correcting the number without recording why would leave the same failure mode available next time: any partially staged file would silently drop out of the next baseline.
+
+---
+
+# 9. Decisions — 2026-08-05 — external-action qualification and briefing interval
+
+**Type:** Append-only decisions
+**Date:** 2026-08-05
+**Decided by:** mikemiller1425-design (human operator)
+**Starting point:** `f0bb0bb670fc235f5ee8de33623ada491ac42be6` — Package 1b-i complete; `agentTrace` and `operationalSnapshot` are the live names; `apps/agent-city` clean
+**Closes:** the two items carried open at § 7.4 — *"qualifying external-action event"* and *interval boundaries*
+
+**Nothing above this line is rewritten.** This section is the later ruling.
+
+## 9.0 Identifier note — read before citing these
+
+The operator's instruction labelled these two decisions **C-5** and **C-6**. **`C-5` is already taken**: `docs/01-mission/foundry-mission-realignment-2026-08-04.md` § 6 records **C-5 — Buildings as economic objects**, still open and out of scope through Package 5. The standing constraint is that identifiers are never reused, renumbered, or re-graded.
+
+They are therefore recorded here as **C-6** and **C-7**, the next free identifiers. **The existing C-5 is untouched.** Only the labels of the new decisions moved; their content is recorded exactly as given. If the operator prefers different identifiers, that is a one-line append — but two different decisions must not share `C-5`.
+
+| Operator's label | Recorded as | Subject |
+| --- | --- | --- |
+| C-5 | **C-6** | External-action qualification |
+| C-6 | **C-7** | Briefing interval and cursor |
+| — | C-5 | *(unchanged)* Buildings as economic objects — realignment § 6 |
+
+---
+
+## Decision C-6 — External-action qualification
+
+> **An external action is an attempted or completed side effect outside Foundry's local operational state.**
+>
+> **Qualifying categories, when actually implemented:** model or remote-agent invocation · email or external message · job/application submission · public publication · external API mutation · production-system mutation · agreement acceptance or signature · payment, purchase, or other spend · another action that changes an external party or system.
+>
+> **Not external actions:** approval or authorization by itself · planning · dry-run or preflight · local read-only research · local projection/rendering · building selection · internal event replay · preparing an artifact without sending or publishing it.
+>
+> **Classification mechanism.** Backend-owned, **versioned registry** over persisted event types and required payload predicates. **Closed vocabulary:** a future external action enters the registry only when its owning package implements an actual emitter. Do not add hypothetical external-action events that nothing can emit.
+>
+> Existing `agentrun.started` with `runtimeType: claude_code` **qualifies** as an external model-invocation attempt. Its related completion/failure event is **another lifecycle phase of the same action**, joined by stable run identity; it must not count as a second action. Approval and `operator.execution_authorized` **do not qualify** — they grant permission without performing the action.
+>
+> Future email, publication, application, production, agreement, and payment packages must add their real emitted vocabulary and classifier entry **at their owning rung**.
+>
+> **Required wording for a negative result:**
+> *"No qualifying external actions were recorded in Foundry's operational ledger for this briefing interval."*
+>
+> It may **not** say that no external action occurred everywhere. The claim is limited to Foundry's connected and instrumented ledger. **No `external_action.none` or synthesized absence event is permitted.**
+
+**What this settles.** § Decision C-3 required negatives to be derived from "zero qualifying external-action events" without defining *qualifying* — so the rule could not be implemented without inventing the definition. This closes it, and does so by **enumerated registry rather than by judgement**: an event either has a registry entry or it does not.
+
+The distinguishing rule is **side effect outside Foundry**, not risk or importance. That is why authorization does not qualify however consequential it feels — it changes only Foundry's own state. And the lifecycle rule prevents the most likely dishonesty in the other direction: counting one real run twice because it emitted two events.
+
+The required wording is scoped to *Foundry's operational ledger*. The system cannot observe actions taken outside its instrumentation, so it may not speak about them.
+
+**Consequences.**
+- The registry is **versioned**: a briefing must be able to state which classifier version produced its result.
+- The closed vocabulary binds forward — every future package adds its own emitter and entry together, at the rung that emits. This is the `AC-107` discipline: *an event nothing can emit is a claim the system does not honour.*
+- The one real Claude Code run to date classifies as **exactly one** external action.
+- A negative statement is a derived read over an interval, never a stored event.
+
+**Acceptance criteria.** Proofs 11–14 of the 1b-ii gate in `docs/03-architecture/foundry-construction-map.md`.
+
+---
+
+## Decision C-7 — Briefing interval and cursor
+
+> **Briefing intervals are based on persisted event sequence numbers, not wall-clock timestamps.**
+>
+> The interval is `(previousAcknowledgedSequence, capturedEndSequence]` — **start exclusive, end inclusive.** The first briefing begins after sequence 0.
+>
+> `capturedEndSequence` is **captured once**, when the briefing record is created. Rendering, reopening, refreshing, or regenerating the same briefing **does not change its interval**.
+>
+> The previous cursor advances **only** through an authenticated operator acknowledgement that the briefing was reviewed. **Merely generating or viewing a briefing does not advance the cursor.** Events recorded after the captured end belong to the next briefing.
+>
+> Timestamps are for **display and diagnostics, not membership**. Two honest readers of one briefing record must derive the **same event population**. Empty intervals are valid and explicit. Cursor advancement is **append-only** and cannot move backward or skip beyond the acknowledged briefing's captured end.
+
+**What this settles.** § 7.2 left the interval boundary rule open, noting that two honest renderings of one interval must not disagree. Sequence numbers close it: wall-clock time is not a reliable membership key across clock skew, backfill, or equal timestamps, and an interval defined by time could silently include or drop an event on re-render.
+
+`capturedEndSequence` being fixed at creation is what makes a briefing a **record** rather than a live query. A live query would change its own answer every time it was opened.
+
+The half-open form `(previous, captured]` guarantees **exactly-once** membership: no event falls in two briefings, and none falls between them.
+
+Separating *viewing* from *acknowledging* is the honesty constraint. If viewing advanced the cursor, opening a briefing would silently discard events the operator never read.
+
+**Consequences.**
+- A briefing record must persist both bounds; neither is recomputed at read time.
+- Acknowledgement is authenticated, idempotent, and append-only. Duplicate and concurrent acknowledgements advance the cursor **once**.
+- The cursor never moves backward and never skips past the acknowledged briefing's captured end.
+- An empty interval is a valid, explicitly-stated result — not an error and not a gap.
+- Timestamps may be displayed but may never determine membership.
+
+**Acceptance criteria.** Proofs 7–10 of the 1b-ii gate.
+
+---
+
+## 9.1 Package sequencing amendment
+
+Recorded in `docs/03-architecture/foundry-construction-map.md`. Package 1b becomes four numbered slots:
+
+| Slot | What | State |
+| --- | --- | --- |
+| **1b-i** | Frontend reconciliation | ✅ Complete at `f0bb0bb` |
+| **1b-ii** | Command Center Operational Truth — backend contracts, commands, events, projections, tests | Not authorized |
+| **1b-iii** | Command Center Frontend — Cursor, against 1b-ii truth | Not authorized |
+| **1b-iv** | Integration verification and operator observation | Not authorized |
+
+**Package 1 remains open until 1b-iv is observed and approved.** The 27 proofs for 1b-ii, and the gates for 1b-iii and 1b-iv, are recorded in the construction map.
+
+## 9.2 This documentation authorizes no implementation
+
+> **This section, the construction-map amendment, and the acceptance gates are governance only. They do not authorize Package 1b-ii implementation.**
+
+Creating a numbered slot and writing its gate is not the same as authorizing the work in it. 1b-ii, 1b-iii, and 1b-iv each still require their own **explicit operator authorization** before any code is written — the standing rule that no package begins without one. No contract, event, command, read model, or UI was created by this record.
+
+## 9.3 Items still open after this section
+
+`C-5` buildings as economic objects · disposition of the remaining in-flight panels · **D-8** · whether the V1.1 ladder and the Package track reconcile (**C-1** decided the pause, not the reconciliation).

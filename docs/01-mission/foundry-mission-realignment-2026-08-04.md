@@ -138,6 +138,12 @@ Recorded so they are never mistaken for operator intent.
 
 ## 6. Conflicts requiring reconciliation
 
+> **Extended — 2026-08-05.** Two further decisions were recorded in the Package 1b record at § 9:
+> **C-6** (external-action qualification) and **C-7** (briefing interval and cursor). They close the
+> two items § 7.4 carried open. **`C-5` below is unchanged** — it remains *buildings as economic
+> objects*, still open and out of scope through Package 5. The operator's instruction labelled the
+> new decisions C-5 and C-6; they were recorded as C-6 and C-7 so no identifier carries two meanings.
+>
 > **Ratified — 2026-08-05.** The authoritative record for **C-1 – C-4** is
 > `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md`, which supersedes the
 > 2026-08-04 record named below and corrects two readings in it. Recorded starting point: `7d7fff6`.

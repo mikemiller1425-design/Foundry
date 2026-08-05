@@ -6,6 +6,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Package 1b sequencing amendment, decisions C-6 and C-7, and acceptance gates (governance only)
+
+**This documentation authorizes no implementation.** Creating a numbered slot and writing its gate is not the same as authorizing the work in it.
+
+**Package 1b becomes four numbered slots.** The original two-phase split gave the Command Center no separate backend-truth slot and no gate between backend truth and the UI built on it:
+
+- **1b-i** Frontend reconciliation — ✅ **complete at `f0bb0bb`**; `agentTrace` and `operationalSnapshot` are the live names and `apps/agent-city` is clean.
+- **1b-ii** Command Center Operational Truth — backend contracts, commands, events, projections, tests. Not authorized.
+- **1b-iii** Command Center Frontend — Cursor, against 1b-ii truth. Not authorized.
+- **1b-iv** Integration verification and operator observation. Not authorized.
+
+**Package 1 remains open until 1b-iv is observed and approved.**
+
+**Two decisions recorded, closing the last two items § 7.4 carried open.**
+
+**C-6 — external-action qualification.** An external action is an attempted or completed side effect outside Foundry's local operational state, classified by a **backend-owned versioned registry** over persisted event types and payload predicates rather than by judgement. The vocabulary is closed: a future external action enters the registry only when its owning package implements a real emitter. `agentrun.started` with `runtimeType: claude_code` qualifies; its completion or failure event is **another lifecycle phase of the same action**, joined by stable run identity, and must not count as a second — so the one real Claude Code run to date is exactly one external action. Approval and `operator.execution_authorized` do not qualify: they grant permission without performing anything. The negative result has required wording — *"No qualifying external actions were recorded in Foundry's operational ledger for this briefing interval"* — which may never be widened into a claim that no external action occurred anywhere, because the system cannot observe what it does not instrument. No `external_action.none` or synthesized absence event is permitted.
+
+**C-7 — briefing interval and cursor.** Intervals are `(previousAcknowledgedSequence, capturedEndSequence]` over persisted **sequence numbers, not wall-clock timestamps** — time is unreliable as a membership key across skew, backfill, and ties, and a time-defined interval could silently include or drop an event on re-render. `capturedEndSequence` is captured once at creation, which is what makes a briefing a **record** rather than a live query that changes its own answer each time it is opened. The half-open form guarantees exactly-once membership. The cursor advances **only** on authenticated operator acknowledgement, never on rendering or refreshing — if viewing advanced it, opening a briefing would silently discard events nobody read. Acknowledgement is idempotent under duplicate and concurrent calls, append-only, and cannot move backward or skip. Empty intervals are valid and explicit.
+
+**Identifier collision resolved rather than absorbed.** The operator's instruction labelled these C-5 and C-6, but **`C-5` is already taken** by *buildings as economic objects* in the realignment record, and identifiers are never reused. They are recorded as **C-6** and **C-7**; the existing C-5 is untouched. Content is recorded exactly as given — only the labels of the new decisions moved.
+
+**Acceptance gates recorded:** 27 proof obligations for 1b-ii — covering mission-type stages without a shared enum, historical build events projecting without rewriting history, briefing-cursor semantics, one-action classification, monetary statuses that cannot be conflated, AC-111 cost projecting as **spent** rather than revenue, orthogonal coverage, autonomy that cannot enlarge authority, recommendations that cannot execute, and **discharging Obligation O-1 by running all 18 shell tests in a provisioned environment**. Plus the 1b-iii frontend gate (invent nothing: mission progress, coverage, decisions, external actions, money, autonomy, recommendations, briefing cursor, urgency) and the 1b-iv gate (seams only; a repair that would need a new contract, event, authority change, or behavior opens another package instead).
+
+**Nothing implemented.** No contract, event, command, read model, or UI. No NAS access, model call, spend, or external action. No Package 2, no `AC-112`, no `AC-111` closure, no Package 1 closure. Documentation paths only; no `apps/` path staged.
+
 ### Fixed — the recorded frontend baseline covered 82 of 83 files (append-only correction)
 
 Cursor stopped rather than proceed on a digest it could not reproduce. It was right to.
