@@ -24,6 +24,8 @@ Corrections occur through new records, never edits — Decision 4 of `docs/01-mi
 
 The repository state these decisions attach to is **`7d7fff6`**, which contains Package 1a (`d4a9bd8`), the 2026-08-04 decision record (`0337e90`), and the eleven-path frontend projection-honesty checkpoint. The audited remaining frontend — **82 dirty paths under `apps/agent-city`**, manifest digest `e6bedfcc4814b1dd16d9521414c8463c1845762b988789543b8b6121e5f213bb` — is **unchanged and uncommitted**, and is the scope the separately authorized reconciliation will act on.
 
+> **→ Corrected. See § 8.** This count and digest are **wrong: 82 of 83**. `e6bedfcc…` remains reproducible and no drift occurred in the 82 files it covers, but it omitted `apps/agent-city/src/lib/mock-runtime/RuntimeProvider.tsx`, which was only *partially* staged at `7d7fff6` and stayed dirty. The authoritative baseline is now the portable 83-file digest **`776d0653ffcfc86415961a94f47e80917662a3a14ba14d9978feb11d6c651b80`** (`docs/evidence/package-1b/`). The paragraph above is left unedited as the state of the record when it was written.
+
 ### How to read authority in this document
 
 | Marking | Meaning |
@@ -347,3 +349,54 @@ It also resolves the defect recorded against the Package 2a draft: `unsupported`
 | Disposition of the remaining in-flight panels | Open | **Still open** — beyond the `OperationalSnapshotPanel` rename |
 | "Qualifying external-action event" · interval boundaries | Open | **Still open** |
 | C-5 · D-8 | Open | **Still open** |
+
+---
+
+# 8. Correction — 2026-08-05 — the recorded frontend baseline covered 82 of 83 files
+
+**Type:** Append-only correction
+**Date:** 2026-08-05
+**Corrects:** the figure "**82 dirty paths under `apps/agent-city`**, manifest digest `e6bedfcc…`" in § 0 *Recorded starting point* above, and the same figure as committed at `ff78bb1`
+**Evidence:** `docs/evidence/package-1b/frontend-baseline-manifest-2026-08-05.tsv` · `docs/evidence/package-1b/frontend-baseline-record.md`
+
+**The earlier statement is preserved above, unedited.** It is left exactly as recorded, including the inaccurate count and digest, because that is what the record said. This section is the correction. History is not rewritten.
+
+## 8.1 What was wrong
+
+> **`e6bedfcc4814b1dd16d9521414c8463c1845762b988789543b8b6121e5f213bb` remains reproducible, but it covered only 82 of the 83 dirty frontend files.**
+
+The digest is not corrupt and has not drifted — replayed against its original path list it still produces `e6bedfcc…` exactly. Its **scope** was wrong: one dirty file was never in the set it measured.
+
+## 8.2 Cause
+
+The remaining-frontend set was derived as *(dirty paths before the commit)* **minus** *(every staged path)*. That subtraction is correct only for files staged **in full**.
+
+`apps/agent-city/src/lib/mock-runtime/RuntimeProvider.tsx` was staged **partially** — four of its eight hunks were committed at `7d7fff6` and four were deliberately held back under Decision C-2. It appeared in the staged list, so the subtraction removed it, even though it remained dirty in the working tree. **The defect is in the derivation, not in the repository.**
+
+## 8.3 What did not happen
+
+> **No user drift occurred in the original 82 files.**
+
+Every one of the 82 files the digest did cover is byte-identical to when it was recorded; `e6bedfcc…` reproduces from them today. Nothing was modified, and no reconciliation, rename, or edit took place. The correction adds a file that was always dirty and should always have been counted — it does not report a change to anything.
+
+## 8.4 The omitted file
+
+**`apps/agent-city/src/lib/mock-runtime/RuntimeProvider.tsx`**
+
+**Content SHA-256:** `63aef79c2887901a0e038d1acb4306894758338b069f0c332d90809f2d68fb3e`
+
+Its four retained hunks — the fixture-journey and `runtimeSource` work held back under Decision C-2 — are intact.
+
+## 8.5 The authoritative baseline
+
+> **The pre-reconciliation baseline is now the portable 83-file manifest digest `776d0653ffcfc86415961a94f47e80917662a3a14ba14d9978feb11d6c651b80`.**
+
+83 files — **38 tracked-modified, 45 untracked-new** — persisted in full at `docs/evidence/package-1b/frontend-baseline-manifest-2026-08-05.tsv`, one TAB-separated line per file as `<status>\t<sha256>\t<path>`, sorted lexically by path under `LC_ALL=C`, with no mtimes and no directory placeholders. The exact generation command, the rationale for each property, and the validation results are in `docs/evidence/package-1b/frontend-baseline-record.md`.
+
+`e6bedfcc…` is **superseded as the baseline** and retained only as the historical figure this section corrects.
+
+**Consequence for the reconciliation.** The authorized Package 1b-i reconciliation must **independently reproduce `776d0653…` before making any edit.** A mismatch means the tree is not the audited tree, and it stops rather than proceeding.
+
+## 8.6 Why this is recorded rather than quietly fixed
+
+A fingerprint's purpose is to make silent change detectable. A fingerprint over an incomplete set does that job for the files it covers and says nothing about the rest — while *reading* as though it covered everything. Reported as "all 82 remaining dirty paths byte-identical," it implied a completeness it did not have. Correcting the number without recording why would leave the same failure mode available next time: any partially staged file would silently drop out of the next baseline.

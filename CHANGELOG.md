@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — the recorded frontend baseline covered 82 of 83 files (append-only correction)
+
+Cursor stopped rather than proceed on a digest it could not reproduce. It was right to.
+
+**`e6bedfcc…` remains reproducible and nothing drifted** — every one of the 82 files it covers is byte-identical to when it was recorded. Its **scope** was wrong. The remaining-frontend set was derived as *(dirty before the commit) minus (every staged path)*, which is correct only for files staged in full. `apps/agent-city/src/lib/mock-runtime/RuntimeProvider.tsx` was staged **partially** — four of eight hunks committed at `7d7fff6`, four deliberately held back under Decision C-2 — so it appeared in the staged list and was subtracted, despite remaining dirty. The defect was in the derivation, not the repository. Its content hash is `63aef79c2887901a0e038d1acb4306894758338b069f0c332d90809f2d68fb3e` and its four retained hunks are intact.
+
+Reported at the time as "all 82 remaining dirty paths byte-identical," the figure implied a completeness it did not have. A fingerprint over an incomplete set does its job for the files it covers and says nothing about the rest, while reading as though it covered everything.
+
+**New authoritative pre-reconciliation baseline: `776d0653ffcfc86415961a94f47e80917662a3a14ba14d9978feb11d6c651b80`** — 83 files, 38 tracked-modified and 45 untracked-new, persisted in full as an 83-line TSV under `docs/evidence/package-1b/` with its exact portable generation command. Each property of the new form closes a way the old one could vary: git plumbing classifies instead of `awk`-parsed porcelain codes (which break on renames and spaces), `ls-files --others` emits files so directory expansion cannot differ, `LC_ALL=C` fixes collation, sorting by path keeps ordering stable when content changes, an explicit status field preserves the tracked/untracked distinction the old method discarded, and only content hashes participate — no mtimes, sizes, or modes.
+
+The inaccurate statement is **preserved unedited** in § 0 of the 2026-08-05 decision record with a pointer to the correction at § 8. `e6bedfcc…` is superseded as a baseline and retained as the historical figure. The reconciliation must now independently reproduce `776d0653…` before making any edit; a mismatch means the tree is not the audited tree and it stops.
+
+**No repository file, operational database, canonical fixture, NAS path, or external state changed** during the reconciliation check or this correction. No `apps/agent-city` path was staged or altered.
+
 ### Added — Package 1b clarification: `operationalSnapshot` and the coverage vocabulary (append-only; nothing implemented)
 
 Appended as § 7 of `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md`. **Sections 0–6 are not rewritten** — their "Open — not decided here" wording was accurate when written and stands, with pointer lines added to § C-2, § C-3, and the summary so no reader takes them at face value.
