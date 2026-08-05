@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Agent City",
-  description: "Foundry — Agent City V1 Operational Neighborhood",
+  title: "Foundry World",
+  description: "Foundry — a spatial operating world for autonomous organizations.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

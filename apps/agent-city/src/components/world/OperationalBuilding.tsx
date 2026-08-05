@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { BuildingType } from "@foundry/contracts";
 import { ShapeGeometry, type IndicatorShape } from "./ShapeGeometry";
 import { SelectionRing } from "./SelectionRing";
+import { FoundryCornerFins, FoundryPlinthBand } from "./FoundryArchitectureKit";
 
 const HOVER_SCALE = 1.05;
 
@@ -57,6 +58,8 @@ function BoxPart({
 }) {
   return (
     <mesh
+      castShadow
+      receiveShadow
       position={[position[0], position[1], position[2]]}
       rotation={[rotation[0], rotation[1], rotation[2]]}
     >
@@ -365,11 +368,17 @@ export function OperationalBuilding({
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
     >
-      <mesh position={[0, h / 2, 0]}>
+      <mesh castShadow receiveShadow position={[0, h / 2, 0]}>
         <boxGeometry args={[w, h, d]} />
         <meshStandardMaterial color={BODY_COLOR[buildingType]} roughness={0.86} />
       </mesh>
       <BuildingArchitecture buildingType={buildingType} level={level} />
+      {buildingType !== "construction_site" && (
+        <>
+          <FoundryPlinthBand width={w + 0.18} depth={d + 0.18} />
+          <FoundryCornerFins width={w + 0.12} depth={d + 0.12} height={h * 0.72} y={h * 0.5} />
+        </>
+      )}
       {buildingType !== "construction_site" && (
         <BoxPart position={[0, 0.04, 0]} args={[w + 0.35, 0.08, d + 0.35]} color={CONCRETE_COLOR} />
       )}
@@ -385,6 +394,14 @@ export function OperationalBuilding({
         <SelectionRing
           innerRadius={Math.max(w, d) / 2 + 0.15}
           outerRadius={Math.max(w, d) / 2 + 0.35}
+        />
+      )}
+      {hovered && !selected && (
+        <SelectionRing
+          innerRadius={Math.max(w, d) / 2 + 0.12}
+          outerRadius={Math.max(w, d) / 2 + 0.27}
+          color="#64d8ff"
+          opacity={0.7}
         />
       )}
     </group>

@@ -22,19 +22,32 @@ export function LighthouseMarker({
   }, [markerRef]);
 
   return (
-    <span
-      className="sr-only"
-      data-testid="lighthouse-marker"
-      data-visible={marker?.visible ?? false}
-      data-x-percent={marker?.xPercent ?? ""}
-      data-y-percent={marker?.yPercent ?? ""}
-      data-state={marker?.state ?? ""}
-      data-hovered={marker?.hovered ?? false}
-      data-selected={marker?.selected ?? false}
-    >
-      Lighthouse {marker?.visible ? "visible" : "not visible"} in the 3D world, state:{" "}
-      {marker?.state ?? "unknown"}
-      {marker?.selected ? ", selected" : ""}.
-    </span>
+    <>
+      <span
+        className="sr-only"
+        data-testid="lighthouse-marker"
+        data-visible={marker?.visible ?? false}
+        data-x-percent={marker?.xPercent ?? ""}
+        data-y-percent={marker?.yPercent ?? ""}
+        data-state={marker?.state ?? ""}
+        data-hovered={marker?.hovered ?? false}
+        data-selected={marker?.selected ?? false}
+      >
+        Lighthouse {marker?.visible ? "visible" : "not visible"} in the 3D world, state:{" "}
+        {marker?.state ?? "unknown"}
+        {marker?.selected ? ", selected" : ""}.
+      </span>
+      {marker?.visible && (marker.hovered || marker.selected) && (
+        <span
+          aria-hidden="true"
+          data-testid="lighthouse-world-label"
+          className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full rounded-lg border border-sky-300/25 bg-slate-950/90 px-2.5 py-1.5 text-[10px] whitespace-nowrap text-slate-300 shadow-xl backdrop-blur-md"
+          style={{ left: `${marker.xPercent}%`, top: `${marker.yPercent}%` }}
+        >
+          <strong className="block text-[11px] font-semibold text-white">Lighthouse</strong>
+          <span className="text-sky-200/80">{marker.state}</span>
+        </span>
+      )}
+    </>
   );
 }

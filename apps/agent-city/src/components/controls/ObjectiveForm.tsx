@@ -88,23 +88,12 @@ export function ObjectiveForm() {
       onSubmit={onSubmit}
       data-testid="objective-form"
       aria-label="Submit objective"
-      className="flex w-full min-w-0 flex-col gap-1"
+      className="foundry-detail flex w-full min-w-0 flex-col gap-2 rounded-xl p-3"
     >
-      <div className="flex w-full min-w-0 items-center gap-2">
-        <label htmlFor="objective-input" className="shrink-0 text-xs text-neutral-400">
+      <div className="flex items-center justify-between gap-2">
+        <label htmlFor="objective-input" className="foundry-eyebrow">
           Objective
         </label>
-        <input
-          id="objective-input"
-          type="text"
-          value={objective}
-          maxLength={OBJECTIVE_MAX_LENGTH}
-          onChange={(e) => setObjective(e.target.value)}
-          placeholder="Describe one small, self-contained software artifact"
-          aria-describedby="objective-workspace-note"
-          className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
-        />
-
         <label htmlFor="objective-risk-class" className="sr-only">
           Risk class
         </label>
@@ -112,7 +101,7 @@ export function ObjectiveForm() {
           id="objective-risk-class"
           value={riskClass}
           onChange={(e) => setRiskClass(e.target.value as V1RiskClass)}
-          className="shrink-0 rounded border border-neutral-700 bg-neutral-900 px-1 py-1 text-xs"
+          className="shrink-0 rounded-md border border-neutral-700 bg-neutral-950/70 px-2 py-1 text-xs text-neutral-300"
         >
           {RISK_CLASSES.map((value) => (
             <option key={value} value={value}>
@@ -120,19 +109,33 @@ export function ObjectiveForm() {
             </option>
           ))}
         </select>
-
+      </div>
+      <input
+        id="objective-input"
+        type="text"
+        value={objective}
+        maxLength={OBJECTIVE_MAX_LENGTH}
+        onChange={(e) => setObjective(e.target.value)}
+        placeholder="Describe one bounded outcome"
+        aria-describedby="objective-workspace-note"
+        className="w-full min-w-0 rounded-lg border border-neutral-700 bg-neutral-950/70 px-3 py-2 text-xs placeholder:text-neutral-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+      />
+      <div className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate text-[10px] text-neutral-500">
+          Foundry-managed workspace
+        </span>
         <button
           type="submit"
           disabled={pending || blockedReason !== null}
-          className="shrink-0 rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+          className="shrink-0 rounded-lg border border-sky-300/30 bg-sky-300/10 px-3 py-1.5 text-xs font-medium text-sky-100 hover:bg-sky-300/15 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
         >
           {pending ? "Submitting…" : "Submit objective"}
         </button>
       </div>
 
-      <p id="objective-workspace-note" className="text-[11px] text-neutral-500">
-        Workspace: Foundry-managed (the only permitted workspace). Risk class R0–R2. Submitting
-        creates a project and a build — nothing is planned or executed.
+      <p id="objective-workspace-note" className="text-[10px] leading-relaxed text-neutral-500">
+        Foundry-managed (the only permitted workspace). Submission creates a project and build;
+        nothing is planned or executed.
       </p>
 
       {/* Explains a disabled button rather than leaving the operator to

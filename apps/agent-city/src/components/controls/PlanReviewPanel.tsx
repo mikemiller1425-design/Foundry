@@ -235,9 +235,9 @@ function Frame({ state, children }: { state: string; children: React.ReactNode }
       aria-label="Build plan review"
       data-testid="plan-review-panel"
       data-plan-state={state}
-      className="rounded border border-neutral-800 p-2 text-xs"
+      className="foundry-workflow-card text-xs"
     >
-      <h3 className="font-medium">Build plan</h3>
+      <h3 className="foundry-workflow-title">Build plan</h3>
       {children}
     </section>
   );

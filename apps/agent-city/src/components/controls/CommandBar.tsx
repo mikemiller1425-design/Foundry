@@ -37,8 +37,18 @@ const SPEED_OPTIONS = [1, 2, 4] as const;
  * Mock mode is untouched: every control behaves exactly as it did at V1.
  */
 export function CommandBar() {
-  const { runtimeMode, submitCommand, isRunning, isComplete, lastRejection, mutationsEnabled } =
-    useRuntime();
+  const {
+    runtimeMode,
+    submitCommand,
+    isRunning,
+    isComplete,
+    lastRejection,
+    mutationsEnabled,
+    projectionStatus,
+    fixtureJourneys,
+    activeFixtureJourneyId,
+    selectFixtureJourney,
+  } = useRuntime();
   const [speed, setSpeed] = useState<(typeof SPEED_OPTIONS)[number]>(1);
 
   const isBackend = runtimeMode === "backend";
@@ -61,7 +71,29 @@ export function CommandBar() {
   const disabled = (extra: boolean) => isBackend || !mutationsEnabled || extra;
 
   return (
-    <div className="flex w-full items-center gap-2">
+    <div className="flex min-w-max flex-1 items-center gap-2">
+      {fixtureJourneys && selectFixtureJourney && (
+        <label className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+          <span className="hidden lg:inline">Journey</span>
+          <select
+            aria-label="Fixture journey"
+            value={activeFixtureJourneyId ?? ""}
+            onChange={(event) =>
+              selectFixtureJourney(event.target.value as NonNullable<typeof activeFixtureJourneyId>)
+            }
+            className="max-w-40 rounded border border-cyan-400/20 bg-cyan-400/5 px-1.5 py-1 text-xs text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+          >
+            <option value="" disabled>
+              Explore fixture…
+            </option>
+            {fixtureJourneys.map((journey) => (
+              <option key={journey.id} value={journey.id}>
+                {journey.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div
         className="flex items-center gap-1"
         role="group"
@@ -151,7 +183,11 @@ export function CommandBar() {
           isBackend
             ? mutationsEnabled
               ? "Backend mode — live"
-              : "Backend mode — disconnected"
+              : projectionStatus === "stale"
+                ? "Backend mode — synchronizing"
+                : projectionStatus === "unavailable"
+                  ? "Backend mode — projection unavailable"
+                  : "Backend mode — disconnected"
             : isComplete
               ? "Demo complete"
               : isRunning

@@ -78,8 +78,8 @@ export function BuildRunPanel() {
     return (
       <Frame state="unreachable">
         <p role="status">
-          Backend unreachable — a run cannot be started or observed until the connection is restored.
-          Any progress shown elsewhere may be out of date.
+          Backend unreachable — a run cannot be started or observed until the connection is
+          restored. Any progress shown elsewhere may be out of date.
         </p>
       </Frame>
     );
@@ -278,9 +278,9 @@ function Frame({ state, children }: { state: string; children: React.ReactNode }
       aria-label="Build run"
       data-testid="build-run-panel"
       data-run-state={state}
-      className="rounded border border-neutral-800 p-2 text-xs"
+      className="foundry-workflow-card text-xs"
     >
-      <h3 className="font-medium">Build run — mock executor</h3>
+      <h3 className="foundry-workflow-title">Build run · mock executor</h3>
       {children}
     </section>
   );

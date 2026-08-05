@@ -171,7 +171,11 @@ export function ExecutionAuthorizationPanel() {
           <h4 className="font-medium">Authorization issued</h4>
           <dl className="mt-1 space-y-1">
             <Row label="who" value={authorization.authorizedBy} testId="authorization-who" />
-            <Row label="what" value={`${authorization.stageName}, once`} testId="authorization-what" />
+            <Row
+              label="what"
+              value={`${authorization.stageName}, once`}
+              testId="authorization-what"
+            />
             <Row label="when" value={authorization.authorizedAt} testId="authorization-when" />
             <Row
               label="bound to"
@@ -237,7 +241,11 @@ export function ExecutionAuthorizationPanel() {
           The gate&apos;s state could not be read: {gate.unavailable}
         </p>
       ) : (
-        <div data-testid="gate-verdict" data-gate-permitted={String(gate.permitted)} className="mt-1">
+        <div
+          data-testid="gate-verdict"
+          data-gate-permitted={String(gate.permitted)}
+          className="mt-1"
+        >
           <p className={gate.permitted ? "text-emerald-300" : "text-neutral-300"}>
             {gate.permitted
               ? `Permitted: one run of ${gate.stageName} would be allowed. Nothing has started — reading this changes nothing.`
@@ -273,9 +281,9 @@ function Frame({ state, children }: { state: string; children: React.ReactNode }
       aria-label="Execution authorization"
       data-testid="execution-authorization-panel"
       data-authorization-state={state}
-      className="rounded border border-neutral-800 p-2 text-xs"
+      className="foundry-workflow-card text-xs"
     >
-      <h3 className="font-medium">Execution authorization</h3>
+      <h3 className="foundry-workflow-title">Execution authorization</h3>
       {children}
     </section>
   );
@@ -295,7 +303,10 @@ function Row({
   return (
     <div>
       <dt className="inline text-neutral-500">{label}: </dt>
-      <dd className={`inline ${mono ? "break-all font-mono text-[11px]" : ""}`} data-testid={testId}>
+      <dd
+        className={`inline ${mono ? "break-all font-mono text-[11px]" : ""}`}
+        data-testid={testId}
+      >
         {value}
       </dd>
     </div>

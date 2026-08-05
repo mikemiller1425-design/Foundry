@@ -5,6 +5,8 @@
 // own kind (FBL-019) since the utility vehicle is a distinct domain entity
 // (domain-model.md → Vehicle), not a Building.
 export type Selection =
+  | { kind: "district"; id: string }
+  | { kind: "parcel"; id: string }
   | { kind: "stage"; id: string }
   | { kind: "agent"; id: string }
   | { kind: "building"; id: string }

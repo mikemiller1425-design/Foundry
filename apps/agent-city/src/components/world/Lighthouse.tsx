@@ -2,15 +2,16 @@
 
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useState, useRef } from "react";
-import { DoubleSide, type Group, type Mesh } from "three";
+import { type Group, type Mesh } from "three";
 import { LIGHTHOUSE_VISUALS, type BeaconShape } from "@/lib/world/lighthouseVisuals";
 import type { LighthouseState } from "@/lib/world/lighthouseState";
 import { useReducedMotion } from "@/lib/world/useReducedMotion";
+import { SelectionRing } from "./SelectionRing";
+import { FoundryRadialBand } from "./FoundryArchitectureKit";
 
 // FBL-015: selection is never a color-only signal either — a ring at the
 // base (shape, not just color) marks the selected object, and it is
 // static (no animation), so it stays a valid signal under reduced motion.
-const SELECTION_RING_COLOR = "#4ade80";
 const HOVER_SCALE = 1.06;
 
 // FBL-014 — Lighthouse (docs/02-specification/world-model.md → "Lighthouse").
@@ -167,21 +168,33 @@ export function Lighthouse({
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
     >
-      <mesh position={[0, 2, 0]}>
-        <cylinderGeometry args={[0.5, 0.9, 4, 8]} />
-        <meshStandardMaterial color={towerColor} />
+      <mesh receiveShadow position={[0, 0.1, 0]}>
+        <cylinderGeometry args={[1.22, 1.35, 0.2, 16]} />
+        <meshStandardMaterial color="#263349" roughness={0.92} />
       </mesh>
-      <mesh position={[0, LANTERN_HEIGHT - 0.25, 0]}>
+      <mesh castShadow receiveShadow position={[0, 2, 0]}>
+        <cylinderGeometry args={[0.5, 0.9, 4, 8]} />
+        <meshStandardMaterial color={towerColor} roughness={0.78} />
+      </mesh>
+      <FoundryRadialBand radius={1.02} y={0.23} opacity={0.66} />
+      <FoundryRadialBand radius={0.72} y={3.7} opacity={0.42} />
+      <mesh castShadow position={[0, LANTERN_HEIGHT - 0.62, 0]}>
+        <torusGeometry args={[0.68, 0.08, 8, 20]} />
+        <meshStandardMaterial color="#93a5bd" metalness={0.35} roughness={0.55} />
+      </mesh>
+      <mesh castShadow position={[0, LANTERN_HEIGHT - 0.25, 0]}>
         <boxGeometry args={[0.9, 0.5, 0.9]} />
-        <meshStandardMaterial color={LANTERN_COLOR} />
+        <meshStandardMaterial color={LANTERN_COLOR} roughness={0.5} />
+      </mesh>
+      <mesh castShadow position={[0, LANTERN_HEIGHT + 0.16, 0]}>
+        <coneGeometry args={[0.72, 0.46, 8]} />
+        <meshStandardMaterial color="#253044" metalness={0.18} roughness={0.62} />
       </mesh>
       <Beam state={state} />
       <Beacon state={state} />
-      {selected && (
-        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[1.15, 1.35, 24]} />
-          <meshBasicMaterial color={SELECTION_RING_COLOR} side={DoubleSide} />
-        </mesh>
+      {selected && <SelectionRing innerRadius={1.15} outerRadius={1.35} />}
+      {hovered && !selected && (
+        <SelectionRing innerRadius={1.12} outerRadius={1.3} color="#64d8ff" opacity={0.72} />
       )}
     </group>
   );

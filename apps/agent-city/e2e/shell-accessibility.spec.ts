@@ -143,6 +143,26 @@ test.describe("Accessibility — keyboard critical path (FBL-033)", () => {
     const navigatorItems = page.getByTestId("building-list-item");
     await expect(navigatorItems.first()).toBeVisible();
     expect(await navigatorItems.count()).toBeGreaterThan(0);
+
+    // The fixture concept layer added after FBL-033 has the same rule:
+    // parcel borders are selectable in WebGL, and each one has a named 2D
+    // atlas button for keyboard and assistive-technology access.
+    const atlas = page.getByRole("region", { name: "Fixture world atlas" });
+    await expect(atlas).toBeVisible();
+    await expect(atlas.getByRole("button", { name: /Future Yard/ })).toBeVisible();
+  });
+
+  test("operational snapshot modes are keyboard operable and disclose evidence limits", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(page.getByTestId("shell-world")).toBeVisible();
+
+    const snapshot = page.getByRole("region", { name: "Operational snapshot" });
+    const evidence = snapshot.getByRole("button", { name: "evidence", exact: true });
+    await evidence.focus();
+    await page.keyboard.press("Enter");
+    await expect(snapshot.getByText(/contents are not inspected or verified here/i)).toBeVisible();
   });
 
   test("mandatory regions expose semantic structure", async ({ page }) => {
@@ -187,5 +207,8 @@ test.describe("Reduced motion (FBL-033)", () => {
     if ((await rows.count()) > 0) {
       await expect(rows.first()).not.toBeEmpty();
     }
+    await expect(page.getByRole("region", { name: "Agent life" })).toContainText(
+      /not autonomous simulation or precise location/i,
+    );
   });
 });

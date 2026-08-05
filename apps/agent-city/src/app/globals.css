@@ -1,1 +1,269 @@
 @import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --foundry-ink: #eef4ff;
+  --foundry-muted: #8e9bb0;
+  --foundry-canvas: #070a10;
+  --foundry-panel: rgba(12, 17, 27, 0.94);
+  --foundry-panel-raised: rgba(19, 27, 42, 0.92);
+  --foundry-line: rgba(148, 163, 184, 0.16);
+  --foundry-line-strong: rgba(148, 163, 184, 0.28);
+  --foundry-cyan: #64d8ff;
+  --foundry-amber: #f4b860;
+  --foundry-green: #62e6aa;
+  --foundry-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--foundry-canvas);
+  color: var(--foundry-ink);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+button,
+select,
+input,
+textarea {
+  font: inherit;
+}
+
+button,
+select {
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+::selection {
+  background: rgba(100, 216, 255, 0.28);
+}
+
+.foundry-shell {
+  background:
+    radial-gradient(circle at 50% 15%, rgba(45, 83, 132, 0.16), transparent 34%),
+    var(--foundry-canvas);
+  color: var(--foundry-ink);
+}
+
+.foundry-shell[data-atmosphere="aurora"] {
+  background:
+    radial-gradient(circle at 68% 12%, rgba(157, 140, 255, 0.2), transparent 32%),
+    radial-gradient(circle at 30% 28%, rgba(68, 208, 255, 0.13), transparent 38%), #070d19;
+}
+
+.foundry-shell[data-atmosphere="ember"] {
+  background:
+    radial-gradient(circle at 55% 16%, rgba(244, 184, 96, 0.17), transparent 34%),
+    radial-gradient(circle at 20% 70%, rgba(150, 67, 72, 0.1), transparent 42%), #100b10;
+}
+
+.foundry-topbar {
+  background: rgba(7, 10, 16, 0.88);
+  border-color: var(--foundry-line);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(18px);
+}
+
+.foundry-panel {
+  background: var(--foundry-panel);
+  border-color: var(--foundry-line);
+  box-shadow: var(--foundry-shadow);
+}
+
+.foundry-panel-header {
+  min-height: 3rem;
+  border-bottom: 1px solid var(--foundry-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent);
+}
+
+.foundry-resize-handle {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.foundry-resize-handle:hover,
+.foundry-resize-handle:focus-visible {
+  background: var(--foundry-cyan);
+}
+
+.foundry-world-vignette {
+  background:
+    linear-gradient(180deg, rgba(7, 10, 16, 0.64), transparent 18%),
+    radial-gradient(circle at center, transparent 45%, rgba(4, 7, 12, 0.48) 100%);
+}
+
+.foundry-shell[data-atmosphere="aurora"] .foundry-world-vignette {
+  background:
+    linear-gradient(180deg, rgba(5, 10, 24, 0.52), transparent 20%),
+    radial-gradient(circle at 66% 28%, rgba(108, 84, 214, 0.1), transparent 36%),
+    radial-gradient(circle at center, transparent 48%, rgba(3, 7, 18, 0.52) 100%);
+}
+
+.foundry-shell[data-atmosphere="ember"] .foundry-world-vignette {
+  background:
+    linear-gradient(180deg, rgba(18, 9, 12, 0.55), transparent 20%),
+    radial-gradient(circle at 58% 34%, rgba(220, 126, 69, 0.08), transparent 34%),
+    radial-gradient(circle at center, transparent 45%, rgba(12, 5, 8, 0.56) 100%);
+}
+
+.foundry-eyebrow {
+  color: var(--foundry-cyan);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.foundry-chip {
+  border: 1px solid var(--foundry-line-strong);
+  background: rgba(18, 25, 38, 0.72);
+  color: var(--foundry-muted);
+}
+
+.foundry-detail {
+  border: 1px solid var(--foundry-line);
+  background: var(--foundry-panel-raised);
+}
+
+.foundry-section-title {
+  color: #a8b4c7;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.foundry-nav-row {
+  border: 1px solid transparent;
+  background: transparent;
+  min-height: 2.15rem;
+}
+
+.foundry-nav-row:hover {
+  border-color: var(--foundry-line);
+  background: rgba(100, 216, 255, 0.045);
+}
+
+.foundry-nav-row[aria-pressed="true"] {
+  border-color: rgba(100, 216, 255, 0.28);
+  background: linear-gradient(90deg, rgba(100, 216, 255, 0.13), rgba(100, 216, 255, 0.035));
+  box-shadow: inset 2px 0 0 var(--foundry-cyan);
+}
+
+.foundry-status-dot {
+  width: 0.38rem;
+  height: 0.38rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.foundry-workflow-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--foundry-line);
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, rgba(20, 28, 43, 0.88), rgba(10, 15, 24, 0.92));
+  padding: 0.75rem;
+}
+
+.foundry-workflow-card::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  content: "";
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.foundry-workflow-card[data-plan-state="awaiting-review"]::before,
+.foundry-workflow-card[data-authorization-state="unauthorized"]::before,
+.foundry-workflow-card[data-run-state="at-gate"]::before {
+  background: var(--foundry-amber);
+  box-shadow: 0 0 14px rgba(244, 184, 96, 0.55);
+}
+
+.foundry-workflow-card[data-plan-state="reviewed"]::before,
+.foundry-workflow-card[data-authorization-state="authorized"]::before,
+.foundry-workflow-card[data-run-state="finished"]::before {
+  background: var(--foundry-green);
+  box-shadow: 0 0 14px rgba(98, 230, 170, 0.45);
+}
+
+.foundry-workflow-title {
+  margin-bottom: 0.5rem;
+  color: #dbe7f8;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.foundry-commandbar {
+  background: rgba(7, 10, 16, 0.96);
+  border-color: var(--foundry-line);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.22);
+}
+
+@media (max-width: 1100px) {
+  .foundry-world-copy {
+    max-width: 22rem;
+  }
+
+  .foundry-world-copy p {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .foundry-topbar {
+    gap: 0.6rem;
+    padding-inline: 0.75rem;
+  }
+
+  .foundry-topbar > div:first-child span:last-child {
+    display: none;
+  }
+
+  .foundry-connection-long {
+    display: none;
+  }
+
+  .foundry-connection-short {
+    display: inline;
+  }
+
+  .foundry-connection-banner {
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .foundry-commandbar {
+    padding-inline: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

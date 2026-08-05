@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { CommandBar } from "./CommandBar";
 import type { CommandFailure } from "@/lib/backend/commandFeedback";
+import { FIXTURE_JOURNEYS } from "@/lib/fixtures/journeys";
+import type { ProjectionStatus } from "@/lib/runtime/adapter";
 
 function renderCommandBar(overrides: {
   isRunning?: boolean;
@@ -12,8 +14,11 @@ function renderCommandBar(overrides: {
   lastRejection?: CommandFailure | null;
   mutationsEnabled?: boolean;
   runtimeMode?: "mock" | "backend";
+  withJourneys?: boolean;
+  projectionStatus?: ProjectionStatus;
 }) {
   const submitCommand = vi.fn<(raw: unknown) => void>();
+  const selectFixtureJourney = vi.fn();
   const mutationsEnabled = overrides.mutationsEnabled ?? true;
   function Wrapper({ children }: { children: ReactNode }) {
     return (
@@ -26,18 +31,26 @@ function renderCommandBar(overrides: {
           isComplete: overrides.isComplete ?? false,
           connectionStatus: mutationsEnabled ? "connected" : "disconnected",
           mutationsEnabled,
+          projectionStatus: overrides.projectionStatus,
           submitCommand,
           resolveApproval: vi.fn(),
           selectBuilding: vi.fn(),
           clearSelection: vi.fn(),
           lastRejection: overrides.lastRejection ?? null,
+          fixtureJourneys: overrides.withJourneys ? FIXTURE_JOURNEYS : undefined,
+          activeFixtureJourneyId: null,
+          selectFixtureJourney: overrides.withJourneys ? selectFixtureJourney : undefined,
         }}
       >
         {children}
       </RuntimeContext.Provider>
     );
   }
-  return { ...render(<CommandBar />, { wrapper: Wrapper }), submitCommand };
+  return {
+    ...render(<CommandBar />, { wrapper: Wrapper }),
+    submitCommand,
+    selectFixtureJourney,
+  };
 }
 
 describe("CommandBar — typed command emission", () => {
@@ -101,6 +114,24 @@ describe("CommandBar — bounded playback state", () => {
     renderCommandBar({ isComplete: true });
     expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Resume" })).toBeDisabled();
+  });
+});
+
+describe("CommandBar — fixture journey navigation", () => {
+  it("selects a curated journey without emitting a domain or demo command", () => {
+    const { selectFixtureJourney, submitCommand } = renderCommandBar({ withJourneys: true });
+
+    fireEvent.change(screen.getByLabelText("Fixture journey"), {
+      target: { value: "approval-gate" },
+    });
+
+    expect(selectFixtureJourney).toHaveBeenCalledWith("approval-gate");
+    expect(submitCommand).not.toHaveBeenCalled();
+  });
+
+  it("does not expose fixture navigation in backend mode", () => {
+    renderCommandBar({ runtimeMode: "backend" });
+    expect(screen.queryByLabelText("Fixture journey")).not.toBeInTheDocument();
   });
 });
 
@@ -257,5 +288,16 @@ describe("CommandBar — every failure kind is visibly distinct (F-105)", () => 
   it("says so when backend mode is disconnected", () => {
     renderCommandBar({ runtimeMode: "backend", mutationsEnabled: false });
     expect(screen.getByTestId("command-feedback")).toHaveTextContent("Backend mode — disconnected");
+  });
+
+  it("distinguishes projection synchronization from transport disconnection", () => {
+    renderCommandBar({
+      runtimeMode: "backend",
+      mutationsEnabled: false,
+      projectionStatus: "stale",
+    });
+    expect(screen.getByTestId("command-feedback")).toHaveTextContent(
+      "Backend mode — synchronizing",
+    );
   });
 });

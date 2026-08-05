@@ -43,6 +43,8 @@ async function readCamera(page: Page): Promise<CameraReadout> {
 }
 
 const READY_TIMEOUT = { timeout: 20000 };
+const CANONICAL_DISTANCE = 20;
+const CANONICAL_TARGET_X = 1;
 
 async function focusCanvas(page: Page) {
   await page
@@ -66,7 +68,7 @@ test.describe("Camera and navigation", () => {
   }) => {
     await page.goto("/");
     const state = await waitForCameraReady(page);
-    expect(state.distance).toBeCloseTo(24, 0);
+    expect(state.distance).toBeCloseTo(CANONICAL_DISTANCE, 0);
     await expect(page.getByRole("button", { name: "Reset view" })).toBeVisible();
   });
 
@@ -149,18 +151,26 @@ test.describe("Camera and navigation", () => {
     await focusCanvas(page);
     for (let i = 0; i < 10; i++) await page.keyboard.press("-");
     await page.keyboard.press("Shift+ArrowRight");
-    await expect.poll(async () => (await readCamera(page)).distance).not.toBeCloseTo(24, 0);
+    await expect
+      .poll(async () => (await readCamera(page)).distance)
+      .not.toBeCloseTo(CANONICAL_DISTANCE, 0);
 
     await page.keyboard.press("Home");
-    await expect.poll(async () => (await readCamera(page)).distance).toBeCloseTo(24, 0);
-    expect((await readCamera(page)).target.x).toBeCloseTo(0, 0);
+    await expect
+      .poll(async () => (await readCamera(page)).distance)
+      .toBeCloseTo(CANONICAL_DISTANCE, 0);
+    expect((await readCamera(page)).target.x).toBeCloseTo(CANONICAL_TARGET_X, 0);
 
     // Now drift again and reset via the 2D button instead of the keyboard.
     await focusCanvas(page);
     for (let i = 0; i < 10; i++) await page.keyboard.press("-");
-    await expect.poll(async () => (await readCamera(page)).distance).not.toBeCloseTo(24, 0);
+    await expect
+      .poll(async () => (await readCamera(page)).distance)
+      .not.toBeCloseTo(CANONICAL_DISTANCE, 0);
     await page.getByRole("button", { name: "Reset view" }).click();
-    await expect.poll(async () => (await readCamera(page)).distance).toBeCloseTo(24, 0);
+    await expect
+      .poll(async () => (await readCamera(page)).distance)
+      .toBeCloseTo(CANONICAL_DISTANCE, 0);
   });
 
   test("camera controls keep working after collapsing and resizing panels", async ({ page }) => {
@@ -190,7 +200,9 @@ test.describe("Camera and navigation", () => {
       .poll(async () => (await readCamera(page)).distance)
       .toBeGreaterThan(before.distance);
     await page.keyboard.press("Home");
-    await expect.poll(async () => (await readCamera(page)).distance).toBeCloseTo(24, 0);
+    await expect
+      .poll(async () => (await readCamera(page)).distance)
+      .toBeCloseTo(CANONICAL_DISTANCE, 0);
   });
 
   test("no console or page errors after camera interaction", async ({ page }) => {

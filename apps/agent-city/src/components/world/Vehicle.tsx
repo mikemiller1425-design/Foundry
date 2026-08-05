@@ -61,11 +61,11 @@ export function Vehicle({
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
     >
-      <mesh position={[0, 0.3, 0]}>
+      <mesh castShadow receiveShadow position={[0, 0.3, 0]}>
         <boxGeometry args={[1.2, 0.6, 0.7]} />
         <meshStandardMaterial color={BODY_COLOR} />
       </mesh>
-      <mesh position={[-0.15, 0.7, 0]}>
+      <mesh castShadow position={[-0.15, 0.7, 0]}>
         <boxGeometry args={[0.6, 0.4, 0.6]} />
         <meshStandardMaterial color={CABIN_COLOR} />
       </mesh>
@@ -78,6 +78,9 @@ export function Vehicle({
         />
       </mesh>
       {selected && <SelectionRing innerRadius={0.75} outerRadius={0.95} />}
+      {hovered && !selected && (
+        <SelectionRing innerRadius={0.74} outerRadius={0.9} color="#64d8ff" opacity={0.7} />
+      )}
     </group>
   );
 }

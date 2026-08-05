@@ -43,10 +43,14 @@ export const CAMERA_BOUNDS = {
 } as const;
 
 export const CANONICAL_CAMERA_STATE: CameraSphericalState = {
-  target: { x: 0, y: 0, z: 0 },
+  // The built district is asymmetrical and extends further south/east.
+  // Centering the presentation on its visual mass keeps the neighborhood
+  // prominent while retaining room for the Lighthouse as an orientation
+  // landmark. This is presentation state only, never world truth.
+  target: { x: 1, y: 0.45, z: -2.5 },
   azimuth: Math.PI / 4,
-  polar: 1.0,
-  distance: 24,
+  polar: 0.94,
+  distance: 20,
 };
 
 export function clamp(value: number, min: number, max: number): number {

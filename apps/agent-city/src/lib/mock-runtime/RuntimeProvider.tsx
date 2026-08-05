@@ -10,6 +10,14 @@ import type { ExecutionGateReport } from "@/lib/backend/executionGate";
 import type { CredentialState } from "@/lib/backend/credentialState";
 import type { CommandFailure } from "@/lib/backend/commandFeedback";
 import type { RuntimeReadAdapter } from "@/lib/runtime/adapter";
+import {
+  FIXTURE_JOURNEYS,
+  fixtureJourneyById,
+  resolveFixtureJourneyCursor,
+  type FixtureJourney,
+  type FixtureJourneyId,
+} from "@/lib/fixtures/journeys";
+import { buildCanonicalScript } from "./script";
 import { DEFAULT_SEED, MockRuntime } from "./runtime";
 import { clearRuntimeCursor, loadRuntimeCursor, saveRuntimeCursor } from "./sessionPersistence";
 
@@ -141,6 +149,21 @@ export interface RuntimeContextValue extends RuntimeReadAdapter {
    * cause it, so this is a `GET` against a handler with no write path.
    */
   readExecutionGate?: (stageName: string) => Promise<ExecutionGateReport | null>;
+  /** Curated deterministic views; absent for backend-authoritative providers. */
+  fixtureJourneys?: readonly FixtureJourney[];
+  activeFixtureJourneyId?: FixtureJourneyId | null;
+  /** Loads a paused projection from canonical events without emitting an event. */
+  selectFixtureJourney?: (id: FixtureJourneyId) => void;
+  /**
+   * Read-only navigation over the complete deterministic fixture recording.
+   * Absent for backend providers: this is presentation replay, not a domain
+   * command, event subscription, or claim that backend history exists.
+   */
+  fixtureReplay?: {
+    events: readonly FoundryEvent[];
+    cursor: number;
+    previewAtCursor: (cursor: number) => void;
+  };
 }
 
 // Exported so tests can supply a fixed, hand-crafted event fixture via
@@ -194,6 +217,10 @@ export function RuntimeProvider({
   const [isRunning, setIsRunning] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [lastRejection, setLastRejection] = useState<CommandFailure | null>(null);
+  const [activeFixtureJourneyId, setActiveFixtureJourneyId] = useState<FixtureJourneyId | null>(
+    null,
+  );
+  const [activeFixturePreviewCursor, setActiveFixturePreviewCursor] = useState<number | null>(null);
 
   useEffect(() => {
     const marker = loadRuntimeCursor();
@@ -246,6 +273,8 @@ export function RuntimeProvider({
 
   const submitCommand = useCallback(
     (raw: unknown) => {
+      setActiveFixtureJourneyId(null);
+      setActiveFixturePreviewCursor(null);
       const resetsHistory = isHistoryResettingCommand(raw);
       if (isResetCommand(raw)) clearRuntimeCursor();
       runtime.submitCommand(raw);
@@ -283,10 +312,60 @@ export function RuntimeProvider({
     runtime.clearSelection();
   }, [runtime]);
 
+  const selectFixtureJourney = useCallback(
+    (id: FixtureJourneyId) => {
+      const journey = fixtureJourneyById(id);
+      const cursor = resolveFixtureJourneyCursor(journey, buildCanonicalScript(runtime.getSeed()));
+      runtime.previewAtCursor(cursor);
+      clearRuntimeCursor();
+      setEvents([...runtime.getEvents()]);
+      setWorldState(runtime.getWorldState());
+      setIsRunning(false);
+      setIsComplete(runtime.isComplete());
+      setLastRejection(null);
+      setActiveFixtureJourneyId(id);
+      setActiveFixturePreviewCursor(null);
+    },
+    [runtime],
+  );
+
+  const previewFixtureAtCursor = useCallback(
+    (cursor: number) => {
+      runtime.previewAtCursor(cursor);
+      clearRuntimeCursor();
+      setEvents([...runtime.getEvents()]);
+      setWorldState(runtime.getWorldState());
+      setIsRunning(false);
+      setIsComplete(runtime.isComplete());
+      setLastRejection(null);
+      setActiveFixtureJourneyId(null);
+      setActiveFixturePreviewCursor(runtime.getCursor());
+    },
+    [runtime],
+  );
+
+  const activeFixtureJourney = activeFixtureJourneyId
+    ? fixtureJourneyById(activeFixtureJourneyId)
+    : null;
+  const fixtureSource = activeFixtureJourney
+    ? { id: activeFixtureJourney.id, label: activeFixtureJourney.label }
+    : activeFixturePreviewCursor !== null
+      ? {
+          id: `v1-canonical-run@${activeFixturePreviewCursor}`,
+          label: `Agent trace · ${activeFixturePreviewCursor} events`,
+        }
+      : { id: "v1-canonical-run", label: "V1 canonical run" };
+
   return (
     <RuntimeContext.Provider
       value={{
         runtimeMode: "mock",
+        runtimeSource: {
+          kind: "fixture",
+          fixtureId: fixtureSource.id,
+          label: fixtureSource.label,
+          authority: "fixture",
+        },
         projectionStatus: "current",
         events,
         worldState,
@@ -302,6 +381,14 @@ export function RuntimeProvider({
         selectBuilding,
         clearSelection,
         lastRejection,
+        fixtureJourneys: FIXTURE_JOURNEYS,
+        activeFixtureJourneyId,
+        selectFixtureJourney,
+        fixtureReplay: {
+          events: buildCanonicalScript(runtime.getSeed()),
+          cursor: runtime.getCursor(),
+          previewAtCursor: previewFixtureAtCursor,
+        },
       }}
     >
       {children}

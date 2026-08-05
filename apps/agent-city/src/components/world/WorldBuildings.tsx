@@ -21,6 +21,7 @@ import {
   type OperationalBuildingType,
 } from "./OperationalBuilding";
 import { Residence } from "./Residence";
+import { residenceIdentityForBuilding } from "@/lib/world/residenceIdentity";
 
 const RESIDENCE_MARKER_HEIGHT = 2.05;
 
@@ -57,7 +58,10 @@ export function WorldBuildings({
   hoveredIdRef: RefObject<string | null>;
 }) {
   const { worldState, events } = useRuntime();
-  const buildingDefs = useMemo(() => WORLD_BUILDINGS.filter((b) => b.buildingType !== "lighthouse"), []);
+  const buildingDefs = useMemo(
+    () => WORLD_BUILDINGS.filter((b) => b.buildingType !== "lighthouse"),
+    [],
+  );
   const stages = useMemo(() => selectStages(events), [events]);
   const upgradeInProgress = useMemo(() => selectUpgradeInProgress(events), [events]);
   const scratchVector = useRef(new Vector3());
@@ -124,6 +128,7 @@ export function WorldBuildings({
             <Residence
               key={def.id}
               position={position}
+              identity={residenceIdentityForBuilding(def.id)}
               state={state}
               selected={selected}
               onSelect={() => onSelect(def.id)}

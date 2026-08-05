@@ -18,9 +18,12 @@ import { computeOperationalBuildingStatus } from "@/lib/world/operationalBuildin
 import { OPERATIONAL_BUILDING_VISUALS } from "@/lib/world/operationalBuildingVisuals";
 import { computeVehicleState } from "@/lib/world/vehicleState";
 import { VEHICLE_VISUALS } from "@/lib/world/vehicleVisuals";
+import { SELECTABLE_WORLD_OBJECTS } from "@/lib/world/selectableObjects";
 import { LIGHTHOUSE_STATE_VISUALS, WORLD_VEHICLE } from "@foundry/world-model";
 import { useMemo } from "react";
 import type { Selection } from "./selection";
+import { findFoundryDistrict, findFoundryParcel } from "@/lib/world/worldAtlas";
+import { fixtureTenantForParcel } from "@/lib/world/tenantSpaces";
 
 const REQUIREMENT_STATUS_COLOR: Record<string, string> = {
   pending: "text-neutral-500",
@@ -30,7 +33,28 @@ const REQUIREMENT_STATUS_COLOR: Record<string, string> = {
   waived: "text-neutral-500",
 };
 
-export function SelectedObjectDetail({ selection }: { selection: Selection | null }) {
+function RelationshipButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mt-2 flex w-full items-center justify-between gap-3 rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-2.5 py-2 text-left text-xs text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+    >
+      <span>{label}</span>
+      <span aria-hidden="true">↗</span>
+    </button>
+  );
+}
+
+export function SelectedObjectDetail({
+  selection,
+  onSelect,
+  onPreviewTenant,
+}: {
+  selection: Selection | null;
+  onSelect?: (selection: Selection) => void;
+  onPreviewTenant?: (tenantId: string) => void;
+}) {
   const { events, worldState } = useRuntime();
   const stages = useMemo(() => selectStages(events), [events]);
   const requirementsByStage = useMemo(() => selectRequirementsByStage(events), [events]);
@@ -39,11 +63,81 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
   if (!selection) {
     return (
       <>
-        <h3 className="font-medium">Selected-object details</h3>
-        <p className="mt-1 text-neutral-400">
-          No selection. Select a stage, agent, or world object from the left navigation, or the
-          Lighthouse in the 3D world.
+        <h3 className="text-sm font-medium text-neutral-200">Nothing selected</h3>
+        <p className="mt-1.5 leading-relaxed text-neutral-500">
+          No selection. Choose a place, stage, or agent in the World navigator—or select an object
+          directly in the district.
         </p>
+      </>
+    );
+  }
+
+  if (selection.kind === "district") {
+    const district = findFoundryDistrict(selection.id);
+    if (!district) return null;
+    return (
+      <>
+        <p className="foundry-eyebrow">Fixture concept</p>
+        <h3 className="mt-1 font-medium">District: {district.label}</h3>
+        <p className="mt-1.5 leading-relaxed text-neutral-400">{district.purpose}</p>
+        <p className="mt-2 text-[10px] uppercase tracking-[0.08em] text-neutral-500">
+          {district.status === "active-fixture"
+            ? "Active fixture district"
+            : "Uncommissioned concept"}
+        </p>
+        <p className="mt-2 rounded-lg border border-violet-300/15 bg-violet-300/5 p-2 text-[10px] leading-relaxed text-violet-200">
+          Frontend exploration only. This district is not a marketplace, legal property, or backend
+          entitlement.
+        </p>
+      </>
+    );
+  }
+
+  if (selection.kind === "parcel") {
+    const parcel = findFoundryParcel(selection.id);
+    if (!parcel) return null;
+    const tenant = fixtureTenantForParcel(parcel.id);
+    return (
+      <>
+        <p className="foundry-eyebrow">Fixture concept</p>
+        <h3 className="mt-1 font-medium">Parcel: {parcel.label}</h3>
+        <p className="mt-1.5 leading-relaxed text-neutral-400">{parcel.purpose}</p>
+        <dl className="mt-2 space-y-0.5 text-neutral-400">
+          <div>
+            <dt className="inline text-neutral-500">fictional tenant: </dt>
+            <dd className="inline">{parcel.tenant ?? "None — unassigned concept"}</dd>
+          </div>
+          <div>
+            <dt className="inline text-neutral-500">tenure model: </dt>
+            <dd className="inline">
+              {parcel.tenure === "concept-lease" ? "Concept lease" : "Unassigned"}
+            </dd>
+          </div>
+          <div>
+            <dt className="inline text-neutral-500">linked places: </dt>
+            <dd className="inline">{parcel.linkedBuildingIds.length}</dd>
+          </div>
+        </dl>
+        <p className="mt-2 rounded-lg border border-violet-300/15 bg-violet-300/5 p-2 text-[10px] leading-relaxed text-violet-200">
+          No lease, ownership, payment, identity, credential, or agent permission exists.
+        </p>
+        {tenant && onPreviewTenant && (
+          <RelationshipButton
+            label={`Preview fictional tenant space · ${tenant.name}`}
+            onClick={() => onPreviewTenant(tenant.id)}
+          />
+        )}
+        {onSelect &&
+          parcel.linkedBuildingIds.map((buildingId) => {
+            const place = SELECTABLE_WORLD_OBJECTS.find((object) => object.id === buildingId);
+            return place ? (
+              <RelationshipButton
+                key={buildingId}
+                label={`View place · ${place.label}`}
+                onClick={() => onSelect({ kind: "building", id: buildingId })}
+              />
+            ) : null;
+          })}
       </>
     );
   }
@@ -52,6 +146,9 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
     const stage = stages.find((s) => s.id === selection.id);
     if (!stage) return null;
     const requirements = requirementsByStage.get(stage.id) ?? [];
+    const workplace = SELECTABLE_WORLD_OBJECTS.find(
+      (object) => object.kind === "building" && object.id === stage.sourceBuildingId,
+    );
     return (
       <>
         <h3 className="font-medium">Stage: {stage.name}</h3>
@@ -87,6 +184,12 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
             </ul>
           </>
         )}
+        {workplace && onSelect && (
+          <RelationshipButton
+            label={`View workplace · ${workplace.label}`}
+            onClick={() => onSelect({ kind: "building", id: workplace.id })}
+          />
+        )}
       </>
     );
   }
@@ -94,6 +197,9 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
   if (selection.kind === "agent") {
     const agent = worldState.agents.find((a) => a.id === selection.id);
     if (!agent) return null;
+    const currentPlace = SELECTABLE_WORLD_OBJECTS.find(
+      (object) => object.id === agent.currentBuildingId,
+    );
     return (
       <>
         <h3 className="font-medium capitalize">Agent: {agent.role}</h3>
@@ -113,6 +219,12 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
             </div>
           )}
         </dl>
+        {currentPlace && onSelect && (
+          <RelationshipButton
+            label={`View current place · ${currentPlace.label}`}
+            onClick={() => onSelect({ kind: currentPlace.kind, id: currentPlace.id } as Selection)}
+          />
+        )}
       </>
     );
   }
@@ -181,6 +293,12 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
             </div>
           )}
         </dl>
+        {agent && onSelect && (
+          <RelationshipButton
+            label={`View resident · ${agent.role}`}
+            onClick={() => onSelect({ kind: "agent", id: agent.id })}
+          />
+        )}
       </>
     );
   }
@@ -214,6 +332,9 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
     );
     const spec = OPERATIONAL_BUILDING_VISUALS[status];
     const capacity = readCapacity(building.capabilities);
+    const presentAgents = worldState.agents.filter(
+      (agent) => agent.currentBuildingId === building.id,
+    );
     return (
       <>
         <h3 className="font-medium">Building: {building.name}</h3>
@@ -246,6 +367,14 @@ export function SelectedObjectDetail({ selection }: { selection: Selection | nul
             </div>
           )}
         </dl>
+        {onSelect &&
+          presentAgents.map((agent) => (
+            <RelationshipButton
+              key={agent.id}
+              label={`View present agent · ${agent.role}`}
+              onClick={() => onSelect({ kind: "agent", id: agent.id })}
+            />
+          ))}
       </>
     );
   }

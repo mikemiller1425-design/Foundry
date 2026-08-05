@@ -18,12 +18,12 @@ describe("AppShell panel interactivity (FBL-006)", () => {
     renderShell();
     const toggle = screen.getByRole("button", { name: "Collapse left navigation" });
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText(/Left navigation/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "World navigator" })).toBeInTheDocument();
 
     fireEvent.click(toggle);
     const expandToggle = screen.getByRole("button", { name: "Expand left navigation" });
     expect(expandToggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText(/^Left navigation$/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "World navigator" })).not.toBeInTheDocument();
 
     fireEvent.click(expandToggle);
     expect(screen.getByRole("button", { name: "Collapse left navigation" })).toHaveAttribute(
@@ -92,6 +92,95 @@ describe("AppShell panel interactivity (FBL-006)", () => {
       "aria-expanded",
       "true",
     );
+  });
+
+  it("switches between a world-first view and the complete operating layout", () => {
+    renderShell();
+
+    fireEvent.click(screen.getByRole("button", { name: "World" }));
+    expect(screen.getByRole("button", { name: "World" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Expand left navigation" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Expand right live-intelligence" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Expand event timeline" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Operate" }));
+    expect(screen.getByRole("button", { name: "Operate" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Collapse left navigation" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Collapse right live-intelligence" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Collapse event timeline" })).toBeInTheDocument();
+  });
+
+  it("opens the world overview without implying future districts are implemented", () => {
+    renderShell();
+    fireEvent.click(screen.getByRole("button", { name: "Map" }));
+
+    expect(screen.getByRole("button", { name: "Map" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("region", { name: "Foundry world overview" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Knowledge Reach/ }));
+    expect(screen.getByText("No implementation")).toBeInTheDocument();
+  });
+
+  it("opens and exits a fictional tenant showroom from its declared parcel", () => {
+    renderShell();
+    fireEvent.click(
+      screen.getByRole("button", { name: /Production Row\s*Forgeworks Cooperative/ }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Preview fictional tenant space/ }));
+
+    expect(
+      screen.getByRole("region", { name: "Forgeworks Cooperative fixture showroom" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Exit preview" }));
+    expect(
+      screen.queryByRole("region", { name: "Forgeworks Cooperative fixture showroom" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the visible authority badge aligned with fixture journey selection", () => {
+    renderShell();
+
+    expect(screen.getByTestId("runtime-source")).toHaveTextContent("Fixture · V1 canonical run");
+    fireEvent.change(screen.getByLabelText("Fixture journey"), {
+      target: { value: "approval-gate" },
+    });
+
+    expect(screen.getByTestId("runtime-source")).toHaveTextContent("Fixture · Approval gate");
+    expect(screen.getByTestId("runtime-source")).toHaveAttribute(
+      "title",
+      "World state is projected from a deterministic frontend fixture.",
+    );
+  });
+
+  it("enters a world-first posture on compact viewports without removing panel toggles", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: true,
+        media: "(max-width: 900px)",
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }),
+    );
+    try {
+      renderShell();
+
+      expect(screen.getByRole("button", { name: "World" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: "Expand left navigation" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Expand right live-intelligence" }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Expand event timeline" })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

@@ -28,6 +28,29 @@ describe("describeEvent", () => {
     expect(describeEvent(buildCompleted)).toBe("Build completed");
     expect(describeEvent(upgradeCompleted)).toContain("level 1 → 2");
   });
+
+  it("reports durable run evidence without leaking its payload into the ambient row", () => {
+    const event = {
+      id: "evt-evidence",
+      type: "agentrun.evidence_recorded",
+      occurredAt: "2026-08-04T00:00:00.000Z",
+      actorType: "backend",
+      actorId: "backend",
+      entityType: "AgentRun",
+      entityId: "run-1",
+      correlationId: "build-1",
+      severity: "info",
+      schemaVersion: 1,
+      payload: {
+        evidenceId: "evidence-1",
+        agentRunId: "run-1",
+        evidence: { stdout: "potentially sensitive output" },
+      },
+    } as FoundryEvent;
+
+    expect(describeEvent(event)).toBe("Run evidence recorded");
+    expect(describeEvent(event)).not.toContain("potentially sensitive output");
+  });
 });
 
 /**

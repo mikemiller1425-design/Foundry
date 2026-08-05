@@ -15,6 +15,9 @@ import { RoadNetwork } from "./RoadNetwork";
 import { VehicleSceneObject } from "./VehicleSceneObject";
 import { WorldBuildings } from "./WorldBuildings";
 import { WorldSelectionController } from "./WorldSelectionController";
+import { FoundryParcelLayer } from "./FoundryParcelLayer";
+import { AgentRouteLayer } from "./AgentRouteLayer";
+import type { AtmosphereMode } from "@/lib/world/atmosphere";
 
 // FBL-011 bootstrapped an empty R3F canvas in the shell's world region
 // (ADR-004); FBL-012 added the camera rig; FBL-013 added the minimal
@@ -38,24 +41,31 @@ export function WorldCanvas({
   worldObjectMarkerMapRef,
   selection,
   onSelect,
+  atmosphereMode = "focus",
+  ambientMotion = false,
 }: {
   controllerRef: RefObject<CameraControllerHandle | null>;
   lighthouseMarkerRef: RefObject<LighthouseMarkerState | null>;
   worldObjectMarkerMapRef: RefObject<WorldObjectMarkerMap>;
   selection: Selection | null;
   onSelect: (id: string) => void;
+  atmosphereMode?: AtmosphereMode;
+  ambientMotion?: boolean;
 }) {
   const hoveredIdRef = useRef<string | null>(null);
 
   return (
     <Canvas
+      shadows
       className="absolute inset-0"
       style={{ position: "absolute", inset: 0 }}
       gl={{ preserveDrawingBuffer: isE2E }}
     >
       <CameraRig controllerRef={controllerRef} />
-      <Environment />
+      <Environment atmosphereMode={atmosphereMode} ambientMotion={ambientMotion} />
+      <FoundryParcelLayer selection={selection} onSelect={onSelect} />
       <RoadNetwork />
+      <AgentRouteLayer />
       <LighthouseSceneObject
         markerRef={lighthouseMarkerRef}
         selection={selection}

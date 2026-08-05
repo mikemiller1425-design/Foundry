@@ -73,9 +73,9 @@ export function OperatorCredentialPanel() {
       aria-label="Operator credential"
       data-testid="credential-panel"
       data-credential-state={kind}
-      className={`rounded border p-2 ${BADGE[kind]}`}
+      className={`rounded-xl border p-3 ${BADGE[kind]}`}
     >
-      <h3 className="flex items-center gap-1.5 font-medium">
+      <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em]">
         <span aria-hidden>{GLYPH[kind]}</span>
         <span data-testid="credential-label">{label}</span>
       </h3>

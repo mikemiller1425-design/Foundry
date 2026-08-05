@@ -110,6 +110,21 @@ export class MockRuntime {
     }
   }
 
+  /**
+   * Rebuilds a read-only fixture view at an exact canonical cursor and
+   * remains paused there. This is presentation navigation, not a domain
+   * command: it creates no event and grants no operational authority.
+   */
+  previewAtCursor(targetCursor: number): void {
+    this.reset();
+    const bound = Math.min(Math.max(targetCursor, 0), this.script.length);
+    // Unlike operational fast-forward, a fixture preview may inspect a
+    // later point in the already-recorded canonical journey. Replaying its
+    // declared approval resolution is not approving anything now.
+    while (this.cursor < bound) this.emitNext();
+    this.pause();
+  }
+
   getCursor(): number {
     return this.cursor;
   }

@@ -151,7 +151,7 @@ test.describe("Object selection", () => {
     await page.goto("/");
     await waitForMarkerReady(page);
     const before = await readCameraTargetX(page);
-    expect(before).toBeCloseTo(0, 0); // canonical target is (0,0,0)
+    expect(before).toBeCloseTo(1, 0); // canonical district target starts at x = 1
 
     await page.getByTestId("building-list-item").first().click();
 

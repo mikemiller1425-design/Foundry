@@ -4,10 +4,42 @@ import { type ThreeEvent } from "@react-three/fiber";
 import { useState } from "react";
 import { ShapeGeometry, type IndicatorShape } from "./ShapeGeometry";
 import { SelectionRing } from "./SelectionRing";
+import type { AgentRole } from "@foundry/contracts";
+import type { AgentStatus } from "@foundry/contracts";
+import { AgentActivityField } from "./AgentActivityField";
 
 const HOVER_SCALE = 1.1;
-const BODY_COLOR = "#d4d4d8";
 const HEAD_COLOR = "#e4e4e7";
+const ROLE_COLOR: Record<AgentRole, string> = {
+  architect: "#67c7e8",
+  builder: "#e7a94d",
+  inspector: "#67d4ad",
+};
+
+function RoleIdentity({ role }: { role: AgentRole }) {
+  if (role === "architect") {
+    return (
+      <mesh castShadow position={[0, 0.47, 0.19]}>
+        <boxGeometry args={[0.28, 0.12, 0.08]} />
+        <meshStandardMaterial color="#b7ecff" emissive="#67c7e8" emissiveIntensity={0.18} />
+      </mesh>
+    );
+  }
+  if (role === "builder") {
+    return (
+      <mesh castShadow position={[0, 0.9, 0]}>
+        <cylinderGeometry args={[0.18, 0.14, 0.1, 8]} />
+        <meshStandardMaterial color="#f2bd66" roughness={0.72} />
+      </mesh>
+    );
+  }
+  return (
+    <mesh castShadow position={[0, 0.45, 0.2]}>
+      <octahedronGeometry args={[0.12, 0]} />
+      <meshStandardMaterial color="#b6f5df" emissive="#67d4ad" emissiveIntensity={0.16} />
+    </mesh>
+  );
+}
 
 // FBL-020 — Architect / Builder / Inspector agents
 // (docs/02-specification/world-model.md → "Architect / Builder / Inspector
@@ -18,6 +50,8 @@ const HEAD_COLOR = "#e4e4e7";
 // driven by agentVisuals.ts's declarative table.
 export function Agent({
   position,
+  role,
+  status,
   indicatorColor,
   indicatorShape,
   selected = false,
@@ -25,6 +59,8 @@ export function Agent({
   onHoverChange,
 }: {
   position: readonly [number, number, number];
+  role: AgentRole;
+  status: AgentStatus;
   indicatorColor: string;
   indicatorShape: IndicatorShape;
   selected?: boolean;
@@ -61,11 +97,13 @@ export function Agent({
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
     >
-      <mesh position={[0, 0.35, 0]}>
+      <mesh castShadow position={[0, 0.35, 0]}>
         <capsuleGeometry args={[0.18, 0.4, 4, 8]} />
-        <meshStandardMaterial color={BODY_COLOR} />
+        <meshStandardMaterial color={ROLE_COLOR[role]} roughness={0.72} />
       </mesh>
-      <mesh position={[0, 0.75, 0]}>
+      <RoleIdentity role={role} />
+      <AgentActivityField status={status} color={indicatorColor} />
+      <mesh castShadow position={[0, 0.75, 0]}>
         <sphereGeometry args={[0.14, 10, 8]} />
         <meshStandardMaterial color={HEAD_COLOR} />
       </mesh>
@@ -78,6 +116,9 @@ export function Agent({
         />
       </mesh>
       {selected && <SelectionRing innerRadius={0.35} outerRadius={0.5} />}
+      {hovered && !selected && (
+        <SelectionRing innerRadius={0.34} outerRadius={0.47} color="#64d8ff" opacity={0.75} />
+      )}
     </group>
   );
 }

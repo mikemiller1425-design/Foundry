@@ -85,6 +85,8 @@ export function AgentsSceneObject({
           <Agent
             key={def.id}
             position={[position.x, position.y, position.z]}
+            role={def.role}
+            status={agent?.status ?? "idle"}
             indicatorColor={spec.color}
             indicatorShape={spec.shape}
             selected={selected}
