@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Accepted — Package 1b-ii-a, operator-observed and accepted 2026-08-05
+
+The operator personally observed Package 1b-ii-a (`7837212`) and accepted it. Recorded at § 13 of the 2026-08-05 decision record.
+
+Observed: `GET /command-center` returns the `command-center-v1` snapshot · recorded authority and budget facts carry evidence · missing historical information reads `not_recorded` · an unknown event vocabulary is refused with HTTP 400 · **ten repeated snapshot reads left the operational ledger unchanged at 135 events.**
+
+That last one is the observation the package rests on. That a read is genuinely a read could not be established by reading code — only by performing the reads and checking the ledger afterwards.
+
+**This acceptance authorizes no downstream work.** Package 1b-iii, Package 2, `AC-112`, `AC-111` closure, and Package 1 closure each still require their own explicit authorization. **Package 1 remains open** and closes only after 1b-iv is observed and approved.
+
 ### Fixed — the dual-checklist "standing governance rule" was a misunderstanding and is not operative
 
 The Package 1b-ii-a entry below records a *standing governance rule* requiring every package from 1b-ii-a onward to report two synchronized checklists. **That adoption statement resulted from a misunderstanding and is withdrawn.**

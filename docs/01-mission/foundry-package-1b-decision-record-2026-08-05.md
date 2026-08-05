@@ -678,3 +678,37 @@ Package 1b-ii-a's acceptance gate is, and always was, the **12 proofs** recorded
 ## 12.4 Why this is corrected by appending
 
 § 11 could have been deleted, and the record would then have shown a rule that never existed rather than one that was withdrawn. Foundry corrects by appending — Decision 4 of the V1.1 decision record, and principle 18 — because the useful fact is not only what the rule is now, but that it was briefly something else and why it changed.
+
+---
+
+# 13. Operator acceptance — 2026-08-05 — Package 1b-ii-a
+
+**Type:** Append-only operator acceptance
+**Date:** 2026-08-05
+**Accepted by:** mikemiller1425-design (human operator)
+**Package:** 1b-ii-a — Command Center Read Transport
+**Implementation:** `7837212c486b113fc5854c10d53042b4b7046a9a`
+
+> **I personally observed Package 1b-ii-a. I accept Package 1b-ii-a.**
+>
+> **This acceptance authorizes no downstream work.**
+
+## 13.1 What the operator personally observed
+
+Recorded as observed by the operator, not as re-asserted by an assistant:
+
+1. `GET /command-center` returns the `command-center-v1` snapshot.
+2. Recorded authority and budget facts carry evidence.
+3. Missing historical information is identified as `not_recorded`.
+4. An unknown event vocabulary is explicitly refused with **HTTP 400**.
+5. **Ten repeated snapshot reads left the operational ledger unchanged at 135 events.**
+
+Item 5 is the one worth naming separately. It is the observation that a read is genuinely a read — the property the whole package rests on, and the one that could not be established by reading code, only by doing it and looking at the ledger afterwards.
+
+## 13.2 Standing
+
+Package 1b-ii-a is **operator-accepted**. Its 12 proofs, its implementation at `7837212`, and its acceptance are now all on the record.
+
+**Nothing downstream is authorized.** Package 1b-iii, Package 2, `AC-112`, `AC-111` closure, and Package 1 closure each still require their own explicit operator authorization, and this acceptance grants none of them. **Package 1 remains open**; it closes only after 1b-iv is observed and approved.
+
+Recorded here because acceptance is the operator's decision and only the operator can create it — § 12 withdrew a rule that said so as a governance requirement, but the constraint itself comes from the construction map's acceptance gates and from principle 14: humans govern.
