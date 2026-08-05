@@ -6,7 +6,7 @@
 
 Each package needs an explicit authorization before it starts, on the same discipline the V1.1 ladder uses. This map is a plan, not a schedule, and not a licence.
 
-**Relationship to the V1.1 ladder:** unchanged and unresolved. `AC-111` is open, `AC-112`–`AC-120` unstarted. Whether V1.1 completes, pauses, or is superseded is conflict **C-1** in `docs/01-mission/foundry-mission-realignment-2026-08-04.md` and is the operator's decision.
+**Relationship to the V1.1 ladder:** **decided 2026-08-04 — V1.1 is PAUSED**, not completed and not superseded. `AC-111` remains open as a historical governed-execution milestone; `AC-112`–`AC-120` unstarted. The Package track is governed **separately** from the ladder until a future operator decision reconciles the two; the pause lifts no existing obligation. See Decision C-1 in `docs/01-mission/foundry-package-1b-decision-record.md`. *(Formerly conflict **C-1** in `docs/01-mission/foundry-mission-realignment-2026-08-04.md`.)*
 
 ---
 
@@ -26,7 +26,9 @@ Each package needs an explicit authorization before it starts, on the same disci
 
 ## Package 1b — Frontend reconciliation, then the Command Center
 
-**The decision comes before the code.** Two candidate models exist in the working tree and neither is confirmed. Building a Command Center before that is settled would create a second mission model beside an unreviewed first.
+**The decision comes before the code.** Two candidate models existed in the working tree and neither was confirmed. Building a Command Center before that was settled would have created a second mission model beside an unreviewed first.
+
+**Decided 2026-08-04** — `docs/01-mission/foundry-package-1b-decision-record.md` records the operator dispositions for **C-1** (V1.1 paused), **C-2** (mission model: backend-owned operational mission, distinct frontend spatial agent trace), **C-3** (coverage honesty), and **C-4** (three disclosure depths). **The decisions are recorded, not implemented**; 1b-i and 1b-ii still require their own authorization, and `operationalMemory` remains undisposed.
 
 **Two phases, in order:**
 
@@ -36,7 +38,7 @@ Each package needs an explicit authorization before it starts, on the same disci
 
 | | |
 | --- | --- |
-| **Depends on** | 1a; **an operator disposition on the in-flight frontend** |
+| **Depends on** | 1a; **an operator disposition on the in-flight frontend** — recorded 2026-08-04 in `docs/01-mission/foundry-package-1b-decision-record.md` (C-1–C-4 decided; C-5 and `operationalMemory` open) |
 | **Acceptance gate** | Operator confirms the audit disposition, then observes the Command Center |
 | **Measurable outcome** | Eleven required surfaces present; every figure traceable to a persisted event; coverage naming unintegrated sources; ledger reachable behind the summary |
 | **Hard requirements** | No visual progress without a recorded event · no "nothing was missed" · autonomy levels never enlarge backend authority · approval-gated actions stay approval-gated |

@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Package 1b operator decision record (decisions only; nothing implemented)
+
+Four of the five conflicts recorded in the mission-realignment record are now **decided by the operator**. `docs/01-mission/foundry-package-1b-decision-record.md` is the authoritative record. **C-5 remains open.**
+
+- **C-1 — V1.1 is PAUSED**, not completed and not superseded. `AC-111` stays open as a historical governed-execution milestone, `AC-112` is not started, and the Package track is governed **separately** from the ladder until a future operator decision reconciles them. The pause is explicitly **not** abandonment, closure, or permission to bypass an existing obligation — `AC-103`'s obligation to close before `AC-111` is unchanged.
+- **C-2 — Operational mission and spatial agent trace are distinct layers.** The **backend-owned** operational mission is briefing → loadout and authority → launch → checkpoints and progress → exceptions and decisions → outcome → evidence-backed debrief. The **frontend** spatial agent trace renders travel legs, arrivals, work location, and returns — event-supported movement only — beneath a mission. `missionTrace` → `agentTrace` is authorized in principle; **execution is deferred** to the separately authorized frontend reconciliation and was **not** performed here.
+- **C-3 — Coverage is scoped to a named source and a defined interval**, with six states: checked · unavailable · not connected · excluded · uncertain · not yet checked. A global "nothing was missed" claim is prohibited **at any scope**, which makes it unrepresentable rather than merely discouraged. **"No external actions occurred" is derived** from zero qualifying events in the interval — a fabricated `external_action.none` event is prohibited, being the same defect class as the `AC-111` dangling `evidenceIds`: manufactured evidence that reads like an audit trail.
+- **C-4 — Three disclosure depths**, defined by content rather than field count: world glance · tactical mission view · evidence/audit detail. Normal operation must remain usable through levels 1 and 2; level 3 is **always reachable and never required**.
+
+**Recorded as still open, so they are not mistaken for settled:** C-5 (buildings as economic objects) · the `operationalMemory` → `operationalSnapshot` rename, which was raised in audit but **absent from the operator's decision text** and therefore undisposed · disposition of the five in-flight panels · the two coverage vocabularies, since Package 2 already specifies five different terms · the definition of "qualifying external-action event" and interval boundaries · **D-8**.
+
+**Authority is marked in the document itself:** operator-confirmed text appears in blockquotes and under "What this settles"/"Consequences"; assistant-authored implementation suggestions are marked **(proposal)** and carry no operator authority.
+
+**Nothing was implemented.** No source file renamed, no contract written, no frontend behavior changed, no baseline or operational data touched, no NAS access, no model call, no spend, no external action, no `AC-112`, no `AC-111` closure. The realignment record's § 6 is preserved unedited as historical statement, with pointer lines added — corrections through new records, never edits.
+
 ### Added — Construction Package 1a: safe backend foundation (no Command Center, no NAS access)
 
 A strategic realignment following Foundry's first governed real Claude Code run. **Package 1a is not Package 1**: it is the clean, independently committable backend and architecture foundation. The Command Center frontend and mission-model reconciliation are deferred to Package 1b.

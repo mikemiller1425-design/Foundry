@@ -138,11 +138,19 @@ Recorded so they are never mistaken for operator intent.
 
 ## 6. Conflicts requiring reconciliation
 
+> **Status update — 2026-08-04.** **C-1, C-2, C-3, and C-4 are now decided** by the operator in
+> `docs/01-mission/foundry-package-1b-decision-record.md`. **C-5 remains open.** The text below is
+> preserved unedited as the historical statement of each conflict; where it says "unresolved" and the
+> decision record decides it, **the decision record governs**. Corrections occur through new records,
+> never edits.
+
 ### C-1 — Is the V1.1 ladder still the active plan?
 
 The realignment describes a product larger than V1.1's stated mission. `AC-111` is open, `AC-112`–`AC-120` are unstarted, and `AC-120` requires the operator to personally perform the § 3 journey end to end.
 
 **Unresolved.** This record does not decide it, and the ladder is unchanged. **Needed:** an operator decision on whether V1.1 completes, pauses, or is superseded — and, if superseded, an explicit record of what happens to its open acceptance requirements.
+
+**→ Decided 2026-08-04:** **PAUSED** — not completed, not superseded. `AC-111` open, `AC-112` not started, Package track governed separately. See Decision C-1 in `docs/01-mission/foundry-package-1b-decision-record.md`.
 
 ### C-2 — Two candidate frontend models, neither confirmed
 
@@ -152,17 +160,23 @@ These overlap directly with Package 1's mission-supervision model (§ B) and int
 
 **Explicitly not decided here.** Package 1a **did not read them as authority, did not extend them, did not duplicate them, and did not touch them.** They are recorded as **candidates requiring explicit reconciliation in Package 1b**. Whether they are accepted, amended, or rejected is the operator's call.
 
+**→ Decided 2026-08-04:** operational mission and spatial agent trace are **distinct layers** — the operational mission is backend-owned; the spatial trace renders event-supported movement beneath it. The `missionTrace` → `agentTrace` rename is authorized in principle, execution deferred to the separately authorized frontend reconciliation. **`operationalMemory` remains undisposed.** See Decision C-2 in `docs/01-mission/foundry-package-1b-decision-record.md`.
+
 ### C-3 — Command Center scope versus current integrations
 
 The operator wants a Command Center covering email, calendar, bills, and commitments. **None of those integrations exists.** A Command Center built now can honestly report only Foundry's own operational data plus explicit "not yet integrated" coverage.
 
 **Resolution adopted for Package 1b:** coverage must name unintegrated sources rather than omitting them. "Nothing was missed" is prohibited language.
 
+**→ Decided 2026-08-04, and stricter than the line above:** coverage is scoped to a **named source and a defined interval**, with six supported states; no global "nothing was missed" claim at any scope; **"no external actions occurred" is derived from zero qualifying events, never a fabricated `external_action.none` event.** See Decision C-3 in `docs/01-mission/foundry-package-1b-decision-record.md`.
+
 ### C-4 — "Ten-year-old navigable" versus operator-grade evidence
 
 Progressive disclosure is the stated reconciliation, but the depth budget at each level is unspecified.
 
 **Unresolved.** A design question for Package 1b.
+
+**→ Decided 2026-08-04:** three disclosure depths — **world glance**, **tactical mission view**, **evidence/audit detail** — each defined by content rather than by field count. Normal operation must remain usable through levels 1 and 2; level 3 is always reachable and never required. See Decision C-4 in `docs/01-mission/foundry-package-1b-decision-record.md`.
 
 ### C-5 — Buildings as economic objects
 
