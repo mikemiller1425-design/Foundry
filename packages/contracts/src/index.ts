@@ -7,3 +7,5 @@ export * from "./authorization";
 export * from "./authorizationCheck";
 export * from "./supportedObjective";
 export * from "./runEvidence";
+export * from "./nasCatalog";
+export * from "./intentCandidate";

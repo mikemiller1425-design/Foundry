@@ -6,6 +6,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Construction Package 1a: safe backend foundation (no Command Center, no NAS access)
+
+A strategic realignment following Foundry's first governed real Claude Code run. **Package 1a is not Package 1**: it is the clean, independently committable backend and architecture foundation. The Command Center frontend and mission-model reconciliation are deferred to Package 1b.
+
+**Why the split.** The working tree carries a large uncommitted frontend redesign — 44 modified and 43 new files, including `missionTrace.ts` and `operationalMemory.ts`, which overlap directly with Package 1's mission-supervision model and intent foundation. Building the Command Center now would have meant either committing the operator's in-flight work under this commit, or standing up a second mission model beside an unreviewed first. Both were refused; the collision was reported and the scope was split.
+
+**Delivered:**
+
+- **Mission-realignment record** separating confirmed operator intent · existing authoritative decisions · implementation truth · unconfirmed proposals · assistant-authored suggestions · five unresolved conflicts. The 62 untracked NAS District drafts are recorded as **unconfirmed and were not read**; the NAS contracts were written from the operator's own instruction text.
+- **Construction map** for Packages 1a, 1b, 2, 3, 4, 5, with dependencies, acceptance gates, and measurable outcomes. Every package needs its own authorization.
+- **Read-only NAS catalog contracts and adapter.** Roots are **named in configuration and selected by id — a caller can never supply a path**, because with a path field "scan the NAS" and "traverse anywhere this process can read" would be the same operation. The registry ships **empty**, so every scan of a real root refuses until the Package 2 gate. Archives are classified and left sealed; an archive bomb is inert because nothing decompresses.
+- **Intent-candidate schema and promotion guard.** Assistant text cannot become operator intent by proximity — authorship is required and closed, `unknown` is a real option, and only an explicit per-candidate authenticated operator command can promote. Unresolved contradictions in priority, authority, spending, publication, or consequential action block promotion.
+- **NAS architecture and threat model**, 15 threats with dispositions, plus the threats deliberately *not* addressed.
+
+**A defect the tests caught:** coverage `complete` was computed from counters alone, so a scan cancelled before examining anything reported **complete coverage** — exactly the dishonesty the type exists to prevent. The stop reason is now part of the computation.
+
+**Gates:** typecheck 8/8 · lint clean · build clean · **1555 passed / 0 failures** (up from 1462) · `v1-canonical-run.json` byte-identical · `git diff --check` clean.
+
+**Proofs.** The 147 watched frontend and NAS-proposal files are **byte-identical** — manifest digest `04727cf9…` before and after. No NAS path was accessed; the adapter imports five read syscalls and a read stream, and no write primitive. The operational database is unchanged at 135 events / 39 entities with one `claude_code` run. No model call, no execution authorization, no spend, no external action.
+
+**Not delivered, and not claimed:** the Command Center does not exist · no mission model was chosen · no real scan occurred · Package 1 is not complete · `AC-111` is not closed · `AC-112` is not started.
+
 ### Fixed — the first real run's evidence was never persisted (AC-111 audit and correction)
 
 **The first real controlled Claude Code run succeeded.** It also demonstrated that almost nothing about it survived.
