@@ -96,6 +96,7 @@ The repository state these decisions attach to is **`7d7fff6`**, which contains 
 
 **Open — not decided here.**
 - **`operationalMemory` → `operationalSnapshot`.** Raised in audit, and **again absent from the operator's decision text**. `lib/runtime/operationalMemory.ts` and `operationalMemory.test.ts` remain untracked and **undisposed**; the reconciliation has no authority over them.
+  **→ Decided later the same day. See § 7.1** — the rename is authorized and the "purely derived" precondition was verified as holding. This bullet is left unedited as the state of the record when § C-2 was ratified.
 - Disposition of the remaining in-flight panels (operational memory, agent life, runtime readiness, world atlas) beyond the layer separation above.
 
 **(proposal)** Each facet a mission type declares should enter the closed event/command vocabulary at the rung that emits it — the `AC-107` discipline: *an event nothing can emit is a claim the system does not honour.*
@@ -133,6 +134,7 @@ A negative is **derived, never authored**. Emitting an event to represent an abs
 
 **Open — not decided here.**
 - **Two coverage vocabularies.** Package 2 is already specified with five different terms — *scanned / skipped / refused / inaccessible / not-yet-scanned* (construction map, Package 2) — and the Package 2a prompt draft adds a sixth, `unsupported`, while omitting `uncertain`. **Reconciling or explicitly mapping these against the six required states is undecided, and blocks Package 2a.**
+  **→ Decided later the same day. See § 7.2** — coverage is four orthogonal dimensions, not one enum; Package 2a is no longer blocked on vocabulary. This bullet is left unedited as the state of the record when § C-3 was ratified.
 - The definition of a **qualifying external-action event**, and the interval boundary rule (open/closed endpoints, and which clock).
 
 ---
@@ -215,7 +217,133 @@ Unchanged: the layer-ownership rule · the prohibition on global coverage claims
 
 **Carried open:** `operationalMemory` → `operationalSnapshot` · disposition of the remaining in-flight panels · the coverage-vocabulary conflict, which **blocks Package 2a** · "qualifying external-action event" and interval boundaries · **D-8**.
 
+> **→ Two of these were decided later the same day. See § 7.** `operationalMemory` → `operationalSnapshot` is authorized (§ 7.1) and the coverage vocabulary is resolved as four orthogonal dimensions (§ 7.2), so Package 2a is no longer blocked on vocabulary. The line above is left unedited as the state of the record at ratification. Still open: the remaining in-flight panels · "qualifying external-action event" and interval boundaries · **C-5** · **D-8**.
+
 ---
 
 **Companion documents:**
 `docs/01-mission/foundry-package-1b-decision-record.md` (2026-08-04, superseded for C-1 – C-4) · `docs/01-mission/foundry-mission-realignment-2026-08-04.md` · `docs/03-architecture/foundry-construction-map.md` · `docs/01-mission/agent-city-v1.1-decision-record.md`
+
+---
+
+# 7. Clarification — 2026-08-05 — `operationalSnapshot` and the coverage vocabulary
+
+**Type:** Append-only clarification
+**Date:** 2026-08-05 (later the same day)
+**Decided by:** mikemiller1425-design (human operator)
+**Resolves:** two items recorded above as *Open — not decided here* — `operationalMemory` → `operationalSnapshot` (§ Decision C-2) and the coverage-vocabulary conflict (§ Decision C-3)
+
+**Nothing above this line is rewritten.** Sections 0 – 6 stand exactly as ratified, including their "Open — not decided here" wording, which was accurate when written. This section is the later ruling; where it resolves an item recorded above as open, **this section governs**. Corrections occur through new records and appended clarifications, never edits.
+
+---
+
+## 7.1 — Ruling C-2.1: `operationalMemory` → `operationalSnapshot`
+
+> **Rename the existing frontend concept:**
+> `operationalMemory` → `operationalSnapshot` · `OperationalMemoryPanel` → `OperationalSnapshotPanel` · and the corresponding imports, exports, tests, test IDs, and e2e references.
+>
+> **Meaning.** `operationalSnapshot` is a **derived, read-only projection of persisted operational events/state at a defined cursor or point in time.**
+>
+> **It is not:** the Canonical Intent Registry · the Personal Constitution · the Professional Truth Vault · Operational Memory persistence · backend authority · a source of events · a source of permissions · an independent truth store.
+>
+> **The frontend may render a snapshot but may never author operational truth through it.**
+>
+> **Precondition.** Before the rename is performed, verify the current module is **purely derived**. If any part persists, mutates, authorizes, or invents operational state, **stop and report that behavior instead of applying the rename.**
+
+**What this settles.** The audit raised this rename twice and the operator's decision text omitted it twice, so it was correctly recorded above as undisposed. It is now decided. The name was the defect: "memory" implies retained state the frontend owns, where the artifact is a projection the backend's event log fully determines. The enumerated negative list exists so a later reader cannot grow this module into one of the named authorities by proximity.
+
+**Precondition check — performed 2026-08-05, read-only, no files modified.**
+
+| Check | Result |
+| --- | --- |
+| Exports of `lib/runtime/operationalMemory.ts` | `selectEvidenceReferences`, `deriveOperationalSnapshot`, `deriveOperationalComparison` — **all pure functions** over `readonly FoundryEvent[]` |
+| Persistence / storage | **None.** No `localStorage`, `sessionStorage`, database, or file access |
+| Mutation | **None.** Inputs are `readonly`; every return value is newly constructed |
+| Event emission | **None.** No command submission, no event authoring |
+| Permission or authority logic | **None** |
+| `OperationalMemoryPanel.tsx` | Render-only. Its sole state is a local tab toggle (`view`); no `submitCommand`, no persistence, no fetch |
+
+**The precondition holds.** The module is already purely derived, and — noted because it reduces the rename's risk — its internal vocabulary **already matches the ruling**: the exported type is already `OperationalSnapshot` and the main function is already `deriveOperationalSnapshot`. The stale name survives only in the **file name**, the **panel name**, one local type (`MemoryView`), the test IDs, and the `AppShell` references. This is a naming correction, not a behavioral change.
+
+**Consequences.**
+- The rename is **authorized** for the separately authorized frontend reconciliation, limited to the already-audited frontend paths.
+- The identifiers still carrying the stale name: `lib/runtime/operationalMemory.ts` + `.test.ts` (file names) · `OperationalMemoryPanel.tsx` + `.test.tsx` · the local `MemoryView` type · test ID `"operational-memory-panel-test"` · two references in `components/shell/AppShell.tsx`.
+- The frontend may render a snapshot and may **never** author operational truth through it.
+- If a future change would make this module persist, mutate, authorize, or invent state, that is a **new decision**, not an implementation detail.
+
+**Acceptance criteria.**
+1. **Zero** occurrences of `operationalMemory`, `OperationalMemory`, or `MemoryView` across source, tests, test IDs, and e2e.
+2. Every export remains a pure function of recorded events; no persistence, mutation, emission, or permission logic is introduced.
+3. The renamed module produces no state that is not fully determined by the persisted event log.
+4. The rename is a rename — no behavior change accompanies it.
+
+---
+
+## 7.2 — Ruling C-3.1: coverage is four orthogonal dimensions, not one enum
+
+> **Do not represent coverage with one overloaded enum. Use orthogonal dimensions.**
+>
+> **A. Source connection** — `connected` · `unavailable` · `not_connected` · `excluded`
+>
+> **B. Interval progress** — `not_yet_checked` · `checking` · `partially_checked` · `checked`
+> `checked` means the declared source and declared interval were processed according to the recorded scope. **It does not mean the source contains all truth, or that nothing was missed.**
+>
+> **C. Item disposition** — preserving the Package 1a scan vocabulary where applicable: `scanned` · `skipped` · `refused` · `inaccessible` · `unsupported` · `not_yet_scanned`
+>
+> **D. Uncertainty** — a **separate quality flag with a reason**, not a replacement for connection or progress: `result_uncertain: true | false`, plus `uncertainty_reason` when true.
+>
+> **Examples.** A connected source can be `partially_checked`. An unavailable source has no checked interval. A checked source can still contain uncertain results. A source may be excluded deliberately and **must say why**. Individual items can be `inaccessible` even when the source interval is `checked`.
+>
+> **Plain frontend labels:** Connected · Unavailable · Not connected · Excluded · Not checked yet · Checking · Partially checked · Checked · Result uncertain
+>
+> **Prohibitions.** No global "nothing was missed" claim · no `external_action.none` event · no `coverage_complete` derived solely from counters · no treating `unavailable`, `excluded`, or `unsupported` as `checked` · **no frontend-authored coverage state.**
+>
+> **"No external actions occurred"** remains a derived interval statement based on zero qualifying recorded external-action events.
+
+**What this settles.** § Decision C-3 above required six states and recorded the collision with Package 2's five as open and **blocking Package 2a**. This ruling resolves it by rejecting the framing both lists shared: coverage was never one dimension. Source connection, interval progress, item disposition, and uncertainty are independent, and collapsing them is what allowed an unavailable source to render as a clean result.
+
+This **supersedes the single six-state list** in § Decision C-3 as the representation, while preserving every honesty constraint it imposed. Mapping the earlier six: *checked*, *unavailable*, *not connected*, *excluded*, *not yet checked* distribute across dimensions A and B; **uncertain is no longer a state at all** — it is dimension D, a flag that composes with any combination, because a checked source can still yield uncertain results.
+
+It also resolves the defect recorded against the Package 2a draft: `unsupported` is **legitimate**, at dimension C, and its omission of `uncertain` from that list is now **correct**, because uncertainty is not an item disposition.
+
+**Consequences.**
+- `coverage_complete` may never be computed from counters alone. This is the same defect Package 1a's own tests caught, where a scan cancelled before examining anything reported complete coverage; the stop reason had to become part of the computation.
+- An excluded source **must record why**. Exclusion without a reason is indistinguishable from an omission.
+- Coverage state is **backend-derived only**. The frontend renders it and never authors it.
+- **Package 2a is no longer blocked on the vocabulary question.** It remains blocked on its own authorization and on an operator decision naming the volume.
+
+**Acceptance criteria.**
+1. The four dimensions are independently representable; no single field encodes two of them.
+2. A fixture demonstrates each documented example, including `connected` + `partially_checked`, and `checked` + `result_uncertain: true`.
+3. `result_uncertain: true` without an `uncertainty_reason` is **unrepresentable or rejected**.
+4. An `excluded` source without a recorded reason is **unrepresentable or rejected**.
+5. **Zero** global "nothing was missed" claims, and **zero** `external_action.none` events, in vocabulary and in the persisted log.
+6. No code path derives `coverage_complete` from counters alone without the stop reason.
+7. No frontend path authors or mutates a coverage state.
+
+---
+
+## 7.3 — Scope consequence
+
+> The semantic rename `operationalMemory` → `operationalSnapshot` **is authorized** for Cursor's reconciliation package, limited to the already-audited frontend paths.
+>
+> **Implementation of the new coverage contracts/events is NOT authorized for Cursor.** It belongs to the later Claude backend-concepts package. Cursor may only **remove misleading existing language** and **preserve honest `unavailable`/`unsupported` states already backed by truth.**
+
+**Consequences.**
+- Cursor's authorized surface gains exactly one thing: the `operationalSnapshot` rename.
+- Cursor **may not** introduce the four dimensions, add coverage fields or events, or build any coverage contract. Encountering a place that would need one, it **stops and reports**.
+- Cursor **may** delete misleading coverage language already present, and **must** leave intact any `unavailable` or `unsupported` state already backed by a recorded truth.
+- The coverage contracts land in the later **Claude backend-concepts package**, under its own authorization, at the rung that emits them — the `AC-107` discipline.
+
+---
+
+## 7.4 — Effect on items recorded open above
+
+| Item | Was | Now |
+| --- | --- | --- |
+| `operationalMemory` → `operationalSnapshot` | Open (§ C-2) | **Decided** — § 7.1. Precondition verified as holding |
+| Coverage-vocabulary conflict | Open, blocking Package 2a (§ C-3) | **Decided** — § 7.2. Package 2a no longer blocked on vocabulary |
+| Six coverage states as one list | Required set (§ C-3) | **Superseded as representation** by four orthogonal dimensions; every honesty constraint preserved |
+| Disposition of the remaining in-flight panels | Open | **Still open** — beyond the `OperationalSnapshotPanel` rename |
+| "Qualifying external-action event" · interval boundaries | Open | **Still open** |
+| C-5 · D-8 | Open | **Still open** |

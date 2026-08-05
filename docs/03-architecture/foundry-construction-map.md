@@ -30,7 +30,9 @@ Each package needs an explicit authorization before it starts, on the same disci
 
 **Ratified 2026-08-05** — `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md` is the authoritative record for **C-1** (V1.1 paused — not completed, abandoned, or superseded), **C-2** (distinct layers; the backend-owned operational mission is expressed as **lifecycle facets with per-mission-type stages**, not a fixed seven-stage sequence), **C-3** (coverage honesty; **six required states**), and **C-4** (three disclosure depths, ordinary operation usable through levels 1–2). It carries acceptance criteria for each and supersedes the 2026-08-04 record (`docs/01-mission/foundry-package-1b-decision-record.md`). Recorded starting point: **`7d7fff6`**.
 
-**The decisions are recorded, not implemented**; 1b-i and 1b-ii still require their own authorization, and `operationalMemory` remains undisposed. **Obligation O-1** binds the Package 1 integration gate: two `apps/api` tests were *not executed* at `7d7fff6` and must not be carried forward as passed.
+**The decisions are recorded, not implemented**; 1b-i and 1b-ii still require their own authorization. **Obligation O-1** binds the Package 1 integration gate: two `apps/api` tests were *not executed* at `7d7fff6` and must not be carried forward as passed.
+
+**Clarified later on 2026-08-05** (§ 7 of the same record): `operationalMemory` → `operationalSnapshot` **is authorized** for 1b-i, with the "purely derived" precondition verified as holding; and coverage is ruled to be **four orthogonal dimensions**, not one enum. **Coverage-contract implementation is explicitly out of 1b-i scope** — it belongs to the later Claude backend-concepts package. 1b-i may only remove misleading coverage language and preserve honest states already backed by truth.
 
 **Two phases, in order:**
 
@@ -54,7 +56,7 @@ Turns 1a's boundary into a real, bounded, operator-gated scan.
 
 | | |
 | --- | --- |
-| **Depends on** | 1a; an operator decision naming which volume Foundry may index; **an operator ruling reconciling this package's five coverage terms with C-3's six required states** — undecided, and it blocks 2a (see the 2026-08-05 decision record) |
+| **Depends on** | 1a; an operator decision naming which volume Foundry may index. **The coverage-vocabulary question is resolved** (§ 7.2 of the 2026-08-05 decision record): coverage is four orthogonal dimensions — source connection · interval progress · item disposition · uncertainty flag — and this package's scan terms are dimension C, joined by `unsupported`. 2a is no longer blocked on vocabulary |
 | **Acceptance gate** | Operator names the root and reviews the first coverage report |
 | **Measurable outcome** | One configured root; a coverage report distinguishing scanned / skipped / refused / inaccessible / not-yet-scanned; resumability demonstrated; **zero writes**, proven by comparing the tree before and after |
 | **Hard requirements** | Read-only · no extraction · no rename, move, or delete · bounded traversal · cancellable · honest coverage |

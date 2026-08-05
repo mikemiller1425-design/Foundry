@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Package 1b clarification: `operationalSnapshot` and the coverage vocabulary (append-only; nothing implemented)
+
+Appended as § 7 of `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md`. **Sections 0–6 are not rewritten** — their "Open — not decided here" wording was accurate when written and stands, with pointer lines added to § C-2, § C-3, and the summary so no reader takes them at face value.
+
+**`operationalMemory` → `operationalSnapshot` is now authorized**, having been raised in audit and omitted from the operator's decision text twice. A snapshot is a derived, read-only projection of persisted operational events at a defined cursor — explicitly **not** the Canonical Intent Registry, Personal Constitution, Professional Truth Vault, Operational Memory persistence, backend authority, a source of events or permissions, or an independent truth store. The frontend may render a snapshot and may never author operational truth through it.
+
+**The "purely derived" precondition was verified before authorizing, read-only.** All three exports of `lib/runtime/operationalMemory.ts` are pure functions over `readonly FoundryEvent[]`; no persistence, mutation, event emission, or permission logic exists, and `OperationalMemoryPanel.tsx` is render-only with a single local tab-toggle state. Noted because it lowers the risk: the module's internal vocabulary **already matches the ruling** — the exported type is already `OperationalSnapshot` and the main function already `deriveOperationalSnapshot`. The stale name survives only in the file name, the panel name, a local `MemoryView` type, one test ID, and two `AppShell` references. This is a naming correction, not a behavioral change.
+
+**Coverage is ruled to be four orthogonal dimensions, not one overloaded enum:** source connection (`connected`/`unavailable`/`not_connected`/`excluded`) · interval progress (`not_yet_checked`/`checking`/`partially_checked`/`checked`) · item disposition, preserving the Package 1a scan terms plus `unsupported` · and uncertainty as a separate flag with a required reason. This supersedes the six-state list in § C-3 **as the representation** while preserving every honesty constraint. `checked` means the declared source and interval were processed to the recorded scope — never that nothing was missed. **`uncertain` stops being a state**: a checked source can still yield uncertain results, so it composes with any combination rather than replacing one.
+
+The framing both earlier lists shared was the defect — collapsing four independent facts into one field is what let an unavailable source render as a clean result. It also resolves the flaw recorded against the Package 2a draft: `unsupported` is legitimate at dimension C, and omitting `uncertain` from that list is correct. **Package 2a is no longer blocked on vocabulary**, though it still needs its own authorization and a named volume.
+
+**Newly prohibited:** `coverage_complete` derived from counters alone — the same defect Package 1a's tests caught, where a scan cancelled before examining anything reported complete coverage · treating `unavailable`, `excluded`, or `unsupported` as `checked` · any frontend-authored coverage state · an `excluded` source with no recorded reason, which is indistinguishable from an omission.
+
+**Scope:** the rename is authorized for the frontend reconciliation, limited to already-audited paths. **Coverage-contract implementation is explicitly withheld from it** and belongs to the later Claude backend-concepts package; the reconciliation may only remove misleading language and preserve honest states already backed by truth.
+
+**Nothing implemented.** No source rename performed, no contract, no behavior, no frontend staged, no NAS, no Package 2, no `AC-112`, no `AC-111` closure.
+
 ### Changed — Package 1b decision record ratified, correcting two readings (decisions only; nothing implemented)
 
 `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md` is now the authoritative record for **C-1 – C-4**, superseding the 2026-08-04 record, which is preserved unedited with a pointer. Recorded starting point: **`7d7fff6`** — Package 1a plus the eleven-path frontend projection-honesty checkpoint. The audited remaining frontend (82 dirty paths, digest `e6bedfcc…`) is untouched.
