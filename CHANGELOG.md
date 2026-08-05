@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — the dual-checklist "standing governance rule" was a misunderstanding and is not operative
+
+The Package 1b-ii-a entry below records a *standing governance rule* requiring every package from 1b-ii-a onward to report two synchronized checklists. **That adoption statement resulted from a misunderstanding and is withdrawn.**
+
+The engineering-coordination checklist and the plain-English understanding checklist are a **conversational protocol between the operator and Codex**. They were never intended to become a Foundry architectural requirement, a standing package-governance rule, an obligation on Claude or Cursor, or part of any package's acceptance criteria. A working habit between two participants was read as a durable rule and written into governance — a category error that matters because governance records are consulted later by readers who were not present, and a future package would have found a standing obligation with no operator behind it.
+
+**The operative rule: no package-level dual-checklist requirement exists.** No package must produce either checklist or the associated status vocabulary; omitting them leaves a package complete, and including them adds nothing to its acceptance criteria.
+
+**Unchanged, because neither depended on the withdrawn rule:** a package still reports what it delivered, what it did not, what remains absent or unrecorded, and how to verify it — that comes from its acceptance gate. And an assistant still may not declare the operator's acceptance, which comes from the construction map's gates and principle 14.
+
+**Package 1b-ii-a is unaffected technically.** Its gate is, and always was, the 12 proofs. The dual-checklist item reported as `E-13` was never part of that gate and is withdrawn from the operative completion requirements; proofs `E-1`–`E-12` are undisturbed. **The implementation remains accepted for observation** — no contract, endpoint, event transport, or test was reverted or modified. Documentation paths only.
+
+Recorded append-only: § 11 of the 2026-08-05 decision record is preserved unedited with a superseded marker, and § 12 carries the correction. Deleting § 11 would have shown a rule that never existed rather than one that was withdrawn.
+
 ### Added — Package 1b-ii-a: Command Center Read Transport (backend only; no UI)
 
 **1620 tests passing**, frontend tree object `06dbb4c9` byte-identical before and after.

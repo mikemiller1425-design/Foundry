@@ -602,6 +602,14 @@ Package 1b-ii-a, 1b-iii, and 1b-iv each still require their own explicit operato
 
 # 11. Standing governance rule — 2026-08-05 — dual checklists
 
+> **⚠ SUPERSEDED — see § 12.** This section recorded a standing governance rule
+> that the operator did not intend to create. The two-checklist format is a
+> **conversational protocol between the operator and Codex**, not a Foundry
+> architectural requirement, package-governance rule, obligation on Claude or
+> Cursor, or acceptance criterion. **No package-level dual-checklist
+> requirement exists.** This section is preserved unedited below as historical
+> evidence of what was recorded; § 12 governs.
+
 **Type:** Append-only standing rule
 **Date:** 2026-08-05
 **Decided by:** mikemiller1425-design (human operator)
@@ -629,3 +637,44 @@ The second list is not a summary of the first. It answers different questions, a
 - A package may mark its own work `IMPLEMENTED` and `TECHNICALLY VERIFIED`. It may **never** mark it `OPERATOR OBSERVED` or `OPERATOR ACCEPTED`; doing so misreports the record.
 - `DEFERRED` and `BLOCKED` are first-class outcomes and are reported as plainly as completion.
 - Completion reporting separates: genuinely implemented and verified · technically present but not yet visible · requiring operator observation · unavailable or historically unrecorded · remaining work · exact personal verification commands with expected results.
+
+---
+
+# 12. Correction — 2026-08-05 — § 11 recorded a rule the operator did not intend
+
+**Type:** Append-only correction
+**Date:** 2026-08-05
+**Decided by:** mikemiller1425-design (human operator)
+**Corrects:** § 11 of this record, and the corresponding section of `docs/03-architecture/foundry-construction-map.md`
+
+**§ 11 is preserved unedited above**, with a superseded marker. It is the record of what was written; this section is the record of what was meant.
+
+## 12.1 What was misunderstood
+
+> **The engineering-coordination checklist and the plain-English understanding checklist are a conversational protocol between Michael and Codex.**
+>
+> They were **not** intended to become: a Foundry architectural requirement · a standing package-governance rule · an obligation imposed on Claude or Cursor · part of Package 1b-ii-a's acceptance criteria.
+
+A working habit between two participants was read as a durable rule and written into governance. That is a category error, and the reason it matters is that governance records are consulted later by readers who were not present: a future package would have found a standing obligation with no operator behind it, and satisfied it in good faith.
+
+## 12.2 The operative rule
+
+> **No package-level dual-checklist requirement exists.**
+
+No package is obliged to produce an engineering-execution checklist, an operator-understanding checklist, or the `PROPOSED`/`AUTHORIZED`/`IMPLEMENTED`/… status vocabulary. A package that omits them is complete. A package that includes them has added nothing to its acceptance criteria by doing so.
+
+**What is unchanged**, because it never depended on § 11:
+- A package still reports what it delivered, what it did not, what remains absent or unrecorded, and how the operator can verify it. That obligation comes from each package's acceptance gate.
+- **An assistant still may not declare the operator's acceptance.** That comes from the acceptance gates in the construction map and from principle 14 — humans govern — not from the withdrawn rule.
+
+## 12.3 Effect on Package 1b-ii-a
+
+> **The Package 1b-ii-a technical implementation remains accepted for observation.** Its contracts, endpoint, event transport, tests, and other implementation are not reverted or modified.
+
+Package 1b-ii-a's acceptance gate is, and always was, the **12 proofs** recorded in the construction map. The dual-checklist item reported as **`E-13`** was never part of that gate; it is **withdrawn from the operative completion requirements**.
+
+**Proofs `E-1` through `E-12` are undisturbed**, as is the 12-proof gate itself. No contract, endpoint, transport, or test changes as a result of this correction — this is a documentation correction and touched no implementation path.
+
+## 12.4 Why this is corrected by appending
+
+§ 11 could have been deleted, and the record would then have shown a rule that never existed rather than one that was withdrawn. Foundry corrects by appending — Decision 4 of the V1.1 decision record, and principle 18 — because the useful fact is not only what the rule is now, but that it was briefly something else and why it changed.

@@ -248,19 +248,44 @@ Michael must personally observe: briefing truth · scheduled decisions · active
 
 `3` needs `1a`'s guard and `2`'s located material. `4` and `5` both need `1b`'s supervision surface and `3`'s verified facts.
 
-## Standing governance rule — dual checklists
+## Reporting conventions — no dual-checklist requirement exists
 
-**Adopted 2026-08-05.** Every package from Package 1b-ii-a onward maintains and reports **two synchronized checklists**, and every operator item cross-references its engineering proof.
+**Corrected 2026-08-05 by operator clarification.** An earlier revision of this
+section, adopted the same day, recorded a *standing governance rule* requiring
+every package from 1b-ii-a onward to maintain and report two synchronized
+checklists — engineering execution and operator understanding — with statuses
+and cross-references.
 
-**A — Engineering execution checklist.** Per requirement: identifier · implementation status · exact files and symbols · technical evidence · the test or verification command · exclusions and unresolved dependencies.
+**That rule was recorded in error and is not operative.** The two-checklist
+format is a **conversational protocol between the operator and Codex**. It was
+never intended to become a Foundry architectural requirement, a standing
+package-governance rule, an obligation on Claude or Cursor, or part of any
+package's acceptance criteria. The superseded text is preserved as historical
+evidence at § 11 of
+`docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md`, marked
+superseded, together with the correction at § 12.
 
-**B — Operator understanding checklist.** Per item, in plain English: what useful capability it adds · what Foundry could do before · what it can do afterward · whether anything visibly changes · what remains unavailable, `not_recorded`, `not_available`, or `not_connected` · what is deliberately excluded · the exact steps the operator can run to verify it themselves · any remaining drift risk.
+**The operative rule, stated plainly:**
 
-**Statuses.** `PROPOSED` · `AUTHORIZED` · `IMPLEMENTED` · `TECHNICALLY VERIFIED` · `OPERATOR OBSERVATION REQUIRED` · `OPERATOR ACCEPTED` · `DEFERRED` · `BLOCKED`.
+> **No package-level dual-checklist requirement exists.** No package is obliged
+> to produce an engineering-execution checklist, an operator-understanding
+> checklist, or the associated status vocabulary. A package that omits them is
+> complete; a package that includes them has added nothing to its acceptance
+> criteria by doing so.
 
-**Only the operator may mark an item `OPERATOR OBSERVED` or `OPERATOR ACCEPTED`.** Neither Claude nor Cursor may advance an item into either state, and a package that reports its own work as accepted has misreported it.
+What remains unchanged is the substance the erroneous rule was reaching for,
+which this map already required independently: a package reports what it
+delivered, what it did not, what remains absent or unrecorded, and how the
+operator can verify it. **And an assistant still may not declare the operator's
+acceptance** — that constraint comes from the acceptance gates in this map and
+from principle 14, not from the withdrawn rule.
 
-**Why this exists.** A passing test proves a machine agrees with itself. It does not tell the person who has to live with the system what changed, what is now visible, or what is still missing — and "1603 tests pass" is not an answer to "what can I do now that I could not do yesterday." The two lists are kept side by side so neither can quietly drift from the other.
+**Effect on Package 1b-ii-a.** Its acceptance gate is, and always was, the
+**12 proofs** recorded above. The dual-checklist item that appeared as `E-13`
+in the completion report was never part of that gate and is withdrawn from the
+operative completion requirements. **Proofs 1–12 and the technical
+implementation are unaffected** — no contract, endpoint, transport, or test
+changes as a result of this correction.
 
 ---
 
