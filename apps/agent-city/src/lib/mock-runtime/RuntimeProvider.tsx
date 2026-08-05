@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConnectionStatus, WorldState } from "@foundry/contracts";
+import type { WorldState } from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -9,10 +9,11 @@ import type { BuildRunResult } from "@/lib/backend/buildRun";
 import type { ExecutionGateReport } from "@/lib/backend/executionGate";
 import type { CredentialState } from "@/lib/backend/credentialState";
 import type { CommandFailure } from "@/lib/backend/commandFeedback";
+import type { RuntimeReadAdapter } from "@/lib/runtime/adapter";
 import { DEFAULT_SEED, MockRuntime } from "./runtime";
 import { clearRuntimeCursor, loadRuntimeCursor, saveRuntimeCursor } from "./sessionPersistence";
 
-export interface RuntimeContextValue {
+export interface RuntimeContextValue extends RuntimeReadAdapter {
   /**
    * AC-106: which runtime is attached, stated rather than inferred.
    *
@@ -22,19 +23,12 @@ export interface RuntimeContextValue {
    * the two apart. Optional for the many test fixtures that supply a
    * partial context; absent is read as `"mock"`.
    */
-  runtimeMode?: "mock" | "backend";
-  events: FoundryEvent[];
-  worldState: WorldState;
-  isRunning: boolean;
-  isComplete: boolean;
   /**
    * FBL-026 (F-10): false whenever the projection is not a live view of
    * backend truth, which disables every mutation control. The mock
    * runtime is always "connected" — it *is* its own authority (ADR-001),
    * so demo/test mode behaves exactly as it did before this rung.
    */
-  connectionStatus: ConnectionStatus;
-  mutationsEnabled: boolean;
   submitCommand: (raw: unknown) => void;
   /**
    * AC-103: submits one bounded objective, creating a real Project and
@@ -293,6 +287,7 @@ export function RuntimeProvider({
     <RuntimeContext.Provider
       value={{
         runtimeMode: "mock",
+        projectionStatus: "current",
         events,
         worldState,
         isRunning,

@@ -25,6 +25,7 @@ import {
   writeOperatorCredential,
 } from "./operatorCredential";
 import { createInitialWorldState } from "@/lib/mock-runtime/worldStateReducer";
+import type { ProjectionStatus } from "@/lib/runtime/adapter";
 
 /**
  * FBL-026: makes the frontend a live projection of backend truth rather
@@ -51,6 +52,7 @@ export function BackendRuntimeProvider({
   const [events, setEvents] = useState<FoundryEvent[]>([]);
   const [rawWorldState, setRawWorldState] = useState<WorldState | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
+  const [projectionStatus, setProjectionStatus] = useState<ProjectionStatus>("unavailable");
   const [lastRejection, setLastRejection] = useState<RuntimeContextValue["lastRejection"]>(null);
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export function BackendRuntimeProvider({
       setEvents(state.events);
       setRawWorldState(state.worldState);
       setConnectionStatus(state.connectionStatus);
+      setProjectionStatus(state.projectionStatus);
     });
     void client.start();
     return () => {
@@ -66,12 +69,17 @@ export function BackendRuntimeProvider({
     };
   }, [client]);
 
+  const projectionIsCurrent = projectionStatus === "current";
   const worldState = useMemo(
-    () => applyConnectionStatus(rawWorldState ?? createInitialWorldState(), connectionStatus),
-    [rawWorldState, connectionStatus],
+    () =>
+      applyConnectionStatus(
+        rawWorldState ?? createInitialWorldState(),
+        connectionStatus === "connected" && projectionIsCurrent ? "connected" : "disconnected",
+      ),
+    [rawWorldState, connectionStatus, projectionIsCurrent],
   );
 
-  const mutationsEnabled = areMutationsAllowed(connectionStatus);
+  const mutationsEnabled = areMutationsAllowed(connectionStatus) && projectionIsCurrent;
 
   const postCommand = useCallback(
     async (body: unknown) => {
@@ -452,6 +460,12 @@ export function BackendRuntimeProvider({
         // like connection status — the mock runtime is permanently
         // "connected" and would read as a live backend.
         runtimeMode: "backend",
+        runtimeSource: {
+          kind: "backend",
+          label: "Backend event stream",
+          authority: "backend",
+        },
+        projectionStatus,
         events,
         worldState,
         isRunning: connectionStatus === "connected",

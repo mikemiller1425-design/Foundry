@@ -8,8 +8,13 @@ import { computeLighthouseState } from "@/lib/world/lighthouseState";
 import { applyConnectionStatus } from "@/lib/backend/connectionState";
 import { ApprovalCard } from "./ApprovalCard";
 import { ConnectionBanner } from "./ConnectionBanner";
+import type { ProjectionStatus } from "@/lib/runtime/adapter";
 
-function wrapper(connectionStatus: ConnectionStatus, worldState?: WorldState) {
+function wrapper(
+  connectionStatus: ConnectionStatus,
+  worldState?: WorldState,
+  projectionStatus: ProjectionStatus = "current",
+) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
       <RuntimeContext.Provider
@@ -19,7 +24,8 @@ function wrapper(connectionStatus: ConnectionStatus, worldState?: WorldState) {
           isRunning: connectionStatus === "connected",
           isComplete: false,
           connectionStatus,
-          mutationsEnabled: connectionStatus === "connected",
+          projectionStatus,
+          mutationsEnabled: connectionStatus === "connected" && projectionStatus === "current",
           submitCommand: vi.fn(),
           resolveApproval: vi.fn(),
           selectBuilding: vi.fn(),
@@ -50,6 +56,22 @@ describe("ConnectionBanner — F-10 stale labeling", () => {
   it("communicates status by text, not by color alone", () => {
     render(<ConnectionBanner />, { wrapper: wrapper("disconnected") });
     expect(screen.getByTestId("connection-banner")).toHaveTextContent(/disconnected/i);
+  });
+
+  it("distinguishes a connected stream from a projection that is still synchronizing", () => {
+    render(<ConnectionBanner />, { wrapper: wrapper("connected", undefined, "stale") });
+    const banner = screen.getByTestId("connection-banner");
+    expect(banner).toHaveTextContent(/synchronizing world projection/i);
+    expect(banner).toHaveTextContent(/last known state/i);
+    expect(banner).toHaveAttribute("data-connection-status", "connected");
+    expect(banner).toHaveAttribute("data-projection-status", "stale");
+  });
+
+  it("distinguishes an unavailable projection from a stale retained one", () => {
+    render(<ConnectionBanner />, { wrapper: wrapper("connected", undefined, "unavailable") });
+    expect(screen.getByTestId("connection-banner")).toHaveTextContent(
+      /world projection unavailable/i,
+    );
   });
 });
 
@@ -92,6 +114,15 @@ describe("Mutation controls are disabled while disconnected (F-10)", () => {
     expect(screen.getByRole("button", { name: "Reject" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Request revision" })).toBeDisabled();
   });
+
+  it("disables every approval action while the connected projection is stale", () => {
+    render(<ApprovalCard />, {
+      wrapper: wrapper("connected", worldStateWithPendingApproval(), "stale"),
+    });
+    expect(screen.getByRole("button", { name: "Approve" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Reject" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Request revision" })).toBeDisabled();
+  });
 });
 
 describe("Lighthouse shows disconnected (F-10)", () => {
@@ -118,6 +149,8 @@ describe("Lighthouse shows disconnected (F-10)", () => {
       },
     };
     expect(computeLighthouseState(busy)).toBe("active");
-    expect(computeLighthouseState(applyConnectionStatus(busy, "disconnected"))).toBe("disconnected");
+    expect(computeLighthouseState(applyConnectionStatus(busy, "disconnected"))).toBe(
+      "disconnected",
+    );
   });
 });

@@ -291,6 +291,11 @@ describe("BackendRuntimeProvider — command honesty (AC-106)", () => {
     renderProbe();
     await waitFor(() => expect(probe).not.toBeNull());
     expect(probe?.runtimeMode).toBe("backend");
+    expect(probe?.runtimeSource).toEqual({
+      kind: "backend",
+      label: "Backend event stream",
+      authority: "backend",
+    });
   });
 
   it("refuses an unknown command type without sending it, and says it is unsupported", async () => {

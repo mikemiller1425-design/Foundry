@@ -62,6 +62,12 @@ class FakeEventSource implements EventSourceLike {
     }
   }
 
+  emitRaw(raw: unknown): void {
+    for (const listener of this.listeners.get("foundry-event") ?? []) {
+      listener({ data: JSON.stringify(raw) } as MessageEvent);
+    }
+  }
+
   fail(): void {
     this.onerror?.call(this, {});
   }
@@ -131,6 +137,20 @@ describe("BackendClient — connect and receive", () => {
     source.emit(evt("dup"));
 
     expect(client.getState().events.map((e) => e.id)).toEqual(["dup"]);
+  });
+
+  it("rejects a contract-invalid frame, marks the projection stale, and schedules reconciliation", async () => {
+    const client = makeClient();
+    await client.start();
+    const source = FakeEventSource.instances[0]!;
+    source.open();
+
+    source.emitRaw({ id: "looks-plausible", type: "invented.event" });
+
+    expect(client.getState().events).toEqual([]);
+    expect(client.getState().connectionStatus).toBe("disconnected");
+    expect(source.closed).toBe(true);
+    expect(retries).toHaveLength(1);
   });
 });
 
@@ -319,7 +339,10 @@ describe("BackendClient — world state advances with the event log (AC-103)", (
     // The backend has created the Build; the event is what tells us so.
     promote();
     FakeEventSource.instances[0]!.emit(evt("build-created"));
+    expect(client.getState().connectionStatus).toBe("connected");
+    expect(client.getState().projectionStatus).toBe("stale");
     await vi.waitFor(() => expect(client.getState().worldState?.currentBuild?.id).toBe("build-1"));
+    expect(client.getState().projectionStatus).toBe("current");
   });
 
   it("notifies subscribers of the refreshed projection, not only of the new event", async () => {
@@ -359,11 +382,13 @@ describe("BackendClient — world state advances with the event log (AC-103)", (
     FakeEventSource.instances[0]!.emit(evt("during-outage"));
     await vi.waitFor(() => expect(client.getState().events).toHaveLength(1));
     expect(client.getState().worldState).toEqual(snapshot);
+    expect(client.getState().projectionStatus).toBe("stale");
 
     // A failed read must not spin; the next event re-arms it.
     healthy = true;
     FakeEventSource.instances[0]!.emit(evt("after-outage"));
     await vi.waitFor(() => expect(client.getState().worldState?.currentBuild?.id).toBe("build-1"));
+    expect(client.getState().projectionStatus).toBe("current");
   });
 
   it("refreshWorldState() can be driven directly, for a command whose effect must be visible at once", async () => {

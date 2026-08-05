@@ -1,7 +1,8 @@
-import type { ConnectionStatus, WorldState } from "@foundry/contracts";
-import type { FoundryEvent } from "@foundry/event-types";
+import { WorldStateSchema, type ConnectionStatus, type WorldState } from "@foundry/contracts";
+import { FoundryEventSchema, type FoundryEvent } from "@foundry/event-types";
 import { nextBackoffMs } from "./connectionState";
 import { mergeEvents, resumeCursor } from "./reconcile";
+import type { ProjectionStatus } from "@/lib/runtime/adapter";
 
 export interface BackendClientOptions {
   baseUrl: string;
@@ -25,6 +26,7 @@ export interface BackendSnapshotState {
   worldState: WorldState | null;
   events: FoundryEvent[];
   connectionStatus: ConnectionStatus;
+  projectionStatus: ProjectionStatus;
 }
 
 export type BackendListener = (state: BackendSnapshotState) => void;
@@ -52,6 +54,7 @@ export class BackendClient {
   private events: FoundryEvent[] = [];
   private worldState: WorldState | null = null;
   private connectionStatus: ConnectionStatus = "disconnected";
+  private projectionStatus: ProjectionStatus = "unavailable";
 
   /** A live event has arrived and the held projection has not caught up yet. */
   private worldStateStale = false;
@@ -77,6 +80,7 @@ export class BackendClient {
       worldState: this.worldState,
       events: this.events,
       connectionStatus: this.connectionStatus,
+      projectionStatus: this.projectionStatus,
     };
   }
 
@@ -91,6 +95,7 @@ export class BackendClient {
     this.stopped = true;
     this.source?.close();
     this.source = null;
+    this.setProjectionStatus(this.worldState ? "stale" : "unavailable");
     this.setConnectionStatus("disconnected");
   }
 
@@ -120,6 +125,7 @@ export class BackendClient {
    */
   async refreshWorldState(): Promise<void> {
     this.worldStateStale = true;
+    this.setProjectionStatus(this.worldState ? "stale" : "unavailable");
     await this.drainWorldStateRefresh();
   }
 
@@ -158,8 +164,17 @@ export class BackendClient {
   private async readWorldStateOnce(): Promise<boolean> {
     try {
       const res = await this.fetchImpl(`${this.baseUrl}/world-state`);
-      if (!res.ok) return false;
-      this.worldState = (await res.json()) as WorldState;
+      if (!res.ok) {
+        this.setProjectionStatus(this.worldState ? "stale" : "unavailable");
+        return false;
+      }
+      const parsed = WorldStateSchema.safeParse(await res.json());
+      if (!parsed.success) {
+        this.setProjectionStatus(this.worldState ? "stale" : "unavailable");
+        return false;
+      }
+      this.worldState = parsed.data;
+      this.projectionStatus = "current";
       this.emit();
       return true;
     } catch {
@@ -171,10 +186,10 @@ export class BackendClient {
     try {
       const res = await this.fetchImpl(`${this.baseUrl}/world-state`);
       if (!res.ok) throw new Error(`snapshot failed: ${res.status}`);
-      const snapshot = (await res.json()) as WorldState;
+      const snapshot = WorldStateSchema.parse(await res.json());
 
       const eventsRes = await this.fetchImpl(`${this.baseUrl}/events`);
-      const authoritative = eventsRes.ok ? ((await eventsRes.json()) as FoundryEvent[]) : [];
+      const authoritative = eventsRes.ok ? parseEventArray(await eventsRes.json()) : [];
 
       this.worldState = snapshot;
       this.events = mergeEvents(
@@ -182,9 +197,11 @@ export class BackendClient {
         authoritative,
         authoritative.map((e) => e.id),
       );
+      this.projectionStatus = "current";
       this.emit();
     } catch {
       // Snapshot unavailable — stay disconnected and let backoff retry.
+      this.setProjectionStatus(this.worldState ? "stale" : "unavailable");
       this.setConnectionStatus("disconnected");
     }
   }
@@ -206,27 +223,40 @@ export class BackendClient {
 
     source.addEventListener("foundry-event", (message: MessageEvent) => {
       try {
-        const event = JSON.parse(message.data as string) as FoundryEvent;
+        const event = FoundryEventSchema.parse(JSON.parse(message.data as string));
         // Duplicate-safe and order-preserving (see reconcile.ts).
         this.events = mergeEvents(this.events, [event]);
+        this.worldStateStale = true;
+        this.projectionStatus = this.worldState ? "stale" : "unavailable";
         this.setConnectionStatus("connected");
         this.emit();
         // The event log and the world-state projection are two views of
         // the same truth, so they have to advance together. Emitting the
         // new event without this is what let the timeline and "Current
         // build" disagree.
-        void this.refreshWorldState();
+        void this.drainWorldStateRefresh();
       } catch {
-        // A malformed frame must never corrupt the local log.
+        // A frame on the declared Foundry channel that does not satisfy
+        // the shared event contract creates a possible gap in canonical
+        // history. Preserve last-known state, mark it stale, and reconcile
+        // from the backend rather than silently claiming the stream is live.
+        this.handleStreamFailure(source);
       }
     });
 
     source.onerror = () => {
-      this.setConnectionStatus("disconnected");
-      source.close();
-      this.source = null;
-      this.retryLater();
+      this.handleStreamFailure(source);
     };
+  }
+
+  private handleStreamFailure(source: EventSourceLike): void {
+    // Ignore a late error from a source that has already been replaced.
+    if (this.source !== source) return;
+    this.setProjectionStatus(this.worldState ? "stale" : "unavailable");
+    this.setConnectionStatus("disconnected");
+    source.close();
+    this.source = null;
+    this.retryLater();
   }
 
   private retryLater(): void {
@@ -245,8 +275,19 @@ export class BackendClient {
     this.emit();
   }
 
+  private setProjectionStatus(status: ProjectionStatus): void {
+    if (this.projectionStatus === status) return;
+    this.projectionStatus = status;
+    this.emit();
+  }
+
   private emit(): void {
     const state = this.getState();
     for (const listener of this.listeners) listener(state);
   }
+}
+
+function parseEventArray(raw: unknown): FoundryEvent[] {
+  if (!Array.isArray(raw)) throw new Error("events response is not an array");
+  return raw.map((event) => FoundryEventSchema.parse(event));
 }

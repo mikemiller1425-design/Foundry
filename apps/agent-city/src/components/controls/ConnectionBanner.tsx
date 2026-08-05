@@ -14,9 +14,23 @@ import { useRuntime } from "@/lib/mock-runtime";
  * across all three target viewports) are unaffected.
  */
 export function ConnectionBanner() {
-  const { connectionStatus } = useRuntime();
+  const { connectionStatus, projectionStatus } = useRuntime();
 
-  if (connectionStatus === "connected") return null;
+  if (connectionStatus === "connected" && (projectionStatus ?? "current") === "current")
+    return null;
+
+  const projectionUnavailable = projectionStatus === "unavailable";
+  const streamConnected = connectionStatus === "connected";
+  const message = streamConnected
+    ? projectionUnavailable
+      ? "World projection unavailable; mutation controls disabled."
+      : "Synchronizing world projection — showing last known state; mutation controls disabled."
+    : "Disconnected — showing last known state; mutation controls disabled.";
+  const compactMessage = streamConnected
+    ? projectionUnavailable
+      ? "Projection unavailable"
+      : "World synchronizing"
+    : "Backend disconnected";
 
   return (
     <span
@@ -24,12 +38,15 @@ export function ConnectionBanner() {
       aria-live="assertive"
       data-testid="connection-banner"
       data-connection-status={connectionStatus}
-      className="flex items-center gap-1.5 rounded border border-amber-600 bg-amber-950 px-2 py-1 text-xs font-medium text-amber-200"
+      data-projection-status={projectionStatus ?? "current"}
+      className="foundry-connection-banner flex items-center gap-1.5 rounded border border-amber-600 bg-amber-950 px-2 py-1 text-xs font-medium text-amber-200"
+      title={message}
     >
       {/* Not a color-only signal (Principle: color is never the sole status
           carrier) — the icon shape and the text carry it independently. */}
       <span aria-hidden="true">⚠</span>
-      Disconnected — showing last known state; mutation controls disabled.
+      <span className="foundry-connection-long">{message}</span>
+      <span className="foundry-connection-short hidden">{compactMessage}</span>
     </span>
   );
 }
