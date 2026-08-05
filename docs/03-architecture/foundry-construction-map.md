@@ -28,7 +28,9 @@ Each package needs an explicit authorization before it starts, on the same disci
 
 **The decision comes before the code.** Two candidate models existed in the working tree and neither was confirmed. Building a Command Center before that was settled would have created a second mission model beside an unreviewed first.
 
-**Decided 2026-08-04** — `docs/01-mission/foundry-package-1b-decision-record.md` records the operator dispositions for **C-1** (V1.1 paused), **C-2** (mission model: backend-owned operational mission, distinct frontend spatial agent trace), **C-3** (coverage honesty), and **C-4** (three disclosure depths). **The decisions are recorded, not implemented**; 1b-i and 1b-ii still require their own authorization, and `operationalMemory` remains undisposed.
+**Ratified 2026-08-05** — `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md` is the authoritative record for **C-1** (V1.1 paused — not completed, abandoned, or superseded), **C-2** (distinct layers; the backend-owned operational mission is expressed as **lifecycle facets with per-mission-type stages**, not a fixed seven-stage sequence), **C-3** (coverage honesty; **six required states**), and **C-4** (three disclosure depths, ordinary operation usable through levels 1–2). It carries acceptance criteria for each and supersedes the 2026-08-04 record (`docs/01-mission/foundry-package-1b-decision-record.md`). Recorded starting point: **`7d7fff6`**.
+
+**The decisions are recorded, not implemented**; 1b-i and 1b-ii still require their own authorization, and `operationalMemory` remains undisposed. **Obligation O-1** binds the Package 1 integration gate: two `apps/api` tests were *not executed* at `7d7fff6` and must not be carried forward as passed.
 
 **Two phases, in order:**
 
@@ -38,7 +40,7 @@ Each package needs an explicit authorization before it starts, on the same disci
 
 | | |
 | --- | --- |
-| **Depends on** | 1a; **an operator disposition on the in-flight frontend** — recorded 2026-08-04 in `docs/01-mission/foundry-package-1b-decision-record.md` (C-1–C-4 decided; C-5 and `operationalMemory` open) |
+| **Depends on** | 1a; **an operator disposition on the in-flight frontend** — ratified 2026-08-05 in `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md` (C-1–C-4 decided with acceptance criteria; C-5 and `operationalMemory` open) |
 | **Acceptance gate** | Operator confirms the audit disposition, then observes the Command Center |
 | **Measurable outcome** | Eleven required surfaces present; every figure traceable to a persisted event; coverage naming unintegrated sources; ledger reachable behind the summary |
 | **Hard requirements** | No visual progress without a recorded event · no "nothing was missed" · autonomy levels never enlarge backend authority · approval-gated actions stay approval-gated |
@@ -52,7 +54,7 @@ Turns 1a's boundary into a real, bounded, operator-gated scan.
 
 | | |
 | --- | --- |
-| **Depends on** | 1a; an operator decision naming which volume Foundry may index |
+| **Depends on** | 1a; an operator decision naming which volume Foundry may index; **an operator ruling reconciling this package's five coverage terms with C-3's six required states** — undecided, and it blocks 2a (see the 2026-08-05 decision record) |
 | **Acceptance gate** | Operator names the root and reviews the first coverage report |
 | **Measurable outcome** | One configured root; a coverage report distinguishing scanned / skipped / refused / inaccessible / not-yet-scanned; resumability demonstrated; **zero writes**, proven by comparing the tree before and after |
 | **Hard requirements** | Read-only · no extraction · no rename, move, or delete · bounded traversal · cancellable · honest coverage |

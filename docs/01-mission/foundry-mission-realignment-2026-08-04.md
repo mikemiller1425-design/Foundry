@@ -138,6 +138,10 @@ Recorded so they are never mistaken for operator intent.
 
 ## 6. Conflicts requiring reconciliation
 
+> **Ratified — 2026-08-05.** The authoritative record for **C-1 – C-4** is
+> `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md`, which supersedes the
+> 2026-08-04 record named below and corrects two readings in it. Recorded starting point: `7d7fff6`.
+>
 > **Status update — 2026-08-04.** **C-1, C-2, C-3, and C-4 are now decided** by the operator in
 > `docs/01-mission/foundry-package-1b-decision-record.md`. **C-5 remains open.** The text below is
 > preserved unedited as the historical statement of each conflict; where it says "unresolved" and the

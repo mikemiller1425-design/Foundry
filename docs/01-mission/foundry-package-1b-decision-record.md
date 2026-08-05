@@ -10,6 +10,14 @@
 
 ## 0. Standing
 
+> **SUPERSEDED for C-1 – C-4 by `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md` (ratified).**
+> This record is preserved unedited as the first statement of these decisions. The ratified record
+> **corrects two readings stated here as settled** — the seven mission items are *lifecycle facets,
+> not a fixed seven-stage sequence* (§ Decision C-2 below), and the six coverage states are
+> *required, not merely an inclusive floor* (§ Decision C-3 below). It also extends the rename scope,
+> adds acceptance criteria, and records an integration-gate obligation. **Where the two differ, the
+> ratified record governs.** Corrections occur through new records, never edits.
+
 This is the **single authoritative record of the operator decisions that unblock Construction Package 1b.** Four conflicts are decided here. **C-5** (buildings as economic objects) is **not** decided here and remains out of scope through Package 5, exactly as recorded.
 
 The realignment record's § 6 remains in place, unedited, as the historical statement of the conflicts. Where it describes a conflict as unresolved and this record decides it, **this record governs**. Corrections occur through new records, never edits — Decision 4 of `docs/01-mission/agent-city-v1.1-decision-record.md`, and Foundry principle 18.

@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — Package 1b decision record ratified, correcting two readings (decisions only; nothing implemented)
+
+`docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md` is now the authoritative record for **C-1 – C-4**, superseding the 2026-08-04 record, which is preserved unedited with a pointer. Recorded starting point: **`7d7fff6`** — Package 1a plus the eleven-path frontend projection-honesty checkpoint. The audited remaining frontend (82 dirty paths, digest `e6bedfcc…`) is untouched.
+
+**Two corrections, not additions:**
+
+- **C-2 — the seven mission items are lifecycle facets, not a fixed seven-stage sequence.** The 2026-08-04 record called them "the seven operational-mission stages," which invited a single shared stage enum walked in order by every mission. That reading is withdrawn. **Mission type is first-class**, each type defines its own stages, and `nas_inventory` is named as a legitimate operational mission with scan-specific stages — so per-type stages exist from the outset rather than being retrofitted when Package 2 arrives.
+- **C-3 — the six coverage states are required, not an inclusive floor.** The earlier record read the operator's "include" as leaving the set open. The ratified text states them as required: no implementation may omit any of checked · unavailable · not connected · excluded · uncertain · not yet checked.
+
+**Extensions:** the C-2 rename scope now covers `MissionTracePanel` → `AgentTracePanel` and every import, test, test ID, and e2e reference, not just the `missionTrace` symbol · C-4 level 2 explicitly includes **authority** and **stages/checkpoints** · "not abandoned" is now part of C-1's decision text rather than surrounding prose · **explicit acceptance criteria for C-1 – C-4**.
+
+**Obligation O-1 recorded, not a passed test.** At `7d7fff6`, two tests in `apps/api/src/execution/dispatchRealRunCli.shell.test.ts` **did not execute** — they shell out to `pnpm --filter`, which cannot resolve in the isolated worktree the checkpoint was gated in. They are recorded as **NOT VERIFIED**: not passed, not failed, not waived. `apps/api` was byte-identical to `d4a9bd8` in that tree, so the checkpoint cannot have affected them — but byte-identity is not execution, and the Package 1 integration gate must run the full suite in a provisioned environment and record the real result rather than carrying the `1493 passed / 2 not executed` figure forward.
+
+**Newly recorded as blocking:** Package 2a cannot start until an operator ruling reconciles Package 2's five coverage terms (*scanned / skipped / refused / inaccessible / not-yet-scanned*) with C-3's six required states. The Package 2a prompt draft adds a sixth term, `unsupported`, while omitting `uncertain` — a third vocabulary.
+
+**Nothing implemented.** No contract, no behavior, no file or symbol renamed, no frontend staged, no untracked path checkpointed, no NAS proposal, concept asset, baseline, or operational data touched, no Package 2, no `AC-112`, no `AC-111` closure.
+
 ### Added — Package 1b operator decision record (decisions only; nothing implemented)
 
 Four of the five conflicts recorded in the mission-realignment record are now **decided by the operator**. `docs/01-mission/foundry-package-1b-decision-record.md` is the authoritative record. **C-5 remains open.**
