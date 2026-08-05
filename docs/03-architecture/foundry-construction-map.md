@@ -30,7 +30,7 @@ Each package needs an explicit authorization before it starts, on the same disci
 
 **Ratified 2026-08-05** — `docs/01-mission/foundry-package-1b-decision-record-2026-08-05.md` is the authoritative record for **C-1** (V1.1 paused — not completed, abandoned, or superseded), **C-2** (distinct layers; the backend-owned operational mission is expressed as **lifecycle facets with per-mission-type stages**, not a fixed seven-stage sequence), **C-3** (coverage honesty; **six required states**), and **C-4** (three disclosure depths, ordinary operation usable through levels 1–2). It carries acceptance criteria for each and supersedes the 2026-08-04 record (`docs/01-mission/foundry-package-1b-decision-record.md`). Recorded starting point: **`7d7fff6`**.
 
-**The decisions are recorded, not implemented**; 1b-i and 1b-ii still require their own authorization. **Obligation O-1** binds the Package 1 integration gate: two `apps/api` tests were *not executed* at `7d7fff6` and must not be carried forward as passed.
+**The decisions are recorded, not implemented**; 1b-i and 1b-ii still require their own authorization. *(Historical, as written on 2026-08-05. Both were authorized and completed afterwards — see the slot table below. The sentence is preserved rather than rewritten.)* **Obligation O-1** binds the Package 1 integration gate: two `apps/api` tests were *not executed* at `7d7fff6` and must not be carried forward as passed.
 
 **Clarified later on 2026-08-05** (§ 7 of the same record): `operationalMemory` → `operationalSnapshot` **is authorized** for 1b-i, with the "purely derived" precondition verified as holding; and coverage is ruled to be **four orthogonal dimensions**, not one enum. **Coverage-contract implementation is explicitly out of 1b-i scope** — it belongs to the later Claude backend-concepts package. 1b-i may only remove misleading coverage language and preserve honest states already backed by truth.
 
@@ -43,8 +43,9 @@ Each package needs an explicit authorization before it starts, on the same disci
 | Slot | Owner | What it is | State |
 | --- | --- | --- | --- |
 | **1b-i** | Claude + Cursor | Frontend reconciliation: audit disposition, accepted frontend, `missionTrace`→`agentTrace` and `operationalMemory`→`operationalSnapshot` | ✅ **Complete at `f0bb0bb`** |
-| **1b-ii** | Claude | **Command Center Operational Truth** — backend contracts, commands, events, projections, tests | **Not authorized** |
-| **1b-iii** | Cursor | **Command Center Frontend** — implementation against 1b-ii truth | **Not authorized**; blocked on 1b-ii committed and pushed |
+| **1b-ii** | Claude | **Command Center Operational Truth** — backend contracts, commands, events, projections, tests | ✅ **Complete at `e895d74`** |
+| **1b-ii-a** | Claude | **Command Center Read Transport** — schema-validated aggregate snapshot and versioned event vocabulary | **Not authorized** |
+| **1b-iii** | Cursor | **Command Center Frontend** — implementation against 1b-ii-a transport | **Not authorized**; blocked on **1b-ii-a** committed and pushed |
 | **1b-iv** | Claude + Michael | **Integration verification and operator observation** | **Not authorized**; blocked on 1b-iii |
 
 **Package 1 remains open until 1b-iv is observed and approved by the operator.**
@@ -60,11 +61,24 @@ Each package needs an explicit authorization before it starts, on the same disci
 | **Explicitly excluded** | Any UI · email/calendar integration · model-generated prioritization · NAS access · Package 2 work |
 | **Risk** | Eight surfaces at once. Each is a place where a plausible-looking number could be shown without a recorded fact behind it |
 
+### 1b-ii-a — Command Center Read Transport
+
+**Why it exists.** A post-completion seam audit of `e895d74` found the eight 1b-ii surfaces reachable from no HTTP route, and both event transports filtering through `isV1Event` — so the three Command Center events cannot reach a client at all. 1b-iii is forbidden from inventing mission, coverage, decision, external-action, monetary, autonomy, recommendation, cursor, or urgency truth, and `apps/agent-city` does not depend on `@foundry/persistence`. It therefore had no non-inventing source for eight of its nine forbidden categories. This slot supplies the transport and adds no domain truth.
+
+| | |
+| --- | --- |
+| **Depends on** | 1b-ii (`e895d74`) |
+| **Scope** | One read-only schema-validated aggregate snapshot endpoint · one versioned opt-in event vocabulary |
+| **Acceptance gate** | The 12 proofs in § *Package 1b acceptance gates* |
+| **Hard requirements** | Composed only from accepted 1b-ii projections · no duplicated projection or domain logic in `apps/api` · zero persisted mutation on any read · explicit `not_recorded`/`not_available`/`not_connected` · default event endpoints stay V1-compatible |
+| **Explicitly excluded** | Any UI · any `apps/agent-city` change · any new event, command, entity type, or domain truth · any change to 1b-ii projection logic |
+| **Risk** | Low. Every field already exists as an accepted projection; the package moves data, it does not derive it |
+
 ### 1b-iii — Command Center Frontend
 
 | | |
 | --- | --- |
-| **Depends on** | 1b-ii **committed and pushed** |
+| **Depends on** | **1b-ii-a** committed and pushed |
 | **Acceptance gate** | Consumes backend projections and invents nothing — see § *Package 1b acceptance gates* |
 | **Hard requirements** | Normal operation usable through world-glance and tactical-mission levels; evidence/audit reachable but never required for ordinary operation |
 
@@ -193,9 +207,24 @@ Recorded 2026-08-05. Each item is a **proof obligation**, not a checklist tick: 
 26. The full `apps/api` suite runs in a correctly provisioned environment, **including all 18 O-1 shell tests** — discharging Obligation O-1.
 27. Typecheck, lint, production build, full tests, `git diff --check`, canonical-fixture byte identity, and operational-database nonmutation all pass.
 
+### 1b-ii-a — 12 proofs
+
+1. `GET /command-center` returns a response parsing against an aggregate schema published from `@foundry/contracts`.
+2. Every field composes from **accepted 1b-ii projections only**.
+3. **No duplicated projection or domain logic in `apps/api`.** A field that appears to need new derivation is new domain truth — the package stops and reports rather than computing it.
+4. **Repeated reads cause zero persisted mutation**: event count, every entity, and the briefing cursor are unchanged after many reads.
+5. Missing evidence surfaces as `not_recorded` / `not_available` / `not_connected` **with a stated reason** — never a default.
+6. `GET /events` and `GET /events/stream` with **no** vocabulary parameter stay **byte-compatible with `e895d74`**, pinned by a golden-response test.
+7. `vocabulary=command-center-v1` delivers V1 **plus every accepted Command Center event**.
+8. **Every unknown vocabulary value is refused with an explicit `400`.** Silent fallback to V1 is prohibited.
+9. Replay ordering is by log sequence, and `Last-Event-ID` / `lastEventId` gap recovery behaves identically to the default stream.
+10. Raw entity reads remain **evidence-only** and are not the frontend contract.
+11. The `apps/agent-city` tree object is byte-identical before and after.
+12. All established gates pass: typecheck · lint · production build · full suite including the 18 O-1 shell tests · `git diff --check` · `v1-canonical-run.json` byte-identity · operational-database nonmutation.
+
 ### 1b-iii — frontend gate
 
-Cursor may build only after 1b-ii is **committed and pushed**. The frontend consumes backend projections and **must not invent** any of: mission progress · coverage · decisions · external actions · money · autonomy · recommendations · briefing cursor · urgency.
+Cursor may build only after **1b-ii-a** is **committed and pushed**, and must consume the **schema-validated aggregate snapshot and the versioned event transport — never raw entity shapes**. The frontend consumes backend projections and **must not invent** any of: mission progress · coverage · decisions · external actions · money · autonomy · recommendations · briefing cursor · urgency.
 
 Normal operation must remain usable through **world-glance** and **tactical-mission** levels. Evidence/audit detail stays reachable but is **not required** for ordinary operation.
 

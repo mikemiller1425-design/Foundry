@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Package 1b-ii-a sequencing amendment and four rulings (governance only)
+
+**This documentation authorizes no implementation.** 1b-ii-a, 1b-iii, and 1b-iv each still require their own explicit authorization.
+
+**Package 1b-ii is recorded complete at `e895d74`** — eight surfaces, 27 proofs, 1603 tests, Obligation O-1 discharged. The construction map's slot table now shows it; its earlier "1b-ii still requires authorization" sentence is preserved unedited with a historical marker, because it was true when written.
+
+**A new slot, 1b-ii-a — Command Center Read Transport**, is inserted between 1b-ii and 1b-iii, and 1b-iii's dependency moves to it. A read-only post-completion seam audit of `e895d74` found the eight 1b-ii surfaces reachable from **no HTTP route**, and both event transports filtering through `isV1Event`, so the three Command Center events could reach no client. Since 1b-iii may not invent mission, coverage, decision, external-action, monetary, autonomy, recommendation, cursor, or urgency truth — and `apps/agent-city` does not depend on `@foundry/persistence` — it had no non-inventing source for eight of its nine forbidden categories. **The remedy is a transport, not more truth:** 1b-ii-a moves data that already exists and derives none, and a field that appears to need new derivation in `apps/api` stops the package rather than being computed there.
+
+**Raw entity reads are Level-3 evidence, not the frontend contract.** `GET /entities/briefings` and `GET /entities/decisionBatchPolicies` became reachable when 1b-ii registered the two entity types; that is now ruled intentional and consistent with every other entity, since C-4 requires complete inspectability at level 3. The boundary is between inspectability and contract — a raw entity is persistence's internal shape, and a UI built on it would couple to a representation nothing promises to keep stable while bypassing the schema validation the snapshot endpoint exists to provide. **1b-iii consuming a raw entity shape is a gate failure.**
+
+**Authentication is unauthenticated now, and explicitly provisional.** `GET /command-center` follows the existing read posture — `world-state`, `entities`, `events`, and the stream are all unauthenticated, and `principals` reaches only write paths. A new endpoint quietly adopting a stronger policy would have created two inconsistent read postures without anyone deciding to. **This is not a permanent multi-user ruling:** authentication and tenant isolation must be reconsidered before LAN or public exposure, multi-user operation, tenant rentals, investor access, or any surface containing another tenant's data. Those five are triggers, not suggestions.
+
+**Event vocabulary negotiation is explicit and refuses rather than degrades.** Absent parameter keeps frozen V1 behaviour, because the reconciled frontend closes its stream on a contract-invalid frame and a widened default would break 1b-i on contact. `vocabulary=command-center-v1` adds the accepted Command Center events. **Every unknown value is a `400`; silent fallback is prohibited** — a client that asked for a vocabulary and quietly received a narrower one would believe it had seen everything, which is the same false-coverage claim a fabricated `external_action.none` would make.
+
+**A 12-proof acceptance gate** for 1b-ii-a is recorded, covering schema-validated aggregation, composition from accepted projections only, no duplicated projection logic in `apps/api`, zero persisted mutation across repeated reads, explicit `not_recorded`/`not_available`/`not_connected`, default-endpoint V1 byte-compatibility, complete `command-center-v1` coverage, refusal of unknown vocabularies, replay and `Last-Event-ID` recovery, raw entities staying evidence-only, frontend tree byte-identity, and all established gates.
+
+**Documentation paths only.** No `apps/`, `packages/`, NAS proposal, concept asset, fixture, or operational-data path touched. No NAS access, model call, spend, external action, Package 2, `AC-112`, `AC-111` closure, or Package 1 closure.
+
 ### Added — Package 1b-ii: Command Center Operational Truth (backend only; no UI)
 
 Eight backend surfaces, **1603 tests passing**, and the frontend byte-identical: `apps/agent-city` tree object `06dbb4c9` before and after.

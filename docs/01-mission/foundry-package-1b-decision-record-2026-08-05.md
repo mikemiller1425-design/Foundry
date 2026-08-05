@@ -515,3 +515,85 @@ Creating a numbered slot and writing its gate is not the same as authorizing the
 ## 9.3 Items still open after this section
 
 `C-5` buildings as economic objects · disposition of the remaining in-flight panels · **D-8** · whether the V1.1 ladder and the Package track reconcile (**C-1** decided the pause, not the reconciliation).
+
+---
+
+# 10. Decisions — 2026-08-05 — Package 1b-ii-a sequencing, raw entities, authentication, and vocabulary negotiation
+
+**Type:** Append-only decisions
+**Date:** 2026-08-05
+**Decided by:** mikemiller1425-design (human operator)
+**Occasion:** a read-only post-completion seam audit of `e895d743da0aac4394ec849e74e3edb3ffd20d75`
+
+**Nothing above this line is rewritten.** This section records five rulings and authorizes no implementation.
+
+## 10.1 — Package 1b-ii completed
+
+> **Package 1b-ii — Command Center Operational Truth — completed and was pushed at `e895d743da0aac4394ec849e74e3edb3ffd20d75`.**
+
+Eight backend surfaces, all 27 acceptance proofs demonstrated, 1603 tests passing, Obligation **O-1 discharged** (all 18 `dispatchRealRunCli.shell.test.ts` tests executed in a provisioned environment), and the `apps/agent-city` tree object byte-identical at `06dbb4c9`.
+
+The construction map's slot table is corrected to show this. Its earlier sentence "1b-i and 1b-ii still require their own authorization" is **preserved unedited** with a historical marker, because it was true when written.
+
+## 10.2 — Package 1b-ii-a: Command Center Read Transport
+
+> **A new slot is added between 1b-ii and 1b-iii: Package 1b-ii-a — Command Center Read Transport.** 1b-iii's dependency moves from 1b-ii to **1b-ii-a committed and pushed**.
+
+**What this settles.** The seam audit established that 1b-ii's eight surfaces are reachable from no HTTP route, and that both event transports filter through `isV1Event`, so the three Command Center events cannot reach any client. Since 1b-iii may not invent mission, coverage, decision, external-action, monetary, autonomy, recommendation, cursor, or urgency truth — and `apps/agent-city` does not depend on `@foundry/persistence` — it had no non-inventing source for eight of its nine forbidden categories.
+
+The remedy is a transport, not more truth. 1b-ii-a moves data that already exists; it derives none.
+
+**Consequences.**
+- 1b-ii-a is **not authorized by this record** and requires its own explicit authorization.
+- It may add **no** new event, command, entity type, or domain truth, and may not change 1b-ii projection logic.
+- A field that appears to need new derivation in `apps/api` is new domain truth: the package stops and reports rather than computing it.
+
+## 10.3 — Raw entity reads are Level-3 evidence, not the frontend contract
+
+> **`GET /entities/briefings` and `GET /entities/decisionBatchPolicies` remain available intentionally, as Level-3 evidence surfaces, consistent with the existing entity ledger.**
+>
+> **They are not the Command Center frontend contract.** Package 1b-iii must consume the schema-validated aggregate snapshot and the versioned event transport, **never raw entity shapes.**
+
+**What this settles.** The audit found these reachable because `reducer.ts` registered the two entity types and `/entities/:type` accepts any registered type. That is now a ruling rather than an accident: every other entity is readable the same way, and Decision C-4 requires complete inspectability at level 3.
+
+The boundary is between *inspectability* and *contract*. A raw entity is persistence's internal shape; building a UI on it would couple the frontend to a representation nothing promises to keep stable, and would bypass the schema validation the snapshot endpoint exists to provide.
+
+**Consequences.**
+- Raw entity reads stay, unrestricted, on the same footing as every other entity type.
+- 1b-iii consuming a raw entity shape is a **gate failure**, not a style preference.
+- The snapshot endpoint is the only Command Center read contract.
+
+## 10.4 — Authentication: unauthenticated now, explicitly provisional
+
+> **For the current local/trusted V1 deployment, `GET /command-center` remains unauthenticated, consistent with `world-state`, `entities`, `events`, and the event stream.**
+>
+> **This is not a permanent multi-user security ruling.** Authentication and tenant isolation must be reconsidered before LAN or public exposure, multi-user operation, tenant rentals, investor access, or any surface containing another tenant's data.
+
+**What this settles.** Every existing read surface is unauthenticated; `principals` is passed only to write paths. A new endpoint quietly adopting a stronger policy would have created two inconsistent read postures without anyone deciding to, and one quietly adopting a weaker one would have been worse. The ruling makes the existing posture explicit and names its expiry conditions.
+
+**Consequences.**
+- 1b-ii-a implements no read authentication and invents no authority policy.
+- The five named conditions are **triggers, not suggestions**: each requires this ruling to be revisited before that exposure exists.
+- A future package that adds any of them without revisiting authentication is in violation of this record.
+
+## 10.5 — Event vocabulary negotiation
+
+> - **absent parameter** — frozen V1 behavior;
+> - **`vocabulary=command-center-v1`** — V1 plus accepted Command Center events;
+> - **every unknown vocabulary value** — explicit `400` refusal;
+> - **never silently fall back** from an unknown value.
+
+**What this settles.** The default must stay frozen because the reconciled frontend treats a contract-invalid frame as a possible gap in canonical history and closes the stream rather than degrading — a widened default would break 1b-i on contact.
+
+Silent fallback is prohibited for the same reason a fabricated `external_action.none` is: a client that asked for a vocabulary and quietly received a narrower one would believe it had seen everything. **A refusal is honest; a downgrade is a false claim about coverage.**
+
+**Consequences.**
+- The parameter is opt-in and explicit; absence is not a version.
+- An unknown value is a `400` naming the supported values — never a 200 carrying less than was asked for.
+- Adding a future vocabulary means adding a value, never changing what an existing one returns.
+
+## 10.6 — This record authorizes no implementation
+
+> **Sections 10.1–10.5, the construction-map amendment, and the 1b-ii-a acceptance gate are governance only.**
+
+Package 1b-ii-a, 1b-iii, and 1b-iv each still require their own explicit operator authorization. No contract, endpoint, event, or transport was created here.
