@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — V2 ledger manifest reproduced; V1 rejected as an invalid method
+
+The operator supplied the `FOUNDRY-LOGICAL-MANIFEST-v2` generator. It reproduced **exactly**: 183 lines, digest `768293606db3b3a08e7fd2d3e3ea44fad88d12c69e5866fd86f030201ab97862`, read through an immutable read-only URI against the stopped, sidecar-free database. The § 15.5 reproducibility obligation is **closed**. Recorded at § 16 of the 2026-08-05 decision record; generator persisted at `docs/evidence/package-1b/generate-manifest-v2.sh`.
+
+**V1 is rejected as invalid, not merely superseded.** Four defects, each confirmed empirically:
+
+- **NULL and empty string were indistinguishable.** `hex(NULL)` returns `''`, not NULL, so the `coalesce(..., '~NULL~')` sentinel never fired. Live, not theoretical: **all 135 events carry `causation_id` NULL**, so every event row was hashed with a NULL silently encoded as empty.
+- **Schema SQL was not encoded**, so newlines in DDL made record boundaries ambiguous — the delimiter appeared inside the data.
+- **`sqlite_sequence` was omitted**, though it holds `events = 135` and controls the next persisted event sequence.
+- **The 205-line count was misleading** — 22 lines came from multiline schema SQL, not from records.
+
+V1 had been proposed one section earlier with a rationale claiming exactly the property defect 1 destroys, and it reproduced twice. **Reproducibility is not correctness:** a method can be perfectly deterministic and still hash the wrong thing. The rejection is recorded rather than the method quietly replaced, because the failure mode — an artifact reading as more authoritative than the fact behind it — is the same one §§ 8, 12, and 15 each corrected.
+
+`61d28ea` is preserved and not amended. Live database unchanged at `258658…`, zero sidecars created.
+
 ### Changed — raw SQLite file hashes retired as ledger gates; logical baseline adopted
 
 Every package since 1a proved the operational database unchanged by citing a raw SHA-256 of `foundry.sqlite`. On 2026-08-05 that hash moved from `8dd834d7…` to `258658…` **with identical counts** — 135 events, 39 entities.

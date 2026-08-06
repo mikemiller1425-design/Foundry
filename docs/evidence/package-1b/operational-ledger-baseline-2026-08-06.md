@@ -81,6 +81,11 @@ The honest statement is **unverifiable**, not *unlikely*. The evidence contains 
 
 ## 4. The replacement gate — logical, not physical
 
+> **⚠ SUPERSEDED — see § 6.** The `FOUNDRY-LOGICAL-MANIFEST-v1` method described
+> below is **rejected as invalid** and is not an eligible ledger gate. It is
+> preserved unedited as the record of what was proposed and why it failed.
+> **`FOUNDRY-LOGICAL-MANIFEST-v2` (§ 6) is the authoritative baseline.**
+
 Content-addressed over rows. No page layout, freelist, change counter, mtime, or writer version participates, so an ordinary open/close cannot move it.
 
 ```bash
@@ -114,6 +119,10 @@ SC="select type||'|'||name||'|'||coalesce(sql,'~NULL~') from sqlite_master where
 
 ## 5. Open — the v2 method is not on record
 
+> **⚠ CLOSED — see § 6.** The operator supplied the v2 generator on 2026-08-06
+> and it reproduced exactly: **183 lines, digest `768293…`**. The obligation
+> recorded below is discharged. This section is preserved unedited.
+
 The operator designated **`FOUNDRY-LOGICAL-MANIFEST-v2` digest `768293606db3b3a08e7fd2d3e3ea44fad88d12c69e5866fd86f030201ab97862`** as the authoritative baseline. **That digest could not be reproduced during this audit**, and the v2 generation method appears nowhere in the repository.
 
 Six candidate reconstructions were computed against the same byte-identical copy and none matched: v1 body under a v2 header; rows only without header or schema; events only; v2 header plus rows only; `sqlite3 .dump`; and a plain `SELECT * FROM events`.
@@ -123,3 +132,57 @@ Six candidate reconstructions were computed against the same byte-identical copy
 **Obligation.** Before `768293…` is used to gate any package, the **v2 method must be recorded here** in the reproducible form § 4 uses, and the digest regenerated from the live ledger to confirm it. Until then, `0a6c4d34…` is the only digest in this record with a method behind it.
 
 This is not a challenge to the ruling. Option A, the permanent unverifiability of `8dd834d7`, the absence of any mutation indicator, and the retirement of raw file hashes are all recorded as decided and none of them depends on which logical digest is authoritative.
+
+---
+
+## 6. Correction — 2026-08-06 — V2 reproduced; V1 rejected
+
+**§§ 4 and 5 are preserved unedited above**, with markers. This section governs.
+
+### 6.1 V2 reproduced exactly
+
+The operator supplied the `FOUNDRY-LOGICAL-MANIFEST-v2` generator. It was run against the stopped, sidecar-free operational database through an immutable read-only URI (`mode=ro&immutable=1`), which cannot create `-wal`/`-shm` or write a byte.
+
+| Required | Observed |
+| --- | --- |
+| 183 lines | **183** |
+| `768293606db3b3a08e7fd2d3e3ea44fad88d12c69e5866fd86f030201ab97862` | **exact match** |
+
+Record census — 1 header · 2 `M` (encoding, user_version) · 5 `S` (schema) · 1 `Q` (sqlite_sequence) · 135 `E` (events) · 39 `N` (entities) = **183 canonical records**.
+
+The live file remained `258658519428319b4a2d77316f0471e5aec9fcb0e56ad2d75a8edd3b7c50768b` with **zero sidecars created**, before and after.
+
+### 6.2 Why V1 is rejected — all four defects confirmed empirically
+
+**1. NULL and empty string were indistinguishable.** `hex(NULL)` returns `''`, not NULL, so `coalesce(hex(...),'~NULL~')` **never fires**:
+
+```
+hex(NULL)=[]   hex('')=[]
+```
+
+This was not theoretical. **All 135 events carry `causation_id` NULL** and zero carry an empty string — so every event row in the V1 manifest silently encoded a NULL as an empty value. A manifest that cannot tell "absent" from "empty" is exactly the failure this project has corrected three times already, expressed in a hash function.
+
+**2. Schema SQL was not encoded.** V1 emitted `coalesce(sql,'~NULL~')` raw. Schema DDL contains newlines, so record boundaries were ambiguous — the delimiter appeared inside the data.
+
+**3. `sqlite_sequence` was omitted.** It holds `events = 135`, which controls the **next persisted event sequence**. A ledger baseline that ignores where the ledger will continue from is incomplete.
+
+**4. The 205-line count was misleading.** V1's 205 lines versus V2's 183 canonical records differ by 22 — lines produced by multiline schema SQL, not by records. V1's line count was never a count of anything.
+
+V2 fixes each: `case when x is null then 'N' else 'V'||hex(...)` distinguishes NULL from empty by construction · every field including schema SQL is hex-encoded · `sqlite_sequence` is a first-class `Q` record · every line is exactly one canonical record · `collate binary` and `LC_ALL=C` fix ordering across locales · `immutable=1` makes the read provably non-mutating.
+
+### 6.3 Authoritative baseline
+
+> **`FOUNDRY-LOGICAL-MANIFEST-v2`**
+> **`768293606db3b3a08e7fd2d3e3ea44fad88d12c69e5866fd86f030201ab97862`**
+> 183 records · `apps/api/data/foundry.sqlite` · 2026-08-06
+
+The generator is persisted at **`docs/evidence/package-1b/generate-manifest-v2.sh`** and re-verified from that committed location.
+
+```bash
+./docs/evidence/package-1b/generate-manifest-v2.sh \
+  /absolute/path/to/apps/api/data/foundry.sqlite | shasum -a 256
+```
+
+**V1 digest `0a6c4d34…` is rejected and superseded.** It is not an eligible ledger gate and may not be cited as one.
+
+**Row data remains uncommitted.** Decision 4 keeps mutable runtime databases out of the repository; the generator and the digest are what a gate needs, and a hex dump of the same rows would circumvent that decision by another route.
