@@ -6,6 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — raw SQLite file hashes retired as ledger gates; logical baseline adopted
+
+Every package since 1a proved the operational database unchanged by citing a raw SHA-256 of `foundry.sqlite`. On 2026-08-05 that hash moved from `8dd834d7…` to `258658…` **with identical counts** — 135 events, 39 entities.
+
+A read-only audit found the gate was never sound. `PersistenceService` opens SQLite in WAL mode: **open** creates `-wal`/`-shm`, and **close** checkpoints those pages back into the main file and increments the file change counter, a header field defined to change on write. An ordinary start-and-stop produces different bytes for an identical ledger. **The gate was measuring the container while claiming to measure the ledger.**
+
+**Operator ruling — Option A.** The change is a physical-only rewrite; a portable logical baseline is adopted append-only. Recorded at § 15 of the 2026-08-05 decision record, with evidence at `docs/evidence/package-1b/operational-ledger-baseline-2026-08-06.md`.
+
+**No mutation indicator was found:** no sequence gap, duplicate event id, schema drift, corruption, freelist churn, or hot journal; sequences 1–135 contiguous; integrity check ok; clean close with no sidecars. The mtime matches the operator restarting Foundry for the 1b-ii-a observation.
+
+**Equality with `8dd834d7…` is permanently unverifiable.** No row-level artifact of the former file was ever created — no tracked copy, no manifest, only its raw hash in prose. Identical counts are consistent with equality and prove none of it; a substituted ledger of the same shape would look the same. *Unverifiable*, not *unlikely*.
+
+**Replacement gate:** a hex-encoded, NULL-distinguishing, deterministically-ordered manifest over event and entity rows plus the schema facts needed to read them. No page layout, change counter, or mtime participates, so an open/close cannot move it. The method is recorded; the row data deliberately is not, since Decision 4 keeps mutable runtime databases out of the repository and a hex dump would circumvent that by another route.
+
+**Recorded open:** the operator designated `FOUNDRY-LOGICAL-MANIFEST-v2` digest `768293…` as authoritative. **It could not be reproduced** — the v2 method is nowhere in the repository, and six candidate reconstructions all failed to match. A baseline nobody can regenerate is not a gate, so it is recorded as designated and marked not-yet-reproducible. The v1 digest `0a6c4d34…`, reproduced twice, is currently the only one with a method behind it. §§ 15.1–15.4 stand regardless.
+
 ### Fixed — the acceptance at `db060aa` was recorded before the operator explicitly gave it
 
 The entry below records Package 1b-ii-a as operator-accepted. **That record was premature.** The operator had personally completed the five observations, but **observation was not acceptance** — and the acceptance was written into the record before it had been explicitly given.

@@ -758,3 +758,57 @@ This is the same defect class the record already carries twice: § 8, where a fi
 `db060aa` is **preserved as historical evidence** and is not reverted. Its attribution is marked premature at § 13; its content is otherwise accurate.
 
 **This acceptance authorizes no downstream work.** Package 1b-iii, Package 2, `AC-112`, `AC-111` closure, and Package 1 closure each still require their own explicit operator authorization. **Package 1 remains open** and closes only after 1b-iv is observed and approved.
+
+---
+
+# 15. Decision — 2026-08-06 — operational-ledger baseline; raw file hashes retired
+
+**Type:** Append-only decision
+**Date:** 2026-08-06
+**Decided by:** mikemiller1425-design (human operator)
+**Evidence:** `docs/evidence/package-1b/operational-ledger-baseline-2026-08-06.md`
+
+**Nothing above this line is rewritten.**
+
+## 15.1 Option A adopted
+
+> **The change from raw file hash `8dd834d7…` to `258658…` is a physical-only SQLite rewrite. A portable logical baseline is adopted append-only.**
+
+## 15.2 Equality with the former file is permanently unverifiable
+
+> **Logical equality between the former `8dd834d7…` file and the current `258658…` file cannot be established, and no future work can establish it.**
+
+No row-level artifact of the former file was ever created — no tracked copy, no manifest, nothing beyond its raw hash in prose. Identical counts, contiguous sequences 1–135, zero duplicates, and a passing integrity check are **consistent with** equality and prove none of it; a substituted or edited ledger of the same shape would present identically.
+
+The word is **unverifiable**, not *unlikely*. Recording it as "confirmed unchanged" would repeat the error being corrected.
+
+## 15.3 No mutation indicator was found
+
+> **The audit found no indicator of logical mutation.**
+
+No sequence gap · no duplicate event id · no schema drift (cookie 4) · no corruption · no freelist churn · no hot journal · no count change · clean close with no `-wal`/`-shm` sidecars. The file's mtime corresponds to the operator restarting Foundry for the Package 1b-ii-a observation, before Package 1b-iii began.
+
+## 15.4 Raw SQLite file hashes are retired as logical-ledger gates
+
+> **A raw SHA-256 of `foundry.sqlite` may no longer be cited as evidence that the ledger is unchanged.**
+
+`PersistenceService` opens the database in WAL mode. **Open** creates `-wal`/`-shm`; **close** checkpoints those pages back into the main file and increments the file change counter — a header field defined to change on write. An ordinary start-and-stop therefore produces different bytes for an identical ledger.
+
+The gate was measuring the container while claiming to measure the ledger. Those are different facts, and only the second is a Foundry invariant.
+
+**Consequences.**
+- Every future package proves ledger nonmutation with the **logical manifest digest**, not a file hash.
+- Historical records citing `8dd834d7…` are **not rewritten**. They recorded what was measured; § 15 records what it meant.
+- Counts remain useful as a cheap check and are **never** sufficient on their own — "135 events" is not row equality.
+
+## 15.5 Open — the v2 method is not on record
+
+The operator designated **`FOUNDRY-LOGICAL-MANIFEST-v2` digest `768293606db3b3a08e7fd2d3e3ea44fad88d12c69e5866fd86f030201ab97862`** as the authoritative baseline.
+
+**That digest could not be reproduced during this audit**, and the v2 generation method appears nowhere in the repository. Six candidate reconstructions were computed against a byte-identical copy and none matched.
+
+**A baseline nobody can regenerate is not a gate** — it is a number that reads authoritative with nothing behind it, which is this record's recurring defect one layer up. The digest is recorded as designated and **marked not-yet-reproducible** rather than presented as verified.
+
+**Obligation.** Before `768293…` gates any package, the **v2 method must be recorded** in reproducible form and the digest regenerated from the live ledger to confirm it. Until then, `FOUNDRY-LOGICAL-MANIFEST-v1` digest `0a6c4d348c8da88c45191593b2e02eac4cab05745a6369e46098677a78464f92` — reproduced twice during the audit — is the only digest in this record with a method behind it.
+
+§§ 15.1–15.4 are decided and none of them depends on which logical digest is authoritative.
