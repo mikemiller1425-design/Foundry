@@ -29,14 +29,10 @@ import { useId, useState } from "react";
  * Ordinary decisions must be possible without opening Level 3. Every figure
  * is backend-supplied; absence states are rendered with their reasons.
  */
-export function CommandCenterPanel({
-  defaultEvidenceOpen = false,
-}: {
-  defaultEvidenceOpen?: boolean;
-} = {}) {
+export function CommandCenterPanel() {
   const { commandCenter, commandCenterStatus, runtimeMode } = useRuntime();
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
-  const [evidenceOpen, setEvidenceOpen] = useState(defaultEvidenceOpen);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
   const titleId = useId();
 
   const status: CommandCenterStatus = commandCenterStatus ?? "unavailable";

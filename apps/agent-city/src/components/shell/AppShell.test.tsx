@@ -248,3 +248,59 @@ describe("AppShell — the objective control (AC-103)", () => {
     expect(screen.queryByText("No build yet.")).not.toBeInTheDocument();
   });
 });
+
+describe("AppShell — Command Center integration (1b-iii hardening)", () => {
+  it("keeps Command Center unavailable in mock mode beside 1b-i panels and the world", () => {
+    renderShell();
+    expect(screen.getByTestId("shell-world")).toBeInTheDocument();
+    expect(screen.getByTestId("command-center-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("command-center-status")).toHaveTextContent(/Unavailable/);
+    expect(screen.queryByTestId("command-center-glance")).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Agent trace replay" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Operational snapshot" })).toBeInTheDocument();
+  });
+
+  it("places L1–L3 inside live intelligence without replacing the world canvas", async () => {
+    const { COMMAND_CENTER_SAMPLE_SNAPSHOT } = await import(
+      "@/lib/command-center/sampleSnapshot"
+    );
+    render(
+      <RuntimeContext.Provider
+        value={{
+          events: [],
+          worldState: createInitialWorldState(),
+          isRunning: false,
+          isComplete: false,
+          connectionStatus: "connected",
+          mutationsEnabled: false,
+          submitCommand: vi.fn(),
+          resolveApproval: vi.fn(),
+          selectBuilding: vi.fn(),
+          clearSelection: vi.fn(),
+          lastRejection: null,
+          runtimeMode: "backend",
+          projectionStatus: "current",
+          commandCenter: COMMAND_CENTER_SAMPLE_SNAPSHOT,
+          commandCenterStatus: "current",
+        }}
+      >
+        <AppShell />
+      </RuntimeContext.Provider>,
+    );
+
+    expect(screen.getByTestId("shell-world")).toBeInTheDocument();
+    expect(screen.getByTestId("shell-intel")).toContainElement(
+      screen.getByTestId("command-center-panel"),
+    );
+    expect(screen.getByTestId("command-center-glance")).toHaveTextContent("Software build");
+    expect(screen.getByTestId("command-center-mission")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Open tactical mission Software build/i }));
+    expect(screen.getByTestId("command-center-mission")).toHaveTextContent("Ship the thing");
+
+    fireEvent.click(screen.getByTestId("command-center-evidence-toggle"));
+    expect(screen.getByTestId("command-center-evidence")).toHaveTextContent("obj-1");
+    fireEvent.click(screen.getByTestId("command-center-evidence-toggle"));
+    expect(screen.queryByTestId("command-center-evidence")).not.toBeInTheDocument();
+  });
+});

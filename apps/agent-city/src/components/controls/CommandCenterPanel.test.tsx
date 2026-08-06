@@ -1,134 +1,11 @@
 import { RuntimeContext } from "@/lib/mock-runtime";
-import type { CommandCenterSnapshot } from "@foundry/contracts";
 import { createInitialWorldState } from "@/lib/mock-runtime/worldStateReducer";
+import { COMMAND_CENTER_SAMPLE_SNAPSHOT } from "@/lib/command-center/sampleSnapshot";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { CommandCenterPanel } from "./CommandCenterPanel";
 import type { RuntimeContextValue } from "@/lib/mock-runtime/RuntimeProvider";
-
-const SAMPLE: CommandCenterSnapshot = {
-  snapshotVersion: "command-center-v1",
-  observedAt: "2026-08-05T00:00:00.000Z",
-  latestSequence: 4,
-  externalActionClassifierVersion: 1,
-  missions: [
-    {
-      missionId: "build-1",
-      missionType: "software_build",
-      missionTypeLabel: "Software build",
-      objective: {
-        state: "recorded",
-        value: "Ship the thing",
-        evidence: [{ eventId: "obj-1", eventType: "operator.objective_submitted" }],
-      },
-      loadout: {
-        agents: [
-          {
-            agentId: "agent-builder",
-            role: { state: "not_recorded", reason: "no event recorded a role" },
-            evidence: [{ eventId: "run-started", eventType: "agentrun.started" }],
-          },
-        ],
-        authority: {
-          state: "recorded",
-          value: { authorizationId: "auth-1", scope: "implementation" },
-          evidence: [{ eventId: "auth-1", eventType: "operator.execution_authorized" }],
-        },
-        budget: {
-          state: "recorded",
-          value: { authorizedCeilingUsd: 25, currency: "USD" },
-          evidence: [{ eventId: "auth-1", eventType: "operator.execution_authorized" }],
-        },
-        constraints: { state: "not_recorded", reason: "historical builds carry no constraints" },
-      },
-      launchedAt: { state: "not_recorded", reason: "no build.started event was recorded" },
-      stages: [
-        {
-          key: "validation",
-          label: "Validation",
-          isCheckpoint: true,
-          status: "not_recorded",
-          evidence: [],
-        },
-      ],
-      blockers: [],
-      decisions: [],
-      outcome: "in_progress",
-      debriefEvidence: [{ eventId: "run-completed", eventType: "agentrun.completed" }],
-      autonomy: { state: "not_recorded", reason: "no persisted event records an autonomy level" },
-      spendUsd: {
-        state: "recorded",
-        value: 0.0790585,
-        evidence: [{ eventId: "run-completed", eventType: "agentrun.completed" }],
-      },
-      artifacts: [],
-      sourceEventIds: ["obj-1", "run-started", "run-completed"],
-    },
-  ],
-  briefing: {
-    record: null,
-    cursor: 0,
-    proposedNextInterval: { previousAcknowledgedSequence: 0, capturedEndSequence: 4 },
-    intervalIsEmpty: false,
-  },
-  decisionBatchPolicy: {
-    timezone: null,
-    schedule: { kind: "unconfigured" },
-    nextExpectedBatchAt: null,
-    enabled: false,
-    immediateInterruptionCategories: ["urgent_deadline"],
-    configuredAt: null,
-    configuredBy: null,
-  },
-  externalActions: {
-    projection: {
-      classifierVersion: 1,
-      fromSequenceExclusive: 0,
-      toSequenceInclusive: 4,
-      actions: [],
-      counts: { attempted: 0, running: 0, succeeded: 0, failed: 0, cancelled: 0 },
-    },
-    noQualifyingActionsStatement:
-      "No qualifying external actions were recorded in Foundry's operational ledger for this briefing interval.",
-  },
-  money: {
-    outcome: {
-      currency: "USD",
-      byStatus: {
-        projected: [],
-        quoted: [],
-        invoiced: [],
-        received: [],
-        spent: [],
-        refunded: [],
-      },
-    },
-    hasNoReceivedRevenue: true,
-    noReceivedRevenueStatement: "No received revenue is recorded in Foundry's operational ledger.",
-  },
-  coverage: [
-    {
-      sourceId: "email",
-      sourceLabel: "Email",
-      declaredScope: "Not integrated",
-      declaredInterval: "(0, 4] by event sequence",
-      connection: "not_connected",
-      progress: "not_yet_checked",
-      uncertainty: { result_uncertain: false },
-      counts: {
-        scanned: 0,
-        skipped: 0,
-        refused: 0,
-        inaccessible: 0,
-        unsupported: 0,
-        not_yet_scanned: 0,
-      },
-      observedAt: "2026-08-05T00:00:00.000Z",
-    },
-  ],
-  recommendations: [],
-};
 
 function renderWith(overrides: Partial<RuntimeContextValue> = {}) {
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -147,7 +24,7 @@ function renderWith(overrides: Partial<RuntimeContextValue> = {}) {
         lastRejection: null,
         runtimeMode: "backend",
         projectionStatus: "current",
-        commandCenter: SAMPLE,
+        commandCenter: COMMAND_CENTER_SAMPLE_SNAPSHOT,
         commandCenterStatus: "current",
         ...overrides,
       }}

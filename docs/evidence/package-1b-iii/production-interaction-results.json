@@ -1,0 +1,58 @@
+[
+  [
+    "status",
+    "CURRENT"
+  ],
+  [
+    "shell-world",
+    true
+  ],
+  [
+    "modes",
+    {
+      "world": 1,
+      "map": 1,
+      "operate": 1
+    }
+  ],
+  [
+    "L1",
+    true
+  ],
+  [
+    "L2",
+    true
+  ],
+  [
+    "L3-open",
+    true
+  ],
+  [
+    "L3-closed",
+    true
+  ],
+  [
+    "after-reload-status",
+    "CURRENT"
+  ],
+  [
+    "after-reload-has-glance",
+    true
+  ],
+  [
+    "sse-status",
+    "CURRENT"
+  ],
+  [
+    "sse-snapshot-refreshed",
+    true
+  ],
+  [
+    "timeline-contains-briefing.created",
+    false
+  ],
+  [
+    "timeline-text-grew-unexpectedly",
+    0
+  ]
+]

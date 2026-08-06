@@ -1,19 +1,10 @@
-"use client";
-
-import { CommandCenterPanel } from "@/components/controls/CommandCenterPanel";
-import { RuntimeContext } from "@/lib/mock-runtime";
-import { createInitialWorldState } from "@/lib/mock-runtime/worldStateReducer";
 import type { CommandCenterSnapshot } from "@foundry/contracts";
-import { useMemo } from "react";
 
 /**
- * Package 1b-iii visual-review harness only.
- *
- * Serves a schema-valid Command Center snapshot into the real panel so
- * screenshots can be captured without inventing runtime truth in mock mode.
- * Not linked from AppShell. Not a product surface.
+ * Schema-valid Command Center fixture for tests only.
+ * Not served by any product route.
  */
-const SAMPLE: CommandCenterSnapshot = {
+export const COMMAND_CENTER_SAMPLE_SNAPSHOT: CommandCenterSnapshot = {
   snapshotVersion: "command-center-v1",
   observedAt: "2026-08-05T00:00:00.000Z",
   latestSequence: 4,
@@ -46,10 +37,7 @@ const SAMPLE: CommandCenterSnapshot = {
           value: { authorizedCeilingUsd: 25, currency: "USD" },
           evidence: [{ eventId: "auth-1", eventType: "operator.execution_authorized" }],
         },
-        constraints: {
-          state: "not_recorded",
-          reason: "historical builds carry no constraints",
-        },
+        constraints: { state: "not_recorded", reason: "historical builds carry no constraints" },
       },
       launchedAt: { state: "not_recorded", reason: "no build.started event was recorded" },
       stages: [
@@ -169,44 +157,3 @@ const SAMPLE: CommandCenterSnapshot = {
     },
   ],
 };
-
-export default function CommandCenterVisualReviewPage() {
-  const value = useMemo(
-    () => ({
-      events: [],
-      worldState: createInitialWorldState(),
-      isRunning: false,
-      isComplete: false,
-      connectionStatus: "connected" as const,
-      mutationsEnabled: false,
-      submitCommand: () => undefined,
-      resolveApproval: () => undefined,
-      selectBuilding: () => undefined,
-      clearSelection: () => undefined,
-      lastRejection: null,
-      runtimeMode: "backend" as const,
-      runtimeSource: {
-        kind: "backend" as const,
-        label: "Visual review harness",
-        authority: "backend" as const,
-      },
-      projectionStatus: "current" as const,
-      commandCenter: SAMPLE,
-      commandCenterStatus: "current" as const,
-    }),
-    [],
-  );
-
-  return (
-    <RuntimeContext.Provider value={value}>
-      <main className="min-h-screen bg-[#0b1018] p-6 text-neutral-200">
-        <p className="mb-4 text-[10px] uppercase tracking-[0.12em] text-amber-200/80">
-          Visual review harness — not a product route
-        </p>
-        <div className="mx-auto max-w-xl">
-          <CommandCenterPanel defaultEvidenceOpen />
-        </div>
-      </main>
-    </RuntimeContext.Provider>
-  );
-}
