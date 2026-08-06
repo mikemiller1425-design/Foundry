@@ -50,7 +50,7 @@ That is the operator's decision, not an engineering default, and it shapes every
 | T-11 | **Malformed entry** — socket, device, FIFO | Classified, not interpreted | Counted as `skipped_unsupported` with a reason |
 | T-12 | **Unavailable volume** | Reported, not thrown | `stoppedReason: "root_unavailable"`, coverage incomplete |
 | T-13 | **Path disclosure** in a shared UI | Mitigated | `relativePath` for display; `sourcePath` retained as evidence and marked not-for-display. A directory tree discloses more than the file it names |
-| T-14 | **Hashing a 40 GB video every pass** | Bounded, and honest | Above `maxFileSizeBytesToHash`, a weaker `size_mtime` fingerprint is recorded **as** `sm:` — never a sha256 that was not computed |
+| T-14 | **Hashing a 40 GB video every pass** | Bounded; **honesty partially defeated — see § 7** | Above `maxFileSizeBytesToHash`, a weaker `size_mtime` fingerprint is recorded **as** `sm:` — never a sha256 that was not computed. **The recorded *value* honours this. The recorded `hashStrategy` *label* does not** (defect C-1, § 7) |
 | T-15 | **Reading file contents unintentionally** | Bounded | Contents are read only when a sha256 strategy is chosen, and `sha256_head` reads a bounded prefix. `none` and `size_mtime` open nothing |
 
 ### Threats explicitly **not** addressed
@@ -72,6 +72,18 @@ That is the operator's decision, not an engineering default, and it shapes every
 
 Every asset records the strategy that produced its fingerprint, so a later reader knows what it is worth rather than assuming the strongest.
 
+> ### ⚠ Superseded 2026-08-06 — § 4 above is preserved as written and is no longer the governing statement
+>
+> **The last sentence was not true of the shipped code.** See § 7 below: the adapter records the strategy that was *requested*, not the one that was *applied*. The claim is preserved rather than edited, because a threat model that quietly repairs its own text cannot be audited against what it once asserted.
+>
+> **Operator ruling D-2 (2026-08-06):** *size and mtime may detect change but never establish identity.* `size_mtime` is therefore a **change detector**, not a fingerprint, and it must not occupy an identity fingerprint field. The table above is retained for its cost/detection tradeoffs; its framing of `size_mtime` as a fingerprint default is superseded.
+>
+> **Operator ruling D-3:** files above the **256 MiB** threshold remain inventoried and carry an **explicit content-hash status**. They are never `skipped`, `unsupported`, `identical`, `verified`, or `duplicate` merely because automatic hashing was not performed.
+>
+> Package 2a must adopt a typed content-hash result equivalent to `hashed` (carrying its **actual** algorithm and digest) · `not_attempted_over_threshold` · `not_attempted_policy` · `attempt_failed`, the latter two with honest reasons. **This is decided, not implemented.**
+>
+> Recorded at `docs/01-mission/foundry-package-2-decision-record-2026-08-06.md` §§ 4, 8.
+
 ## 5. Verification performed
 
 23 offline tests, synthetic fixture trees in temporary directories. **No NAS path was accessed.**
@@ -83,3 +95,63 @@ Proven: the registry is empty and refuses every id · a scan request cannot carr
 ## 6. What Package 2 must add
 
 A configured root, chosen by the operator · a decision on hash strategy per material type · persistence of the catalog · a coverage surface the operator can read · **proof, by comparing the tree before and after a real scan, that nothing changed.**
+
+---
+
+## 7. Defect C-1 — recorded 2026-08-06, not yet corrected
+
+**Append-only. Nothing above this line is rewritten.**
+
+`apps/api/src/nas/nasCatalogAdapter.ts` writes `hashStrategy: request.hashStrategy`
+— the strategy **requested**, not the one **applied**. A file above
+`maxFileSizeBytesToHash` falls back to a `sm:${size}:${mtime}` value regardless
+of the strategy asked for.
+
+> **A file over 256 MiB scanned with `sha256_full` records
+> `hashStrategy: "sha256_full"` while its fingerprint is a size/mtime pair.**
+> The asset asserts a SHA-256 that was never computed.
+
+This contradicts § 4's claim that *"every asset records the strategy that
+produced its fingerprint"*, and it hollows out **T-14**: the guarantee holds for
+the recorded *value* and fails for the recorded *label*. `contentFingerprint`
+compounds it — its `null` means *both* "strategy was `none`" *and* "hashing was
+refused", two facts with different remedies.
+
+**Historical blast radius — inert.** `CONFIGURED_NAS_ROOTS` shipped empty, every
+real scan was refused, and **no operational NAS asset was ever produced**. The
+effect is confined to synthetic fixtures.
+
+**That limits the effect. It does not make a false contract assertion
+acceptable.** It is the same failure class as the Package 1b-iv monetary defect
+— a field asserting a fact the system does not hold.
+
+**Standing.** Package 1a remains historically accepted; it is not reopened and
+not reverted. **Package 2a owns the explicit contract correction and its
+regression proof.** The defect is live in `main` at the time of this record.
+
+**Operator ruling Q-2 (2026-08-06):** record append-only; do not correct
+silently. See `docs/01-mission/foundry-package-2-decision-record-2026-08-06.md` § 4.
+
+---
+
+## 8. What Package 2 must add — revised 2026-08-06
+
+§ 6 above is preserved as written. It is superseded on its detail by the
+Package 2 decision record, which decomposes the work into **2a** (contract and
+scanner truth, fixtures only, owner Claude) · **2b** (durable scan-state
+persistence **plus** schema-validated read transport, fixtures only) · **2c**
+(NAS Inventory Frontend, fixtures only) · **2d** (integration verification,
+separately governed root activation, first bounded scan, zero-write proof, and
+the operator-reviewed coverage report — **the only slot that may touch the
+named root**).
+
+**`CONFIGURED_NAS_ROOTS` remains empty through 2a and 2b.** The authorized
+future root is `/Volumes/01_PRIVATE_VAULT/Voss`; naming and mounting it
+authorize nothing. The activation mechanism is deferred to a separately
+authorized 2d preparation decision and is **not** inherited from `AC-111` by
+analogy.
+
+**Proof boundary.** 2a proves the root and symlink rules **only against
+controlled temporary fixtures** and **must not claim it verified the mounted
+`Voss` root**. Exact canonical-path and root-symlink verification against the
+real root belongs to **2d, immediately before the authorized scan**.

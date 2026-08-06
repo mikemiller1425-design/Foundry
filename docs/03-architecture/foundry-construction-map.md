@@ -109,9 +109,34 @@ Turns 1a's boundary into a real, bounded, operator-gated scan.
 | --- | --- |
 | **Depends on** | 1a; an operator decision naming which volume Foundry may index. **The coverage-vocabulary question is resolved** (§ 7.2 of the 2026-08-05 decision record): coverage is four orthogonal dimensions — source connection · interval progress · item disposition · uncertainty flag — and this package's scan terms are dimension C, joined by `unsupported`. 2a is no longer blocked on vocabulary |
 | **Acceptance gate** | Operator names the root and reviews the first coverage report |
-| **Measurable outcome** | One configured root; a coverage report distinguishing scanned / skipped / refused / inaccessible / not-yet-scanned; resumability demonstrated; **zero writes**, proven by comparing the tree before and after |
+| **Measurable outcome** | One configured root; a coverage report distinguishing the six dimension-C terms below; resumability demonstrated; **zero writes**, proven by comparing the tree before and after |
 | **Hard requirements** | Read-only · no extraction · no rename, move, or delete · bounded traversal · cancellable · honest coverage |
 | **Risk** | Volume. A multi-terabyte NAS makes the hash strategy an operational decision, not a preference — see the threat model |
+
+*The **Measurable outcome** row previously read "scanned / skipped / refused / inaccessible / not-yet-scanned" — **five** terms. That wording omitted `unsupported` and is corrected above. § 7.2 rules `unsupported` legitimate at dimension C; the omission was stale, not a decision.*
+
+**Dimension C — the six terms** (Package 2 decision record 2026-08-06, § 7):
+
+```
+scanned · skipped · refused · inaccessible · unsupported · not_yet_scanned
+```
+
+**Refusal grounds are carried separately from the disposition.** Collapsing a reason into the term is what let `refused_unsafe` and `skipped_unsupported` encode two facts in one field.
+
+**Decided 2026-08-06 — `docs/01-mission/foundry-package-2-decision-record-2026-08-06.md`** is the authoritative record for operator decisions **D-1**–**D-7**, frontend/transport **rulings 1–12**, the **2a–2d decomposition**, and contradictions **C-1**–**C-13**. Nothing there is implemented.
+
+### The four slots
+
+| Slot | Owner | Scope | Volume access | State |
+| --- | --- | --- | --- | --- |
+| **2a** | **Claude** | Contract and scanner truth — corrects C-1–C-8, C-12, C-13 | **None.** Fixtures only | **Not authorized** |
+| **2b** | Codex | **Durable scan-state persistence *plus* schema-validated read transport** | **None.** Fixtures only | **Not authorized** |
+| **2c** | Cursor | **NAS Inventory Frontend** | **None.** Fixtures only | **Not authorized** |
+| **2d** | Claude + Michael | Integration verification · separately governed root activation · first bounded scan · zero-write proof · operator-reviewed coverage report | **The only slot that may touch the named root** | **Not authorized** |
+
+**The authorized future root is `/Volumes/01_PRIVATE_VAULT/Voss` (D-1).** Naming and mounting it authorize nothing. **`CONFIGURED_NAS_ROOTS` remains empty through 2a and 2b**, and the activation mechanism is deferred to a separately authorized 2d preparation decision — **not** inherited from `AC-111` by analogy.
+
+**Package 2 remains unimplemented until 2a receives its own explicit authorization.**
 
 ---
 

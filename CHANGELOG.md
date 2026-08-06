@@ -6,6 +6,38 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Package 2 governance record; decisions D-1–D-7, rulings 1–12, and the 2a–2d decomposition
+
+Governance only. **Nothing is implemented, no scan is authorized, and no source file changed.** Recorded at `docs/01-mission/foundry-package-2-decision-record-2026-08-06.md`.
+
+**The authorized future root is `/Volumes/01_PRIVATE_VAULT/Voss` (D-1)** — that root exactly, and its descendants. Every other volume, the wider `01_PRIVATE_VAULT` subtree, recycle-bin and snapshot directories, and out-of-root symlink targets are excluded. **Naming and mounting a share create no scan authorization.**
+
+**`CONFIGURED_NAS_ROOTS` remains empty through Packages 2a and 2b.** Neither may populate an allowlist, embed the path in executable source, accept it through an environment override, `stat` it, or traverse it. The activation mechanism is deferred to a separately authorized 2d preparation decision and is explicitly **not** inherited from `AC-111` by analogy — an analogy is not a review.
+
+Other decisions: metadata-first inventory with targeted resumable SHA-256, where **size and mtime detect change but never establish identity** (D-2) · a 256 MiB automatic-hashing threshold above which files stay inventoried and carry an explicit content-hash status (D-3) · four independent coverage dimensions (D-4) · the NAS staying `not_connected` in the Command Center until 2d is accepted (D-5) · initial bounds where the entry cap is a **resumable batch boundary, not a completion claim** (D-6) · the 62 NAS proposal documents limited to 2c styling and information architecture, supplying no fields, truth, scope, or acceptance evidence (D-7).
+
+Decomposition: **2a** contract and scanner truth (owner Claude, fixtures only) · **2b** **durable scan-state persistence plus** schema-validated read transport (fixtures only) · **2c** NAS Inventory Frontend (Cursor, fixtures only) · **2d** integration verification, separately governed root activation, first bounded scan, zero-write proof, and the operator-reviewed coverage report — **the only slot that may touch the named root**. 2b's label names persistence explicitly because ruling 2 requires the resume cursor to survive process restart, and **persistence cannot be smuggled in under a transport-only label**.
+
+Thirteen contradictions (C-1–C-13) were found while reconciling these decisions against the construction map, Package 1 closure at `5329f77`, § 7.2, the Package 1a catalog, and the threat model. **Package 2 remains unimplemented until 2a receives its own explicit authorization.**
+
+### Fixed — construction map's stale five-disposition wording
+
+The Package 2 measurable-outcome row listed five dimension-C terms, omitting `unsupported`, though § 7.2 rules it legitimate. Dimension C is **`scanned · skipped · refused · inaccessible · unsupported · not_yet_scanned`**, with **refusal grounds carried separately from the disposition** — collapsing a reason into the term is what let `refused_unsafe` and `skipped_unsupported` encode two facts in one field.
+
+### Deprecated — threat model § 4's framing of `size_mtime` as a fingerprint default
+
+Preserved as written and marked superseded. Under D-2, `size_mtime` is a **change detector, not identity**, and must not occupy an identity fingerprint field. Package 2a must adopt a typed content-hash result — `hashed` carrying its actual algorithm and digest · `not_attempted_over_threshold` · `not_attempted_policy` · `attempt_failed`, the latter two with honest reasons. **Decided, not implemented.**
+
+### Security — accepted Package 1a defect C-1 recorded; live in `main` and not yet corrected
+
+`nasCatalogAdapter.ts` writes `hashStrategy: request.hashStrategy` — the strategy **requested**, not the one **applied**. A file above the threshold falls back to a `sm:${size}:${mtime}` value regardless. **A file over 256 MiB scanned with `sha256_full` records `hashStrategy: "sha256_full"` while its fingerprint is a size/mtime pair** — an asset asserting a SHA-256 that was never computed. `contentFingerprint: null` compounds it, meaning both "strategy was `none`" and "hashing was refused".
+
+This contradicts threat model § 4's claim that every asset records the strategy that produced its fingerprint, and hollows out T-14: the guarantee holds for the recorded *value* and fails for the recorded *label*.
+
+**The defect was inert** — the root registry shipped empty, every real scan was refused, and no operational NAS asset was ever produced. **That limits its effect; it does not make a false contract assertion acceptable.** Same failure class as the Package 1b-iv monetary defect: a field asserting a fact the system does not hold.
+
+Recorded append-only per operator ruling Q-2 rather than corrected silently. **Package 1a remains historically accepted; Package 2a owns the correction and its regression proof.**
+
 ### Added — Package 1b-iv accepted; Package 1 closed
 
 The operator personally observed all eleven Package 1b-iv requirements in the running application — including progressive disclosure, evidence access, the existing World/Map/Operate modes, refresh behaviour, and the narrow layout — and **explicitly accepted Package 1b-iv**. Recorded at § 17 of the 2026-08-05 decision record.
