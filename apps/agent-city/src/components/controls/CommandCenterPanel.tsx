@@ -3,6 +3,7 @@
 import {
   COVERAGE_LABELS,
   type CommandCenterSnapshot,
+  type ConnectionStatus,
   type OperationalMission,
 } from "@foundry/contracts";
 import { useRuntime } from "@/lib/mock-runtime";
@@ -30,7 +31,7 @@ import { useId, useState } from "react";
  * is backend-supplied; absence states are rendered with their reasons.
  */
 export function CommandCenterPanel() {
-  const { commandCenter, commandCenterStatus, runtimeMode } = useRuntime();
+  const { commandCenter, commandCenterStatus, runtimeMode, connectionStatus } = useRuntime();
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const titleId = useId();
@@ -64,7 +65,7 @@ export function CommandCenterPanel() {
         </span>
       </div>
 
-      <CommandCenterStatusBody status={status} />
+      <CommandCenterStatusBody status={status} connectionStatus={connectionStatus} />
 
       {status === "current" || status === "stale" ? (
         commandCenter ? (
@@ -97,14 +98,29 @@ export function CommandCenterPanel() {
   );
 }
 
-function CommandCenterStatusBody({ status }: { status: CommandCenterStatus }) {
+function CommandCenterStatusBody({
+  status,
+  connectionStatus,
+}: {
+  status: CommandCenterStatus;
+  connectionStatus: ConnectionStatus;
+}) {
   if (status === "current" || status === "stale") {
-    return status === "stale" ? (
+    if (status !== "stale") return null;
+    // `stale` is reached two ways: a live event has arrived and the refresh is
+    // in flight, or the backend became unreachable while a validated snapshot
+    // was already held. Both are honestly "stale", but explaining a lost
+    // backend as "catching up to a newer event" states a cause that is not
+    // true — the operator would read a held snapshot as merely a moment
+    // behind. The stream's own connection status already distinguishes them.
+    const disconnected = connectionStatus === "disconnected";
+    return (
       <p className="mt-2 text-[10px] text-amber-200/90" role="status">
-        Snapshot is catching up to a newer event. Figures below are the last validated
-        aggregate, not a guessed update.
+        {disconnected
+          ? "Disconnected from the backend. Figures below are the last validated aggregate and are no longer being refreshed — they are not current, and no newer state is being guessed."
+          : "Snapshot is catching up to a newer event. Figures below are the last validated aggregate, not a guessed update."}
       </p>
-    ) : null;
+    );
   }
 
   const messages: Record<"disconnected" | "loading" | "invalid_contract" | "unavailable", string> =
@@ -191,11 +207,16 @@ function WorldGlance({
           </ul>
         )}
       </div>
+      {/* Scoped at level 1 for the same reason as level 2: a bare count reads
+          as "this is everything", when it is everything the classifier
+          qualified inside the projection's own interval. */}
       <GlanceBlock
         label="External actions"
         value={
           snapshot.externalActions.noQualifyingActionsStatement ??
-          `${snapshot.externalActions.projection.actions.length} qualifying · classifier v${snapshot.externalActionClassifierVersion}`
+          `${snapshot.externalActions.projection.actions.length} qualifying in ${formatActionInterval(
+            snapshot,
+          )} · classifier v${snapshot.externalActionClassifierVersion}`
         }
       />
       <GlanceBlock label="Money spent" value={money.spent} />
@@ -234,19 +255,55 @@ function WorldGlance({
           </ul>
         )}
       </div>
-      {snapshot.decisionBatchPolicy.schedule.kind === "unconfigured" ? (
-        <GlanceBlock
-          label="Decision batch"
-          value="Unconfigured — no scheduled batch is active."
-        />
-      ) : (
-        <GlanceBlock
-          label="Decision batch"
-          value={`Enabled: ${snapshot.decisionBatchPolicy.enabled ? "yes" : "no"}`}
-        />
-      )}
+      <GlanceBlock
+        label="Decision batch"
+        value={formatDecisionBatch(snapshot.decisionBatchPolicy)}
+      />
+      <GlanceBlock
+        label="Immediate interruption"
+        value={
+          snapshot.decisionBatchPolicy.immediateInterruptionCategories.length === 0
+            ? "No category bypasses the batch."
+            : snapshot.decisionBatchPolicy.immediateInterruptionCategories
+                .map((category) => category.replaceAll("_", " "))
+                .join(" · ")
+        }
+      />
     </div>
   );
+}
+
+/**
+ * The C-7 sequence form of the interval the external-action projection covers.
+ *
+ * Read from the projection's own bounds rather than from `latestSequence`,
+ * because the two differ: a briefing record scopes the projection to the
+ * briefing's captured end, which trails the log head as new events arrive.
+ */
+function formatActionInterval(snapshot: CommandCenterSnapshot): string {
+  const { fromSequenceExclusive, toSequenceInclusive } = snapshot.externalActions.projection;
+  return `(${fromSequenceExclusive}, ${toSequenceInclusive}]`;
+}
+
+/**
+ * The batch schedule, stated from the policy rather than summarised away.
+ *
+ * "Enabled: yes" alone answers a different question than the operator is
+ * asking — it says a batch exists without saying when it lands, while the
+ * policy already carries the time, the timezone, and the next expected
+ * batch. Every value below is read from `decisionBatchPolicy`; nothing is
+ * inferred, and the unconfigured case still says unconfigured.
+ */
+function formatDecisionBatch(policy: CommandCenterSnapshot["decisionBatchPolicy"]): string {
+  if (policy.schedule.kind === "unconfigured") {
+    return "Unconfigured — no scheduled batch is active.";
+  }
+  const cadence = policy.schedule.kind === "daily" ? "Daily" : "Weekdays";
+  const zone = policy.timezone ?? "no timezone recorded";
+  const next = policy.nextExpectedBatchAt ?? "no next batch computed";
+  return `${cadence} at ${policy.schedule.atLocalTime} (${zone}) · enabled: ${
+    policy.enabled ? "yes" : "no"
+  } · next: ${next}`;
 }
 
 function GlanceBlock({ label, value }: { label: string; value: string }) {
@@ -367,8 +424,16 @@ function TacticalMission({
             (artifact) => `${artifact.artifactId} · ${formatAttested(artifact.kind)}`,
           )}
         />
+        {/* Labelled by the interval the projection actually carries, which is
+            neither this mission's nor necessarily the snapshot's full range:
+            once a briefing record exists the projection is scoped to that
+            briefing's interval, so it can end below `latestSequence`. The
+            previous "(mission interval)" label attributed this count to one
+            mission. No per-mission external-action projection exists in the
+            accepted contract, so the honest repair is to state the scope the
+            number really has, read from the projection's own bounds. */}
         <ListBlock
-          label="External actions (mission interval)"
+          label={`External actions (classified interval ${formatActionInterval(snapshot)})`}
           empty={
             snapshot.externalActions.noQualifyingActionsStatement ?? "None in snapshot."
           }

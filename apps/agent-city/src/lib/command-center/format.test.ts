@@ -53,6 +53,81 @@ describe("command-center format helpers", () => {
       formatMoneyGlance({ money } as CommandCenterSnapshot).received,
     ).toContain("No received revenue");
   });
+
+  it("never renders an absent spend record as a recorded zero", () => {
+    const money = {
+      outcome: {
+        currency: "USD",
+        byStatus: {
+          projected: [],
+          quoted: [],
+          invoiced: [],
+          received: [],
+          spent: [],
+          refunded: [],
+        },
+      },
+      hasNoReceivedRevenue: true,
+      noReceivedRevenueStatement: "No received revenue is recorded in Foundry's operational ledger.",
+    } as CommandCenterSnapshot["money"];
+    const spent = formatMoneyGlance({ money } as CommandCenterSnapshot).spent;
+    expect(spent).toContain("No spend record exists");
+    expect(spent).not.toContain("0.00");
+  });
+
+  it("states a recorded spend as a figure once a spend record exists", () => {
+    const money = {
+      outcome: {
+        currency: "USD",
+        byStatus: {
+          projected: [],
+          quoted: [],
+          invoiced: [],
+          received: [],
+          spent: [
+            {
+              recordId: "spend-1",
+              status: "spent",
+              currency: "USD",
+              amount: 4.25,
+              evidence: [{ eventId: "e-1", eventType: "agentrun.completed" }],
+              recordedAt: "2026-08-05T00:00:00.000Z",
+              responsibleEntityType: "Build",
+              responsibleEntityId: "build-1",
+            },
+          ],
+          refunded: [],
+        },
+      },
+      hasNoReceivedRevenue: true,
+      noReceivedRevenueStatement: "No received revenue is recorded in Foundry's operational ledger.",
+    } as unknown as CommandCenterSnapshot["money"];
+    expect(formatMoneyGlance({ money } as CommandCenterSnapshot).spent).toBe("USD 4.25");
+  });
+
+  it("surfaces a stop reason so a stopped scan cannot read as complete coverage", () => {
+    expect(
+      formatCoverageLine({
+        sourceId: "nas",
+        sourceLabel: "NAS archive",
+        declaredScope: "All shares",
+        declaredInterval: "(0, 9]",
+        connection: "connected",
+        progress: "checked",
+        uncertainty: { result_uncertain: false },
+        counts: {
+          scanned: 12,
+          skipped: 0,
+          refused: 0,
+          inaccessible: 0,
+          unsupported: 0,
+          not_yet_scanned: 0,
+        },
+        stopReason: "cancelled by operator",
+        observedAt: "2026-08-05T00:00:00.000Z",
+      }),
+    ).toBe("NAS archive: Connected, Checked · stopped: cancelled by operator");
+  });
 });
 
 describe("commandCenterStatusLabel", () => {

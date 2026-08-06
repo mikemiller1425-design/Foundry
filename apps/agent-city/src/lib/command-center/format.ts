@@ -35,14 +35,35 @@ export function formatUsd(amount: number, currency = "USD"): string {
   return `${currency} ${amount.toFixed(2)}`;
 }
 
+/**
+ * The absence of a spend record is not a spend of zero.
+ *
+ * `sumStatus(outcome, "spent")` returns 0 both when records sum to nothing
+ * and when no record exists at all, and rendering that 0 as "USD 0.00"
+ * states a monetary fact the ledger does not hold — the same collapse the
+ * `received` side already refuses via `hasNoReceivedRevenue`. It is visible
+ * against the current operational data, where `byStatus.spent` is empty and
+ * every mission reports `spendUsd: not_recorded`: the glance asserted
+ * "USD 0.00" while the mission below it said the cost was never recorded.
+ *
+ * The emptiness of the supplied `byStatus.spent` array is read, not derived —
+ * no new figure is computed here, and the backend contract is untouched.
+ */
+export const NO_SPEND_RECORDED_STATEMENT =
+  "No spend record exists in Foundry's operational ledger for this interval — not a recorded zero.";
+
 export function formatMoneyGlance(snapshot: CommandCenterSnapshot): {
   spent: string;
   received: string;
 } {
+  const spentRecords = snapshot.money.outcome.byStatus.spent;
   const spent = sumStatus(snapshot.money.outcome, "spent");
   const received = receivedRevenue(snapshot.money.outcome);
   return {
-    spent: formatUsd(spent, snapshot.money.outcome.currency),
+    spent:
+      spentRecords.length === 0
+        ? NO_SPEND_RECORDED_STATEMENT
+        : formatUsd(spent, snapshot.money.outcome.currency),
     received: snapshot.money.hasNoReceivedRevenue
       ? (snapshot.money.noReceivedRevenueStatement ?? "No received revenue recorded")
       : formatUsd(received, snapshot.money.outcome.currency),
@@ -59,7 +80,13 @@ export function formatCoverageLine(coverage: SourceCoverage): string {
     coverage.connection === "excluded" && coverage.exclusionReason
       ? ` · why: ${coverage.exclusionReason}`
       : "";
-  return `${coverage.sourceLabel}: ${connection}, ${progress}${exclusion}${uncertain}`;
+  // A recorded stop reason is what distinguishes "finished" from "stopped
+  // early" — `isSourceCoverageComplete` treats it as disqualifying, so a
+  // glance that omits it can render a cancelled scan as "Connected, Checked"
+  // and read as complete coverage. Surfaced at level 1 rather than only in
+  // the level-3 drawer, because the misreading happens at the glance.
+  const stopped = coverage.stopReason ? ` · stopped: ${coverage.stopReason}` : "";
+  return `${coverage.sourceLabel}: ${connection}, ${progress}${exclusion}${stopped}${uncertain}`;
 }
 
 export function collectMissionEvidence(mission: OperationalMission): EvidenceRef[] {
