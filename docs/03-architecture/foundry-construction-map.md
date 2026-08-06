@@ -2,7 +2,9 @@
 
 **Type:** Sequenced construction plan
 **Date:** 2026-08-04
-**Status:** **Package 1a delivered. Packages 1b–5 are proposals awaiting their own operator authorization.**
+**Status:** **Packages 1a and 1b delivered; Package 1 is CLOSED (operator ruling 2026-08-06). Packages 2–5 remain proposals awaiting their own operator authorization.**
+
+*Historical: this line read "Package 1a delivered. Packages 1b–5 are proposals awaiting their own operator authorization." as written on 2026-08-04. It was true then and is superseded on its facts by the 2026-08-06 closure, not rewritten as to its discipline — Packages 2–5 each still need an explicit authorization.*
 
 Each package needs an explicit authorization before it starts, on the same discipline the V1.1 ladder uses. This map is a plan, not a schedule, and not a licence.
 
@@ -45,10 +47,16 @@ Each package needs an explicit authorization before it starts, on the same disci
 | **1b-i** | Claude + Cursor | Frontend reconciliation: audit disposition, accepted frontend, `missionTrace`→`agentTrace` and `operationalMemory`→`operationalSnapshot` | ✅ **Complete at `f0bb0bb`** |
 | **1b-ii** | Claude | **Command Center Operational Truth** — backend contracts, commands, events, projections, tests | ✅ **Complete at `e895d74`** |
 | **1b-ii-a** | Claude | **Command Center Read Transport** — schema-validated aggregate snapshot and versioned event vocabulary | ✅ **Complete at `7837212`** · **operator-accepted 2026-08-05** — explicit acceptance recorded at § 14 of the 2026-08-05 decision record; the earlier § 13 attribution was premature |
-| **1b-iii** | Cursor | **Command Center Frontend** — implementation against 1b-ii-a transport | **Not authorized**; blocked on **1b-ii-a** committed and pushed |
-| **1b-iv** | Claude + Michael | **Integration verification and operator observation** | **Not authorized**; blocked on 1b-iii |
+| **1b-iii** | Cursor | **Command Center Frontend** — implementation against 1b-ii-a transport | ✅ **Complete at `da66a18`**, with hardening at `9534c21` |
+| **1b-iv** | Claude + Michael | **Integration verification and operator observation** | ✅ **Complete at `3347322`** · **operator-observed and explicitly accepted 2026-08-06** — see § 17 of the 2026-08-05 decision record |
 
-**Package 1 remains open until 1b-iv is observed and approved by the operator.**
+*The two rows above previously read "**Not authorized**" — 1b-iii blocked on 1b-ii-a being committed and pushed, 1b-iv blocked on 1b-iii. Both blocks were satisfied in order and both slots were authorized and completed. The earlier text is superseded on its facts and preserved in the decision record rather than here.*
+
+**Package 1 is CLOSED, 2026-08-06.** Its final gate — the operator personally observing the eleven 1b-iv requirements — is satisfied.
+
+*Historical: this line read "**Package 1 remains open until 1b-iv is observed and approved by the operator.**" That condition was not waived; it was met.*
+
+**Closure advances no `AC-*` rung.** `AC-103` remains **not started** and must still close before `AC-111` (D-9, `docs/01-mission/agent-city-v1.1-decision-record.md`); `AC-111` remains **open**; `AC-112` remains **not started**. **Package 2 remains unauthorized.**
 
 ### 1b-ii — Command Center Operational Truth
 
@@ -74,7 +82,7 @@ Each package needs an explicit authorization before it starts, on the same disci
 | **Explicitly excluded** | Any UI · any `apps/agent-city` change · any new event, command, entity type, or domain truth · any change to 1b-ii projection logic |
 | **Risk** | Low. Every field already exists as an accepted projection; the package moves data, it does not derive it |
 
-### 1b-iii — Command Center Frontend
+### 1b-iii — Command Center Frontend ✅ **Complete at `da66a18`; hardening `9534c21`**
 
 | | |
 | --- | --- |
@@ -82,7 +90,7 @@ Each package needs an explicit authorization before it starts, on the same disci
 | **Acceptance gate** | Consumes backend projections and invents nothing — see § *Package 1b acceptance gates* |
 | **Hard requirements** | Normal operation usable through world-glance and tactical-mission levels; evidence/audit reachable but never required for ordinary operation |
 
-### 1b-iv — Integration verification and operator observation
+### 1b-iv — Integration verification and operator observation ✅ **Complete at `3347322`; operator-accepted 2026-08-06**
 
 | | |
 | --- | --- |
@@ -235,6 +243,8 @@ Claude verifies **seams only**, between the accepted 1a, 1b-i, 1b-ii, and 1b-iii
 Michael must personally observe: briefing truth · scheduled decisions · active mission · autonomy without authority enlargement · external-action accounting · monetary honesty · source coverage · recommendations · progressive disclosure · evidence access · unchanged existing modes.
 
 **Package 1 closes only after that observation.**
+
+**Satisfied 2026-08-06.** The operator personally observed all eleven requirements in the running application and explicitly accepted Package 1b-iv. The gate above is stated as originally written and is **met, not waived** — it remains the standard the closure was judged against. Six integration-seam defects were found and repaired at `3347322`; each was a labelling or mapping correction over truth the accepted contracts already supplied, and none required a new contract, event, authority change, or behavior. See § 17 of the 2026-08-05 decision record.
 
 ---
 

@@ -6,6 +6,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — Package 1b-iv accepted; Package 1 closed
+
+The operator personally observed all eleven Package 1b-iv requirements in the running application — including progressive disclosure, evidence access, the existing World/Map/Operate modes, refresh behaviour, and the narrow layout — and **explicitly accepted Package 1b-iv**. Recorded at § 17 of the 2026-08-05 decision record.
+
+**Package 1 is closed.** Its final construction-map gate is **satisfied, not waived**. Package 1b-iii completed at `da66a18` with hardening at `9534c21`; Package 1b-iv seam repairs completed at `3347322`.
+
+Acceptance is recorded because the operator stated it, not because gates passed. § 14.2's distinction holds: **observation is not acceptance**, and the two remain separate acts by the same person.
+
+**Closure advances no `AC-*` rung.** `AC-103` remains not started and still precedes `AC-111`; `AC-111` remains open; `AC-112` remains not started; **Package 2 remains unauthorized** and still requires an operator decision naming the volume Foundry may index.
+
+### Fixed — six Command Center integration-seam defects (Package 1b-iv)
+
+Verification between the accepted 1a, 1b-i, 1b-ii, 1b-ii-a and 1b-iii commits found six frontend seam defects. Every one was a labelling or mapping fault in `apps/agent-city` over truth the accepted contracts already supplied — `apps/api` and `packages/persistence` are byte-identical across `5bb5ee4..3347322`.
+
+- **An absent spend record rendered as a recorded zero.** `sumStatus(outcome, "spent")` returns 0 both when records sum to nothing and when no record exists, so the world glance asserted "USD 0.00" while the mission below it read `spendUsd: not_recorded`. Visible against live operational data. The `received` side already refused this collapse via `hasNoReceivedRevenue`.
+- **A snapshot-level external-action count labelled "(mission interval)."** No per-mission external-action projection exists in the accepted contract; the count is the projection over its own `(fromSequenceExclusive, toSequenceInclusive]`.
+- **The same count unscoped at level 1**, reading as "this is everything."
+- **A configured decision batch reported only "Enabled: yes,"** withholding cadence, local time, timezone, and next expected batch. The backend-owned immediate-interruption categories — 1b-ii proof 6's visibility requirement — were rendered nowhere.
+- **A recorded `stopReason` was missing from the level-1 coverage line**, so a scan stopped early could read as "Connected, Checked" — the exact defect § 7.2 forbids.
+- **A lost backend was explained as a snapshot catching up.** The `stale` status was honest; its explanation was not. Observed live by stopping the API.
+
+Verified against the actual API and production frontend running on an operational-data observation copy; the operational database was never started against and remains at `FOUNDRY-LOGICAL-MANIFEST-v2` digest `768293606db3b3a08e7fd2d3e3ea44fad88d12c69e5866fd86f030201ab97862`, 183 records, with no WAL/SHM sidecars.
+
 ### Fixed — V2 ledger manifest reproduced; V1 rejected as an invalid method
 
 The operator supplied the `FOUNDRY-LOGICAL-MANIFEST-v2` generator. It reproduced **exactly**: 183 lines, digest `768293606db3b3a08e7fd2d3e3ea44fad88d12c69e5866fd86f030201ab97862`, read through an immutable read-only URI against the stopped, sidecar-free database. The § 15.5 reproducibility obligation is **closed**. Recorded at § 16 of the 2026-08-05 decision record; generator persisted at `docs/evidence/package-1b/generate-manifest-v2.sh`.
