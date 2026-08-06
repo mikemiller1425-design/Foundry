@@ -1,4 +1,4 @@
-import type { WorldState } from "@foundry/contracts";
+import type { CommandCenterSnapshot, WorldState } from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BackendClient, type EventSourceLike } from "./backendClient";
@@ -29,6 +29,57 @@ const snapshot: WorldState = {
   inventoryCounts: { successfulPackages: 9 },
   health: { status: "healthy", reasons: ["nominal"] },
   lastProcessedEventId: null,
+};
+
+const emptyCommandCenter: CommandCenterSnapshot = {
+  snapshotVersion: "command-center-v1",
+  observedAt: "2026-08-05T00:00:00.000Z",
+  latestSequence: 0,
+  externalActionClassifierVersion: 1,
+  missions: [],
+  briefing: {
+    record: null,
+    cursor: 0,
+    proposedNextInterval: { previousAcknowledgedSequence: 0, capturedEndSequence: 0 },
+    intervalIsEmpty: true,
+  },
+  decisionBatchPolicy: {
+    timezone: null,
+    schedule: { kind: "unconfigured" },
+    nextExpectedBatchAt: null,
+    enabled: false,
+    immediateInterruptionCategories: [],
+    configuredAt: null,
+    configuredBy: null,
+  },
+  externalActions: {
+    projection: {
+      classifierVersion: 1,
+      fromSequenceExclusive: 0,
+      toSequenceInclusive: 0,
+      actions: [],
+      counts: { attempted: 0, running: 0, succeeded: 0, failed: 0, cancelled: 0 },
+    },
+    noQualifyingActionsStatement:
+      "No qualifying external actions were recorded in Foundry's operational ledger for this briefing interval.",
+  },
+  money: {
+    outcome: {
+      currency: "USD",
+      byStatus: {
+        projected: [],
+        quoted: [],
+        invoiced: [],
+        received: [],
+        spent: [],
+        refunded: [],
+      },
+    },
+    hasNoReceivedRevenue: true,
+    noReceivedRevenueStatement: "No received revenue is recorded in Foundry's operational ledger.",
+  },
+  coverage: [],
+  recommendations: [],
 };
 
 class FakeEventSource implements EventSourceLike {
@@ -85,7 +136,10 @@ function makeClient() {
       if (url.endsWith("/world-state")) {
         return { ok: true, json: async () => snapshot } as Response;
       }
-      if (url.includes("/events")) {
+      if (url.endsWith("/command-center")) {
+        return { ok: true, json: async () => emptyCommandCenter } as Response;
+      }
+      if (url.includes("/events") && !url.includes("/events/stream")) {
         return { ok: true, json: async () => serverEvents } as Response;
       }
       return { ok: false, status: 404 } as Response;
@@ -225,6 +279,7 @@ describe("BackendClient — reconnect with bounded backoff and reconciliation", 
 
     const reconnected = FakeEventSource.instances[FakeEventSource.instances.length - 1]!;
     expect(reconnected.url).toContain("lastEventId=b");
+    expect(reconnected.url).toContain("vocabulary=command-center-v1");
   });
 
   it("resets backoff after a successful reconnect", async () => {
@@ -315,7 +370,10 @@ describe("BackendClient — world state advances with the event log (AC-103)", (
           const body = current;
           return { ok: true, json: async () => body } as Response;
         }
-        if (url.includes("/events")) {
+        if (url.endsWith("/command-center")) {
+          return { ok: true, json: async () => emptyCommandCenter } as Response;
+        }
+        if (url.includes("/events") && !url.includes("/events/stream")) {
           return { ok: true, json: async () => serverEvents } as Response;
         }
         return { ok: false, status: 404 } as Response;
@@ -398,5 +456,105 @@ describe("BackendClient — world state advances with the event log (AC-103)", (
     promote();
     await client.refreshWorldState();
     expect(client.getState().worldState?.currentBuild?.id).toBe("build-1");
+  });
+});
+
+describe("BackendClient — Command Center transport (1b-iii)", () => {
+  it("opens the stream with vocabulary=command-center-v1", async () => {
+    const client = makeClient();
+    await client.start();
+    const source = FakeEventSource.instances[0]!;
+    expect(source.url).toContain("vocabulary=command-center-v1");
+    expect(client.getState().commandCenterStatus).toBe("current");
+    expect(client.getState().commandCenter?.snapshotVersion).toBe("command-center-v1");
+  });
+
+  it("treats a Command Center event as a snapshot refresh signal without corrupting the V1 log", async () => {
+    let ccReads = 0;
+    let latestSequence = 0;
+    const client = new BackendClient({
+      baseUrl: "http://api.test",
+      createEventSource: (url) => new FakeEventSource(url),
+      fetchImpl: (async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/world-state")) {
+          return { ok: true, json: async () => snapshot } as Response;
+        }
+        if (url.endsWith("/command-center")) {
+          ccReads += 1;
+          return {
+            ok: true,
+            json: async () => ({ ...emptyCommandCenter, latestSequence }),
+          } as Response;
+        }
+        if (url.includes("/events") && !url.includes("/events/stream")) {
+          return { ok: true, json: async () => serverEvents } as Response;
+        }
+        return { ok: false, status: 404 } as Response;
+      }) as typeof fetch,
+      scheduleRetry: (fn, ms) => retries.push({ fn, ms }),
+    });
+
+    await client.start();
+    const readsAfterStart = ccReads;
+    expect(client.getState().commandCenter?.latestSequence).toBe(0);
+    expect(client.getState().events).toEqual([]);
+
+    latestSequence = 7;
+    const briefingCreated = {
+      id: "briefing-created-1",
+      type: "briefing.created",
+      occurredAt: "2026-08-05T00:00:00.000Z",
+      actorType: "operator",
+      actorId: "op-1",
+      entityType: "Briefing",
+      entityId: "brief-1",
+      correlationId: "corr-brief",
+      severity: "info",
+      schemaVersion: 1,
+      payload: {
+        briefingId: "brief-1",
+        previousAcknowledgedSequence: 0,
+        capturedEndSequence: 7,
+        sourceCoverageIds: [],
+        externalActionClassifierVersion: 1,
+      },
+    };
+    FakeEventSource.instances[0]!.emitRaw(briefingCreated);
+
+    await vi.waitFor(() => expect(client.getState().commandCenter?.latestSequence).toBe(7));
+    expect(ccReads).toBeGreaterThan(readsAfterStart);
+    // V1 world log must not absorb Command Center envelopes.
+    expect(client.getState().events.map((e) => e.id)).not.toContain("briefing-created-1");
+    expect(client.getState().worldState).toEqual(snapshot);
+    expect(client.getState().projectionStatus).toBe("current");
+  });
+
+  it("marks invalid_contract when /command-center fails the schema", async () => {
+    const client = new BackendClient({
+      baseUrl: "http://api.test",
+      createEventSource: (url) => new FakeEventSource(url),
+      fetchImpl: (async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/world-state")) {
+          return { ok: true, json: async () => snapshot } as Response;
+        }
+        if (url.endsWith("/command-center")) {
+          return { ok: true, json: async () => ({ snapshotVersion: "not-a-contract" }) } as Response;
+        }
+        if (url.includes("/events") && !url.includes("/events/stream")) {
+          return { ok: true, json: async () => [] } as Response;
+        }
+        return { ok: false, status: 404 } as Response;
+      }) as typeof fetch,
+      scheduleRetry: (fn, ms) => retries.push({ fn, ms }),
+    });
+
+    await client.start();
+    expect(client.getState().commandCenter).toBeNull();
+    expect(client.getState().commandCenterStatus).toBe("invalid_contract");
+    // World projection remains independently healthy.
+    expect(client.getState().worldState).toEqual(snapshot);
+    expect(client.getState().projectionStatus).toBe("current");
   });
 });

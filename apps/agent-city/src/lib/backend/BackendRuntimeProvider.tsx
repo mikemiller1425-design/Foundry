@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConnectionStatus, WorldState } from "@foundry/contracts";
+import type { CommandCenterSnapshot, ConnectionStatus, WorldState } from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RuntimeContext, type RuntimeContextValue } from "@/lib/mock-runtime/RuntimeProvider";
@@ -26,6 +26,7 @@ import {
 } from "./operatorCredential";
 import { createInitialWorldState } from "@/lib/mock-runtime/worldStateReducer";
 import type { ProjectionStatus } from "@/lib/runtime/adapter";
+import type { CommandCenterStatus } from "@/lib/command-center/status";
 
 /**
  * FBL-026: makes the frontend a live projection of backend truth rather
@@ -53,6 +54,9 @@ export function BackendRuntimeProvider({
   const [rawWorldState, setRawWorldState] = useState<WorldState | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
   const [projectionStatus, setProjectionStatus] = useState<ProjectionStatus>("unavailable");
+  const [commandCenter, setCommandCenter] = useState<CommandCenterSnapshot | null>(null);
+  const [commandCenterStatus, setCommandCenterStatus] =
+    useState<CommandCenterStatus>("disconnected");
   const [lastRejection, setLastRejection] = useState<RuntimeContextValue["lastRejection"]>(null);
 
   useEffect(() => {
@@ -61,6 +65,8 @@ export function BackendRuntimeProvider({
       setRawWorldState(state.worldState);
       setConnectionStatus(state.connectionStatus);
       setProjectionStatus(state.projectionStatus);
+      setCommandCenter(state.commandCenter);
+      setCommandCenterStatus(state.commandCenterStatus);
     });
     void client.start();
     return () => {
@@ -472,6 +478,8 @@ export function BackendRuntimeProvider({
         isComplete: worldState.currentBuild?.status === "completed",
         connectionStatus,
         mutationsEnabled,
+        commandCenter,
+        commandCenterStatus,
         submitCommand,
         submitObjective,
         resolveApproval,

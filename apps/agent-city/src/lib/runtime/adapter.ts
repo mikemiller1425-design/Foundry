@@ -1,5 +1,6 @@
-import type { ConnectionStatus, WorldState } from "@foundry/contracts";
+import type { CommandCenterSnapshot, ConnectionStatus, WorldState } from "@foundry/contracts";
 import type { FoundryEvent } from "@foundry/event-types";
+import type { CommandCenterStatus } from "@/lib/command-center/status";
 
 /**
  * Provider-neutral identity for the authority currently driving the world.
@@ -41,6 +42,15 @@ export interface RuntimeReadAdapter {
   isComplete: boolean;
   connectionStatus: ConnectionStatus;
   mutationsEnabled: boolean;
+  /**
+   * Package 1b-iii: schema-validated Command Center aggregate.
+   *
+   * Present only when a provider has a real transport. Mock mode leaves this
+   * null and sets `commandCenterStatus` to `unavailable` so fixture truth
+   * cannot leak into a Command Center figure.
+   */
+  commandCenter?: CommandCenterSnapshot | null;
+  commandCenterStatus?: CommandCenterStatus;
 }
 
 export function runtimeSourceLabel(source: RuntimeSource | undefined): string {

@@ -376,6 +376,10 @@ export function RuntimeProvider({
         // applies to the backend-backed provider, not to demo/test mode.
         connectionStatus: "connected",
         mutationsEnabled: true,
+        // Package 1b-iii: mock mode has no Command Center transport. Do not
+        // invent missions, money, coverage, or recommendations from fixtures.
+        commandCenter: null,
+        commandCenterStatus: "unavailable",
         submitCommand,
         resolveApproval,
         selectBuilding,

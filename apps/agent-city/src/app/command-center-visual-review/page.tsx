@@ -1,0 +1,212 @@
+"use client";
+
+import { CommandCenterPanel } from "@/components/controls/CommandCenterPanel";
+import { RuntimeContext } from "@/lib/mock-runtime";
+import { createInitialWorldState } from "@/lib/mock-runtime/worldStateReducer";
+import type { CommandCenterSnapshot } from "@foundry/contracts";
+import { useMemo } from "react";
+
+/**
+ * Package 1b-iii visual-review harness only.
+ *
+ * Serves a schema-valid Command Center snapshot into the real panel so
+ * screenshots can be captured without inventing runtime truth in mock mode.
+ * Not linked from AppShell. Not a product surface.
+ */
+const SAMPLE: CommandCenterSnapshot = {
+  snapshotVersion: "command-center-v1",
+  observedAt: "2026-08-05T00:00:00.000Z",
+  latestSequence: 4,
+  externalActionClassifierVersion: 1,
+  missions: [
+    {
+      missionId: "build-1",
+      missionType: "software_build",
+      missionTypeLabel: "Software build",
+      objective: {
+        state: "recorded",
+        value: "Ship the thing",
+        evidence: [{ eventId: "obj-1", eventType: "operator.objective_submitted" }],
+      },
+      loadout: {
+        agents: [
+          {
+            agentId: "agent-builder",
+            role: { state: "not_recorded", reason: "no event recorded a role" },
+            evidence: [{ eventId: "run-started", eventType: "agentrun.started" }],
+          },
+        ],
+        authority: {
+          state: "recorded",
+          value: { authorizationId: "auth-1", scope: "implementation" },
+          evidence: [{ eventId: "auth-1", eventType: "operator.execution_authorized" }],
+        },
+        budget: {
+          state: "recorded",
+          value: { authorizedCeilingUsd: 25, currency: "USD" },
+          evidence: [{ eventId: "auth-1", eventType: "operator.execution_authorized" }],
+        },
+        constraints: {
+          state: "not_recorded",
+          reason: "historical builds carry no constraints",
+        },
+      },
+      launchedAt: { state: "not_recorded", reason: "no build.started event was recorded" },
+      stages: [
+        {
+          key: "validation",
+          label: "Validation",
+          isCheckpoint: true,
+          status: "not_recorded",
+          evidence: [],
+        },
+      ],
+      blockers: [
+        {
+          key: "budget",
+          summary: "Awaiting operator review of spend ceiling",
+          severity: "warning",
+          occurredAt: "2026-08-05T00:00:00.000Z",
+          evidence: [{ eventId: "auth-1", eventType: "operator.execution_authorized" }],
+        },
+      ],
+      decisions: [],
+      outcome: "in_progress",
+      debriefEvidence: [{ eventId: "run-completed", eventType: "agentrun.completed" }],
+      autonomy: { state: "not_recorded", reason: "no persisted event records an autonomy level" },
+      spendUsd: {
+        state: "recorded",
+        value: 0.0790585,
+        evidence: [{ eventId: "run-completed", eventType: "agentrun.completed" }],
+      },
+      artifacts: [],
+      sourceEventIds: ["obj-1", "run-started", "run-completed"],
+    },
+  ],
+  briefing: {
+    record: null,
+    cursor: 0,
+    proposedNextInterval: { previousAcknowledgedSequence: 0, capturedEndSequence: 4 },
+    intervalIsEmpty: false,
+  },
+  decisionBatchPolicy: {
+    timezone: null,
+    schedule: { kind: "unconfigured" },
+    nextExpectedBatchAt: null,
+    enabled: false,
+    immediateInterruptionCategories: ["urgent_deadline"],
+    configuredAt: null,
+    configuredBy: null,
+  },
+  externalActions: {
+    projection: {
+      classifierVersion: 1,
+      fromSequenceExclusive: 0,
+      toSequenceInclusive: 4,
+      actions: [],
+      counts: { attempted: 0, running: 0, succeeded: 0, failed: 0, cancelled: 0 },
+    },
+    noQualifyingActionsStatement:
+      "No qualifying external actions were recorded in Foundry's operational ledger for this briefing interval.",
+  },
+  money: {
+    outcome: {
+      currency: "USD",
+      byStatus: {
+        projected: [],
+        quoted: [],
+        invoiced: [],
+        received: [],
+        spent: [
+          {
+            recordId: "spend:1",
+            status: "spent",
+            currency: "USD",
+            amount: 0.0790585,
+            evidence: [{ eventId: "run-completed", eventType: "agentrun.completed" }],
+            recordedAt: "2026-08-05T00:01:00.000Z",
+            responsibleEntityType: "AgentRun",
+            responsibleEntityId: "run-1",
+          },
+        ],
+        refunded: [],
+      },
+    },
+    hasNoReceivedRevenue: true,
+    noReceivedRevenueStatement: "No received revenue is recorded in Foundry's operational ledger.",
+  },
+  coverage: [
+    {
+      sourceId: "email",
+      sourceLabel: "Email",
+      declaredScope: "Not integrated",
+      declaredInterval: "(0, 4] by event sequence",
+      connection: "not_connected",
+      progress: "not_yet_checked",
+      uncertainty: { result_uncertain: false },
+      counts: {
+        scanned: 0,
+        skipped: 0,
+        refused: 0,
+        inaccessible: 0,
+        unsupported: 0,
+        not_yet_scanned: 0,
+      },
+      observedAt: "2026-08-05T00:00:00.000Z",
+    },
+  ],
+  recommendations: [
+    {
+      recommendationId: "rec-1",
+      reason: "Review the open spend ceiling before the next run.",
+      evidence: [{ eventId: "auth-1", eventType: "operator.execution_authorized" }],
+      supportingEntities: [{ entityType: "Build", entityId: "build-1" }],
+      generatedAt: "2026-08-05T00:00:00.000Z",
+      ruleVersion: "1b-ii.deterministic.1",
+      confidence: { kind: "deterministic" },
+      suggestedNextAction: "Open the tactical mission and confirm budget authority.",
+      wouldRequireOperatorApproval: true,
+    },
+  ],
+};
+
+export default function CommandCenterVisualReviewPage() {
+  const value = useMemo(
+    () => ({
+      events: [],
+      worldState: createInitialWorldState(),
+      isRunning: false,
+      isComplete: false,
+      connectionStatus: "connected" as const,
+      mutationsEnabled: false,
+      submitCommand: () => undefined,
+      resolveApproval: () => undefined,
+      selectBuilding: () => undefined,
+      clearSelection: () => undefined,
+      lastRejection: null,
+      runtimeMode: "backend" as const,
+      runtimeSource: {
+        kind: "backend" as const,
+        label: "Visual review harness",
+        authority: "backend" as const,
+      },
+      projectionStatus: "current" as const,
+      commandCenter: SAMPLE,
+      commandCenterStatus: "current" as const,
+    }),
+    [],
+  );
+
+  return (
+    <RuntimeContext.Provider value={value}>
+      <main className="min-h-screen bg-[#0b1018] p-6 text-neutral-200">
+        <p className="mb-4 text-[10px] uppercase tracking-[0.12em] text-amber-200/80">
+          Visual review harness — not a product route
+        </p>
+        <div className="mx-auto max-w-xl">
+          <CommandCenterPanel defaultEvidenceOpen />
+        </div>
+      </main>
+    </RuntimeContext.Provider>
+  );
+}

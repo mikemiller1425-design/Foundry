@@ -31,6 +31,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { findFoundryDistrict, findFoundryParcel } from "@/lib/world/worldAtlas";
 import { AgentLifePanel } from "@/components/controls/AgentLifePanel";
 import { AgentTracePanel } from "@/components/controls/AgentTracePanel";
+import { CommandCenterPanel } from "@/components/controls/CommandCenterPanel";
 import { OperationalSnapshotPanel } from "@/components/controls/OperationalSnapshotPanel";
 import { RuntimeReadinessPanel } from "@/components/controls/RuntimeReadinessPanel";
 import { WorldOverview } from "@/components/world/WorldOverview";
@@ -545,6 +546,7 @@ export function AppShell() {
               <p className="foundry-eyebrow mb-2">District pulse</p>
               <LiveIntelligence />
             </section>
+            <CommandCenterPanel />
             <AgentLifePanel onSelect={handleSelect} />
             <AgentTracePanel onSelect={handleSelect} />
             <OperationalSnapshotPanel />

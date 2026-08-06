@@ -1,8 +1,20 @@
-import { WorldStateSchema, type ConnectionStatus, type WorldState } from "@foundry/contracts";
-import { FoundryEventSchema, type FoundryEvent } from "@foundry/event-types";
+import {
+  CommandCenterSnapshotSchema,
+  WorldStateSchema,
+  type CommandCenterSnapshot,
+  type ConnectionStatus,
+  type WorldState,
+} from "@foundry/contracts";
+import {
+  FoundryEventSchema,
+  PersistedEventSchema,
+  isV1Event,
+  type FoundryEvent,
+} from "@foundry/event-types";
 import { nextBackoffMs } from "./connectionState";
 import { mergeEvents, resumeCursor } from "./reconcile";
 import type { ProjectionStatus } from "@/lib/runtime/adapter";
+import type { CommandCenterStatus } from "@/lib/command-center/status";
 
 export interface BackendClientOptions {
   baseUrl: string;
@@ -27,6 +39,9 @@ export interface BackendSnapshotState {
   events: FoundryEvent[];
   connectionStatus: ConnectionStatus;
   projectionStatus: ProjectionStatus;
+  /** Schema-validated Command Center aggregate; null until a successful read. */
+  commandCenter: CommandCenterSnapshot | null;
+  commandCenterStatus: CommandCenterStatus;
 }
 
 export type BackendListener = (state: BackendSnapshotState) => void;
@@ -55,11 +70,16 @@ export class BackendClient {
   private worldState: WorldState | null = null;
   private connectionStatus: ConnectionStatus = "disconnected";
   private projectionStatus: ProjectionStatus = "unavailable";
+  private commandCenter: CommandCenterSnapshot | null = null;
+  private commandCenterStatus: CommandCenterStatus = "disconnected";
 
   /** A live event has arrived and the held projection has not caught up yet. */
   private worldStateStale = false;
   /** A `/world-state` read is in flight; guarantees at most one at a time. */
   private worldStateFetching = false;
+  /** A live event requires a Command Center snapshot refresh. */
+  private commandCenterStale = false;
+  private commandCenterFetching = false;
 
   constructor(options: BackendClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, "");
@@ -81,6 +101,8 @@ export class BackendClient {
       events: this.events,
       connectionStatus: this.connectionStatus,
       projectionStatus: this.projectionStatus,
+      commandCenter: this.commandCenter,
+      commandCenterStatus: this.commandCenterStatus,
     };
   }
 
@@ -96,7 +118,18 @@ export class BackendClient {
     this.source?.close();
     this.source = null;
     this.setProjectionStatus(this.worldState ? "stale" : "unavailable");
+    this.setCommandCenterStatus(this.commandCenter ? "stale" : "disconnected");
     this.setConnectionStatus("disconnected");
+  }
+
+  /** Re-reads the authoritative Command Center aggregate (Package 1b-iii). */
+  async refreshCommandCenter(): Promise<void> {
+    this.commandCenterStale = true;
+    if (this.commandCenter) this.setCommandCenterStatus("stale");
+    else if (this.commandCenterStatus !== "invalid_contract") {
+      this.setCommandCenterStatus("loading");
+    }
+    await this.drainCommandCenterRefresh();
   }
 
   /**
@@ -182,12 +215,56 @@ export class BackendClient {
     }
   }
 
+  private async drainCommandCenterRefresh(): Promise<void> {
+    if (this.commandCenterFetching) return;
+    this.commandCenterFetching = true;
+    try {
+      while (this.commandCenterStale && !this.stopped) {
+        this.commandCenterStale = false;
+        const applied = await this.readCommandCenterOnce();
+        if (!applied && !this.commandCenterStale) break;
+      }
+    } finally {
+      this.commandCenterFetching = false;
+    }
+  }
+
+  private async readCommandCenterOnce(): Promise<boolean> {
+    try {
+      const res = await this.fetchImpl(`${this.baseUrl}/command-center`);
+      if (!res.ok) {
+        // Transport failure is never an empty successful operational state.
+        if (this.commandCenter) this.setCommandCenterStatus("stale");
+        else this.setCommandCenterStatus("unavailable");
+        return false;
+      }
+      const parsed = CommandCenterSnapshotSchema.safeParse(await res.json());
+      if (!parsed.success) {
+        this.commandCenter = null;
+        this.setCommandCenterStatus("invalid_contract");
+        this.emit();
+        return false;
+      }
+      this.commandCenter = parsed.data;
+      this.commandCenterStatus = "current";
+      this.emit();
+      return true;
+    } catch {
+      if (this.commandCenter) this.setCommandCenterStatus("stale");
+      else this.setCommandCenterStatus("unavailable");
+      return false;
+    }
+  }
+
   private async reconcile(): Promise<void> {
     try {
+      this.setCommandCenterStatus(this.commandCenter ? "stale" : "loading");
       const res = await this.fetchImpl(`${this.baseUrl}/world-state`);
       if (!res.ok) throw new Error(`snapshot failed: ${res.status}`);
       const snapshot = WorldStateSchema.parse(await res.json());
 
+      // Default /events stays on the frozen V1 vocabulary so the world
+      // timeline is never widened by Command Center envelopes.
       const eventsRes = await this.fetchImpl(`${this.baseUrl}/events`);
       const authoritative = eventsRes.ok ? parseEventArray(await eventsRes.json()) : [];
 
@@ -199,9 +276,13 @@ export class BackendClient {
       );
       this.projectionStatus = "current";
       this.emit();
+
+      this.commandCenterStale = true;
+      await this.drainCommandCenterRefresh();
     } catch {
       // Snapshot unavailable — stay disconnected and let backoff retry.
       this.setProjectionStatus(this.worldState ? "stale" : "unavailable");
+      this.setCommandCenterStatus(this.commandCenter ? "stale" : "disconnected");
       this.setConnectionStatus("disconnected");
     }
   }
@@ -209,9 +290,9 @@ export class BackendClient {
   private openStream(): void {
     if (this.stopped) return;
     const cursor = resumeCursor(this.events);
-    const url = cursor
-      ? `${this.baseUrl}/events/stream?lastEventId=${encodeURIComponent(cursor)}`
-      : `${this.baseUrl}/events/stream`;
+    const params = new URLSearchParams({ vocabulary: "command-center-v1" });
+    if (cursor) params.set("lastEventId", cursor);
+    const url = `${this.baseUrl}/events/stream?${params.toString()}`;
 
     const source = this.createEventSource(url);
     this.source = source;
@@ -223,18 +304,20 @@ export class BackendClient {
 
     source.addEventListener("foundry-event", (message: MessageEvent) => {
       try {
-        const event = FoundryEventSchema.parse(JSON.parse(message.data as string));
-        // Duplicate-safe and order-preserving (see reconcile.ts).
-        this.events = mergeEvents(this.events, [event]);
-        this.worldStateStale = true;
-        this.projectionStatus = this.worldState ? "stale" : "unavailable";
+        const persisted = PersistedEventSchema.parse(JSON.parse(message.data as string));
+        // Command Center envelopes refresh the aggregate only. They must
+        // not enter the V1 world event log or invent world-projection state.
+        if (isV1Event(persisted)) {
+          this.events = mergeEvents(this.events, [persisted]);
+          this.worldStateStale = true;
+          this.projectionStatus = this.worldState ? "stale" : "unavailable";
+          void this.drainWorldStateRefresh();
+        }
+        this.commandCenterStale = true;
+        if (this.commandCenter) this.commandCenterStatus = "stale";
         this.setConnectionStatus("connected");
         this.emit();
-        // The event log and the world-state projection are two views of
-        // the same truth, so they have to advance together. Emitting the
-        // new event without this is what let the timeline and "Current
-        // build" disagree.
-        void this.drainWorldStateRefresh();
+        void this.drainCommandCenterRefresh();
       } catch {
         // A frame on the declared Foundry channel that does not satisfy
         // the shared event contract creates a possible gap in canonical
@@ -253,6 +336,7 @@ export class BackendClient {
     // Ignore a late error from a source that has already been replaced.
     if (this.source !== source) return;
     this.setProjectionStatus(this.worldState ? "stale" : "unavailable");
+    this.setCommandCenterStatus(this.commandCenter ? "stale" : "disconnected");
     this.setConnectionStatus("disconnected");
     source.close();
     this.source = null;
@@ -278,6 +362,12 @@ export class BackendClient {
   private setProjectionStatus(status: ProjectionStatus): void {
     if (this.projectionStatus === status) return;
     this.projectionStatus = status;
+    this.emit();
+  }
+
+  private setCommandCenterStatus(status: CommandCenterStatus): void {
+    if (this.commandCenterStatus === status) return;
+    this.commandCenterStatus = status;
     this.emit();
   }
 

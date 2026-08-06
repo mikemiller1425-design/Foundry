@@ -49,6 +49,60 @@ async function installFakeBackend(page: import("@playwright/test").Page) {
     w.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.startsWith(apiUrl)) {
+        if (url.includes("/command-center")) {
+          const emptyCc = {
+            snapshotVersion: "command-center-v1",
+            observedAt: "2026-08-05T00:00:00.000Z",
+            latestSequence: 0,
+            externalActionClassifierVersion: 1,
+            missions: [],
+            briefing: {
+              record: null,
+              cursor: 0,
+              proposedNextInterval: { previousAcknowledgedSequence: 0, capturedEndSequence: 0 },
+              intervalIsEmpty: true,
+            },
+            decisionBatchPolicy: {
+              timezone: null,
+              schedule: { kind: "unconfigured" },
+              nextExpectedBatchAt: null,
+              enabled: false,
+              immediateInterruptionCategories: [],
+              configuredAt: null,
+              configuredBy: null,
+            },
+            externalActions: {
+              projection: {
+                classifierVersion: 1,
+                fromSequenceExclusive: 0,
+                toSequenceInclusive: 0,
+                actions: [],
+                counts: { attempted: 0, running: 0, succeeded: 0, failed: 0, cancelled: 0 },
+              },
+              noQualifyingActionsStatement:
+                "No qualifying external actions were recorded in Foundry's operational ledger for this briefing interval.",
+            },
+            money: {
+              outcome: {
+                currency: "USD",
+                byStatus: {
+                  projected: [],
+                  quoted: [],
+                  invoiced: [],
+                  received: [],
+                  spent: [],
+                  refunded: [],
+                },
+              },
+              hasNoReceivedRevenue: true,
+              noReceivedRevenueStatement:
+                "No received revenue is recorded in Foundry's operational ledger.",
+            },
+            coverage: [],
+            recommendations: [],
+          };
+          return Promise.resolve(new Response(JSON.stringify(emptyCc), { status: 200 }));
+        }
         const body = url.includes("/world-state") ? snapshot : [];
         return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
       }
